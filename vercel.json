@@ -1,0 +1,20 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "EMAIL_USER": "@email_user",
+    "EMAIL_APP_PASSWORD": "@email_app_password",
+    "NEXT_PUBLIC_APP_URL": "@app_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret"
+  },
+  "crons": [
+    { "path": "/api/blog/publish-scheduled", "schedule": "*/15 * * * *" }
+  ]
+}

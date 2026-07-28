@@ -1,0 +1,168 @@
+/* ==========================================================================
+   AUTH FLOW STYLES
+   Single source of truth for every login / forgot-password / reset-password /
+   accept-invite page (src/app/login, /forgot-password, /reset-password,
+   /accept-invite).
+
+   Change a value here and it updates on ALL auth pages automatically,
+   no need to touch the page files themselves.
+
+   Pages consume these via the shared <AuthLayout> component:
+   src/components/auth/AuthLayout.tsx
+   ========================================================================== */
+
+:root {
+  /* --- Layout / sizing ------------------------------------------------- */
+  --auth-card-max-width: 24rem;      /* width of the centered card */
+  --auth-container-padding-x: 1.5rem; /* left/right screen padding on small viewports */
+
+  /* --- Logo badge -------------------------------------------------------*/
+  --auth-logo-size: 2.5rem;          /* logo square, width & height */
+  --auth-logo-icon-size: 1.25rem;    /* icon inside the logo square */
+  --auth-logo-radius: var(--radius-sm);
+  --auth-logo-bg: var(--color-accent);
+  --auth-logo-icon-color: #ffffff;
+
+  /* --- Header (logo + title + subtitle) ---------------------------------*/
+  --auth-header-margin-bottom: 2.5rem;
+  --auth-logo-margin-bottom: 1rem;
+  --auth-title-font: var(--font-display);
+  --auth-title-size: 1.125rem;
+  --auth-title-color: var(--color-text-primary);
+  --auth-subtitle-size: 0.875rem;
+  --auth-subtitle-color: var(--color-muted);
+  --auth-subtitle-margin-top: 0.25rem;
+
+  /* --- Form ---------------------------------------------------------- */
+  --auth-form-gap: 1rem;             /* vertical gap between fields */
+  --auth-submit-margin-top: 0.5rem;
+
+  /* --- Links / helper text -------------------------------------------- */
+  --auth-link-size: 0.75rem;
+  --auth-link-color: var(--color-accent);
+  --auth-error-size: 0.875rem;
+  --auth-error-color: #9b2335;
+  --auth-message-size: 0.875rem;
+  --auth-message-color: var(--color-text-secondary);
+
+  /* --- Footer (e.g. "Back to sign in") --------------------------------- */
+  --auth-footer-size: 0.875rem;
+  --auth-footer-margin-top: 1.5rem;
+
+  /* --- Loading state ---------------------------------------------------*/
+  --auth-loading-padding-y: 2rem;
+  --auth-loading-icon-size: 1.25rem;
+  --auth-loading-icon-color: var(--color-muted);
+}
+
+/* ==========================================================================
+   Classes, used by AuthLayout.tsx, do not need editing page by page.
+   ========================================================================== */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  padding-left: var(--auth-container-padding-x);
+  padding-right: var(--auth-container-padding-x);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: var(--auth-card-max-width);
+}
+
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: var(--auth-header-margin-bottom);
+}
+
+.auth-logo {
+  width: var(--auth-logo-size);
+  height: var(--auth-logo-size);
+  background: var(--auth-logo-bg);
+  border-radius: var(--auth-logo-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--auth-logo-margin-bottom);
+}
+
+.auth-logo svg {
+  width: var(--auth-logo-icon-size);
+  height: var(--auth-logo-icon-size);
+  color: var(--auth-logo-icon-color);
+}
+
+.auth-title {
+  font-family: var(--auth-title-font), serif;
+  font-size: var(--auth-title-size);
+  color: var(--auth-title-color);
+}
+
+.auth-subtitle {
+  font-size: var(--auth-subtitle-size);
+  color: var(--auth-subtitle-color);
+  margin-top: var(--auth-subtitle-margin-top);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--auth-form-gap);
+}
+
+.auth-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-link {
+  font-size: var(--auth-link-size);
+  color: var(--auth-link-color);
+}
+
+.auth-error {
+  font-size: var(--auth-error-size);
+  color: var(--auth-error-color);
+}
+
+.auth-message {
+  font-size: var(--auth-message-size);
+  color: var(--auth-message-color);
+  text-align: center;
+}
+
+.auth-submit {
+  margin-top: var(--auth-submit-margin-top);
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-footer {
+  font-size: var(--auth-footer-size);
+  text-align: center;
+  margin-top: var(--auth-footer-margin-top);
+}
+
+.auth-loading {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--auth-loading-padding-y);
+  padding-bottom: var(--auth-loading-padding-y);
+}
+
+.auth-loading svg {
+  width: var(--auth-loading-icon-size);
+  height: var(--auth-loading-icon-size);
+  color: var(--auth-loading-icon-color);
+}
+
+/* Dark mode automatically inherits from the --color-* variables already
+   redefined under .dark in globals.css, nothing extra needed here. */

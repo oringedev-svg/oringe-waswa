@@ -1,0 +1,111 @@
+{
+  "jurisdiction": "Kenya",
+  "legal_basis": "Constitution of Kenya 2010, Chapter 10 (Articles 162-169); Judicature Act; Magistrates' Courts Act",
+  "as_of": "2026",
+  "hierarchy": [
+    {
+      "tier": 1,
+      "level": "superior_court",
+      "name": "Supreme Court",
+      "constitutional_basis": "Article 163",
+      "composition": "Chief Justice (President), Deputy Chief Justice (Deputy President), and 5 other judges (7 total); quorum of 5",
+      "jurisdiction": "Exclusive original jurisdiction over presidential election petitions; appellate jurisdiction over Court of Appeal decisions on matters of constitutional interpretation or certified as of general public importance; final and binding, subject to its own limited review power",
+      "appeals_from": ["Court of Appeal"],
+      "appeals_to": null
+    },
+    {
+      "tier": 2,
+      "level": "superior_court",
+      "name": "Court of Appeal",
+      "constitutional_basis": "Article 164",
+      "jurisdiction": "Hears appeals from the High Court and courts of equal status (Employment and Labour Relations Court, Environment and Land Court)",
+      "appeals_from": ["High Court", "Employment and Labour Relations Court", "Environment and Land Court"],
+      "appeals_to": "Supreme Court (on constitutional interpretation or matters of general public importance)"
+    },
+    {
+      "tier": 3,
+      "level": "superior_court",
+      "name": "High Court",
+      "constitutional_basis": "Article 165",
+      "jurisdiction": "Unlimited original jurisdiction in criminal and civil matters; supervisory jurisdiction over subordinate courts and tribunals; hears constitutional petitions and judicial review applications; hears appeals from Magistrates' Courts and tribunals",
+      "appeals_from": ["Magistrates' Courts", "Kadhis' Courts", "Tribunals (subject to their enabling statute)"],
+      "appeals_to": "Court of Appeal"
+    },
+    {
+      "tier": 3,
+      "level": "superior_court_equal_status",
+      "name": "Employment and Labour Relations Court",
+      "constitutional_basis": "Article 162(2)(a)",
+      "jurisdiction": "Employment and labour relations disputes; status equal to the High Court",
+      "appeals_from": ["Subordinate courts/tribunals within its specialisation"],
+      "appeals_to": "Court of Appeal"
+    },
+    {
+      "tier": 3,
+      "level": "superior_court_equal_status",
+      "name": "Environment and Land Court",
+      "constitutional_basis": "Article 162(2)(b)",
+      "jurisdiction": "Environment, and use, occupation and title to land disputes; status equal to the High Court",
+      "appeals_from": ["Subordinate courts/tribunals within its specialisation"],
+      "appeals_to": "Court of Appeal"
+    },
+    {
+      "tier": 4,
+      "level": "subordinate_court",
+      "name": "Magistrates' Courts",
+      "constitutional_basis": "Article 169; Magistrates' Courts Act",
+      "jurisdiction": "Bulk of criminal and civil trials at first instance, within pecuniary/penal limits set by rank",
+      "ranks_ascending": [
+        "Resident Magistrate",
+        "Senior Resident Magistrate",
+        "Principal Magistrate",
+        "Senior Principal Magistrate",
+        "Chief Magistrate"
+      ],
+      "appeals_from": [],
+      "appeals_to": "High Court"
+    },
+    {
+      "tier": 4,
+      "level": "subordinate_court",
+      "name": "Kadhis' Courts",
+      "constitutional_basis": "Article 169; Kadhis' Courts Act",
+      "jurisdiction": "Questions of Muslim personal law relating to marriage, divorce, inheritance, where all parties profess the Muslim faith and submit to the court's jurisdiction",
+      "appeals_from": [],
+      "appeals_to": "High Court"
+    },
+    {
+      "tier": 4,
+      "level": "subordinate_court",
+      "name": "Courts Martial",
+      "constitutional_basis": "Article 169; Kenya Defence Forces Act",
+      "jurisdiction": "Service offences committed by members of the Kenya Defence Forces",
+      "appeals_from": [],
+      "appeals_to": "High Court"
+    },
+    {
+      "tier": 4,
+      "level": "subordinate_court",
+      "name": "Small Claims Court",
+      "constitutional_basis": "Article 169; Small Claims Court Act, 2016 (operational from 2021)",
+      "jurisdiction": "Civil claims for a liquidated sum or value of subject matter not exceeding the statutory limit (KES 1,000,000 as of last update); simplified, expeditious procedure; no legal representation as of right at first instance",
+      "appeals_from": [],
+      "appeals_to": "High Court"
+    },
+    {
+      "tier": 4,
+      "level": "subordinate_court",
+      "name": "Other Tribunals",
+      "constitutional_basis": "Article 169; various enabling Acts of Parliament",
+      "jurisdiction": "Specialised, sector-specific disputes (e.g. Rent Restriction Tribunal, Business Premises Rent Tribunal, Tax Appeals Tribunal, Political Parties Disputes Tribunal, Public Procurement Administrative Review Board, Cooperative Tribunal); no penal jurisdiction; generally operate under High Court supervision",
+      "appeals_from": [],
+      "appeals_to": "High Court (or as specified in the tribunal's enabling Act)"
+    }
+  ],
+  "notes": [
+    "Superior courts (tiers 1-3) are the Supreme Court, Court of Appeal, High Court, Employment and Labour Relations Court, and Environment and Land Court.",
+    "Subordinate courts (tier 4) are Magistrates' Courts, Kadhis' Courts, Courts Martial, the Small Claims Court, and other tribunals established by Act of Parliament.",
+    "General appeal timelines: 30 days from Magistrates' Court to High Court (civil); 14 days (criminal); 30 days from High Court to Court of Appeal; 30 days from Court of Appeal to Supreme Court on constitutional matters.",
+    "This reflects the structure as generally described by the Judiciary of Kenya and the Constitution; specific monetary/jurisdictional thresholds for Magistrates' Courts and the Small Claims Court are set by subsidiary legislation and are periodically revised — verify current thresholds against the Judiciary's own publications before relying on them for filing decisions."
+  ]
+}
