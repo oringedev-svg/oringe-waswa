@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient()
     const repo = new PostgresCourtsAdminRepository(supabase)
     const container = getCompositionRoot()
-    const contract = new CreateCourtOutputContract(repo, container.eventPublisher || {})
+    const contract = new CreateCourtOutputContract(repo, container.getEventPublisher())
 
     const result = await contract.execute(body)
 

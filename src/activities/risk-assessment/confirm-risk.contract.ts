@@ -9,6 +9,7 @@ import { PostgresRiskAssessmentEngineRepository } from '@/lib/repositories/engin
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError, NotFoundError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const ConfirmRiskInputSchema = z.object({
   assessmentId: z.string().uuid(),
@@ -29,7 +30,7 @@ export class ConfirmRiskOutputContract {
     const validation = ConfirmRiskInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      throw new ValidationError('Invalid risk confirmation input', { errors })
+      throw new ValidationError(`Invalid risk confirmation input: ${errors.join('; ')}`)
     }
 
     const { assessmentId, approved, confirmedBy, notes } = validation.data
@@ -41,7 +42,7 @@ export class ConfirmRiskOutputContract {
       const assessment = allAssessments.find((a) => a.id === assessmentId)
 
       if (!assessment) {
-        throw new NotFoundError('Risk assessment not found', { assessmentId })
+        throw new NotFoundError('Risk assessment', assessmentId)
       }
 
       if (approved) {
@@ -50,11 +51,15 @@ export class ConfirmRiskOutputContract {
         await this.riskRepository.rejectRiskAssessment(assessmentId, confirmedBy)
       }
 
+      const updatedAt = new Date()
       await this.eventPublisher.publish({
         eventId: `risk_confirmed_${assessmentId}_${Date.now()}`,
-        eventType: 'risk_confirmed',
+        type: 'risk_confirmed',
+        firmId: (await getCurrentFirmId())!,
         matterId: assessment.matterId,
-        timestamp: new Date(),
+        aggregateId: assessmentId,
+        aggregateType: 'risk_assessment',
+        occurredAt: updatedAt,
         payload: {
           assessmentId,
           approved,
@@ -68,7 +73,7 @@ export class ConfirmRiskOutputContract {
       return {
         assessmentId,
         status: approved ? 'promoted' : 'rejected',
-        updatedAt: new Date(),
+        updatedAt,
       }
     } catch (error) {
       logger.error('ConfirmRisk contract failed', error as Error, { assessmentId })

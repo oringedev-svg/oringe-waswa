@@ -64,7 +64,10 @@ export class DeadlineEngineSubscriber {
             daysOffset = filingDays
           }
         } catch (err) {
-          logger.warn('Failed to fetch judge preferences', err as Error, { judgeId })
+          logger.warn('Failed to fetch judge preferences', {
+            judgeId,
+            error: err instanceof Error ? err.message : String(err),
+          })
         }
       }
 

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const contract = new CreateLegalIssueOutputContract(
       issuesRepo,
       matterRepo,
-      container.eventPublisher || {},
+      container.getEventPublisher(),
     )
 
     const result = await contract.execute(body)

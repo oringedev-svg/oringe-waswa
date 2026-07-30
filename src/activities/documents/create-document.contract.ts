@@ -11,6 +11,7 @@ import { MatterRecordRepository } from '@/lib/repositories/MatterRecordRepositor
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError, NotFoundError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const CreateDocumentInputSchema = z.object({
   matterId: z.string().uuid(),
@@ -34,7 +35,7 @@ export class CreateDocumentOutputContract {
     const validation = CreateDocumentInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      throw new ValidationError('Invalid document input', { errors })
+      throw new ValidationError(`Invalid document input: ${errors.join('; ')}`)
     }
 
     const { matterId, fileName, fileSize, documentType, uploadedBy, fileUrl } = validation.data
@@ -44,7 +45,7 @@ export class CreateDocumentOutputContract {
 
       const matter = await this.matterRepository.getMatter(matterId)
       if (!matter) {
-        throw new NotFoundError('Matter not found', { matterId })
+        throw new NotFoundError('Matter', matterId)
       }
 
       const document = await this.documentsRepository.createDocument({
@@ -58,9 +59,12 @@ export class CreateDocumentOutputContract {
 
       await this.eventPublisher.publish({
         eventId: `document_uploaded_${document.id}_${Date.now()}`,
-        eventType: 'document_uploaded',
+        type: 'document_uploaded',
+        firmId: (await getCurrentFirmId())!,
         matterId: document.matterId,
-        timestamp: document.createdAt,
+        aggregateId: document.id,
+        aggregateType: 'document',
+        occurredAt: document.createdAt,
         payload: {
           documentId: document.id,
           matterId: document.matterId,

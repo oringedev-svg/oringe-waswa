@@ -14,6 +14,7 @@ import { PostgresCourtsAdminRepository } from '@/lib/repositories/knowledge-hub/
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError, NotFoundError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const DeleteCourtInputSchema = z.object({
   courtId: z.string().uuid('courtId must be a valid UUID'),
@@ -37,8 +38,8 @@ export class DeleteCourtOutputContract {
     const validation = DeleteCourtInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      logger.warn('DeleteCourt input validation failed', new Error(errors.join('; ')))
-      throw new ValidationError('Invalid court deletion input', { errors })
+      logger.warn('DeleteCourt input validation failed', { errors })
+      throw new ValidationError(`Invalid court deletion input: ${errors.join('; ')}`)
     }
 
     const { courtId } = validation.data
@@ -51,7 +52,7 @@ export class DeleteCourtOutputContract {
       // 2. Verify court exists
       const existing = await this.courtsAdminRepository.getCourt(courtId)
       if (!existing) {
-        throw new NotFoundError('Court not found', { courtId })
+        throw new NotFoundError('Court', courtId)
       }
 
       // 3. Delete court
@@ -65,9 +66,11 @@ export class DeleteCourtOutputContract {
       const deletedAt = new Date()
       await this.eventPublisher.publish({
         eventId: `court_deleted_${courtId}_${Date.now()}`,
-        eventType: 'court_deleted',
-        matterId: null,
-        timestamp: deletedAt,
+        type: 'court_deleted',
+        firmId: (await getCurrentFirmId())!,
+        aggregateId: courtId,
+        aggregateType: 'court',
+        occurredAt: deletedAt,
         payload: {
           courtId,
           name: existing.name,

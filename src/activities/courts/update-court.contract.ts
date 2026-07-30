@@ -14,6 +14,7 @@ import { PostgresCourtsAdminRepository } from '@/lib/repositories/knowledge-hub/
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError, NotFoundError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const UpdateCourtInputSchema = z.object({
   courtId: z.string().uuid('courtId must be a valid UUID'),
@@ -46,8 +47,8 @@ export class UpdateCourtOutputContract {
     const validation = UpdateCourtInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      logger.warn('UpdateCourt input validation failed', new Error(errors.join('; ')))
-      throw new ValidationError('Invalid court update input', { errors })
+      logger.warn('UpdateCourt input validation failed', { errors })
+      throw new ValidationError(`Invalid court update input: ${errors.join('; ')}`)
     }
 
     const { courtId, updates } = validation.data
@@ -61,7 +62,7 @@ export class UpdateCourtOutputContract {
       // 2. Verify court exists
       const existing = await this.courtsAdminRepository.getCourt(courtId)
       if (!existing) {
-        throw new NotFoundError('Court not found', { courtId })
+        throw new NotFoundError('Court', courtId)
       }
 
       // 3. Update court
@@ -72,12 +73,19 @@ export class UpdateCourtOutputContract {
         name: court.name,
       })
 
-      // 4. Emit domain event
+      // 4. Emit domain event. Knowledge Hub reference data has no matter of
+      // its own, so matterId is simply omitted rather than set to null,
+      // DomainEvent declares it optional, not nullable. firmId is not
+      // constructor-injected here (this contract is built directly in its
+      // route, not via a CompositionRoot factory), so it's resolved from
+      // the single-firm helper the same way trigger/permission code does.
       await this.eventPublisher.publish({
         eventId: `court_updated_${courtId}_${Date.now()}`,
-        eventType: 'court_updated',
-        matterId: null,
-        timestamp: court.updatedAt,
+        type: 'court_updated',
+        firmId: (await getCurrentFirmId())!,
+        aggregateId: court.id,
+        aggregateType: 'court',
+        occurredAt: court.updatedAt,
         payload: {
           courtId: court.id,
           name: court.name,

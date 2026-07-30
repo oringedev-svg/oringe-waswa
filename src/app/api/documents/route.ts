@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCompositionRoot } from '@/lib/di/CompositionRoot'
 import { logger } from '@/lib/logging/logger'
-import { PostgresDocumentsRepository } from '@/lib/repositories/DocumentsRepository'
+import { PostgresDocumentsRepository, Document } from '@/lib/repositories/DocumentsRepository'
 import { PostgresMatterRecordRepository } from '@/lib/repositories/PostgresMatterRecordRepository'
 import { CreateDocumentOutputContract } from '@/activities/documents/create-document.contract'
 import { createAdminClient } from '@/lib/supabase'
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const supabase = createAdminClient()
     const repo = new PostgresDocumentsRepository(supabase)
 
-    let documents
+    let documents: Document[]
     if (matterId) {
       documents = await repo.getDocumentsByMatter(matterId)
     } else {
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     const contract = new CreateDocumentOutputContract(
       docsRepo,
       matterRepo,
-      container.eventPublisher || {},
+      container.getEventPublisher(),
     )
 
     const result = await contract.execute(body)

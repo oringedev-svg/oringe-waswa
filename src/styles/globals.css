@@ -803,19 +803,21 @@ body{top:0!important}
 /* ADMIN SHELL, a persistent left sidebar of the current domain's tools plus
    a breadcrumb row on every page. Sidebar hides on mobile where the top-bar
    launcher carries navigation. */
-.admin-sidebar{flex-shrink:0;width:15rem;border-right:1px solid var(--color-border);min-height:calc(100vh - 3.5rem);position:sticky;top:3.5rem;align-self:flex-start;display:none;padding:1.25rem .75rem}
+.admin-topbar{position:sticky;top:0;z-index:50;border-bottom:1px solid var(--color-border);background:color-mix(in srgb,var(--color-surface-raised) 92%,transparent);backdrop-filter:blur(12px)}
+.admin-sidebar{flex-shrink:0;width:15rem;border-right:1px solid var(--color-border);background:var(--color-surface-raised);min-height:calc(100vh - 3.5rem);position:sticky;top:3.5rem;align-self:flex-start;display:none;padding:1.25rem .75rem}
 @media(min-width:1024px){.admin-sidebar{display:block}}
-.admin-sidebar-head{display:flex;align-items:center;gap:.5rem;padding:.4rem .75rem 1rem;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-muted)}
+.admin-sidebar-head{display:flex;align-items:center;gap:.5rem;padding:.4rem .75rem 1rem;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-muted);font-weight:500}
 .admin-sidebar-nav{display:flex;flex-direction:column;gap:.15rem}
-.admin-sidebar-item{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;border-radius:var(--radius-md);font-size:.875rem;color:var(--color-text-secondary);transition:background .15s ease,color .15s ease}
+.admin-sidebar-item{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;border-radius:var(--radius-md);font-size:.875rem;font-family:var(--font-body);color:var(--color-text-secondary);transition:background .15s ease,color .15s ease,border-color .15s ease;border:1px solid transparent}
 .admin-sidebar-item:hover{background:var(--color-surface-overlay);color:var(--color-text-primary)}
-.admin-sidebar-item.is-active{background:var(--color-accent);color:#fff}
-.admin-sidebar-item.is-active:hover{color:#fff}
-.admin-main{flex:1;min-width:0;padding:1.5rem 1.5rem 3rem}
+.admin-sidebar-item.is-active{background:color-mix(in srgb,var(--color-brand) 10%,var(--color-surface));color:var(--color-text-primary);border-color:color-mix(in srgb,var(--color-brand) 35%,transparent);font-weight:500}
+.admin-sidebar-item.is-active svg{color:var(--color-brand)}
+.admin-sidebar-item.is-active:hover{color:var(--color-text-primary)}
+.admin-main{flex:1;min-width:0;padding:1.5rem 1.5rem 3rem;background:var(--color-surface)}
 @media(min-width:768px){.admin-main{padding:2rem 2.5rem 4rem}}
-.admin-breadcrumbs{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--color-text-muted);margin-bottom:1.75rem}
+.admin-breadcrumbs{display:flex;align-items:center;gap:.4rem;font-family:var(--font-body);font-size:.8rem;color:var(--color-text-muted);margin-bottom:1.75rem}
 .admin-breadcrumbs a{color:var(--color-text-muted);transition:color .15s ease}
-.admin-breadcrumbs a:hover{color:var(--color-accent)}
+.admin-breadcrumbs a:hover{color:var(--color-brand)}
 .admin-breadcrumbs-current{color:var(--color-text-primary);font-weight:500}
 
 /* ROUTE PROGRESS, the thin top bar shown by loading.tsx during navigation.
@@ -840,7 +842,6 @@ body{top:0!important}
 .latest-tab.is-active{border-bottom-color:var(--color-brand)}
 .latest-viewall{color:var(--color-brand-strong)}
 .latest-viewall:hover{color:var(--color-brand)}
-.admin-sidebar-item.is-active{background:var(--color-brand);color:#fff}
 .rule-accent{background:var(--color-brand)}
 .capability-cta-arrow{color:var(--color-brand)}
 .capability-cta:hover .capability-cta-arrow{color:var(--color-brand-strong)}
@@ -1102,16 +1103,13 @@ body{top:0!important}
   .case-strip{grid-template-columns:repeat(var(--case-count,3),1fr)}
 }
 .case-mini{display:flex;align-items:flex-start;gap:1rem}
-/* Thumbnails carry the same fade-to-transparent as the larger image cards,
-   so a small picture sits into the band rather than reading as a pasted-on
-   rectangle. Masked rather than overlaid: an overlay would need a wrapper
-   element and would still show a hard edge at the image's corners. */
+/* No fade here either: the wording sits beside the thumbnail, not over it,
+   so the picture is a plain rectangle doing a plain job. Fading is reserved
+   for photographs that carry type. */
 .case-mini-media{
   flex-shrink:0;width:8.5rem;height:5.25rem;object-fit:cover;
   border-radius:var(--radius-sm);filter:var(--site-photo-filter);
   transition:opacity .3s ease;
-  -webkit-mask-image:linear-gradient(180deg,#000 55%,rgba(0,0,0,.35) 100%);
-  mask-image:linear-gradient(180deg,#000 55%,rgba(0,0,0,.35) 100%);
 }
 .case-mini:hover .case-mini-media{opacity:.85}
 .case-mini-body{min-width:0;display:flex;flex-direction:column}

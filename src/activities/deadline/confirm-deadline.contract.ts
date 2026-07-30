@@ -42,8 +42,8 @@ export class ConfirmDeadlineOutputContract {
     const validation = ConfirmDeadlineInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      logger.warn('ConfirmDeadline input validation failed', new Error(errors.join('; ')))
-      throw new ValidationError('Invalid deadline confirmation input', { errors })
+      logger.warn('ConfirmDeadline input validation failed', { errors })
+      throw new ValidationError(`Invalid deadline confirmation input: ${errors.join('; ')}`)
     }
 
     const { deadlineId, approved, confirmedBy, notes } = validation.data
@@ -60,7 +60,7 @@ export class ConfirmDeadlineOutputContract {
       const deadline = allDeadlines.find((d) => d.id === deadlineId)
 
       if (!deadline) {
-        throw new NotFoundError('Deadline not found', { deadlineId })
+        throw new NotFoundError('Deadline', deadlineId)
       }
 
       // 3. Update deadline status
@@ -68,7 +68,7 @@ export class ConfirmDeadlineOutputContract {
 
       if (approved) {
         // Promote deadline to confirmed
-        await this.deadlineEngineRepository.promoteDeadline(deadlineId, confirmedBy)
+        await this.deadlineEngineRepository.promoteDeadline(deadlineId)
         logger.info('ConfirmDeadline promoted', {
           deadlineId,
           dueDate: deadline.dueDate,
@@ -85,9 +85,12 @@ export class ConfirmDeadlineOutputContract {
       // 4. Emit domain event (after commit)
       await this.eventPublisher.publish({
         eventId: `deadline_confirmed_${deadlineId}_${Date.now()}`,
-        eventType: 'deadline_confirmed',
+        type: 'deadline_confirmed',
+        firmId: this.firmId,
         matterId: deadline.matterId,
-        timestamp: updatedAt,
+        aggregateId: deadlineId,
+        aggregateType: 'deadline',
+        occurredAt: updatedAt,
         payload: {
           deadlineId,
           approved,

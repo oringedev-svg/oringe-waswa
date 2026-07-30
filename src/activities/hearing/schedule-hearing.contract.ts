@@ -41,7 +41,7 @@ export const ScheduleHearingInput = z.object({
   judgeId: z.string().uuid('Must be a valid judge ID').optional(),
   courtroom: z.string().max(100, 'Courtroom name too long').optional(),
 
-  hearingDate: z.coerce.date('Invalid date'),
+  hearingDate: z.coerce.date({ invalid_type_error: 'Invalid date' }),
   hearingTime: z
     .string()
     .regex(/^\d{2}:\d{2}$/, 'Time must be HH:MM')
@@ -74,7 +74,7 @@ export type ScheduleHearingInput = z.infer<typeof ScheduleHearingInput>
  * The Activity only knows "I produce a Hearing."
  * It has no idea this maps to a database table.
  */
-export { Hearing }
+export type { Hearing }
 
 /**
  * Step 3: DEPENDENCY INJECTION

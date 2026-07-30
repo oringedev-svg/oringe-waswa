@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Gavel, MapPin, X, CalendarDays } from 'lucide-react'
+import { Plus, Gavel, MapPin, X, CalendarDays, Clock, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { litigationStatusLabel, litigationStatusMeta } from '@/lib/litigationStatus'
 import {
@@ -41,12 +41,13 @@ function fmtDate(v: string) {
 function fmtTime(v: string) {
   return new Date(v).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
-function daysAway(v: string) {
+function daysAway(v: string): { label: string; urgent: boolean; past: boolean } {
   const diff = Math.ceil((new Date(v).getTime() - Date.now()) / 86400000)
-  if (diff < 0) return `${Math.abs(diff)}d ago`
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Tomorrow'
-  return `in ${diff}d`
+  if (diff < 0) return { label: `${Math.abs(diff)}d ago`, urgent: false, past: true }
+  if (diff === 0) return { label: 'Today', urgent: true, past: false }
+  if (diff === 1) return { label: 'Tomorrow', urgent: true, past: false }
+  if (diff <= 3) return { label: `in ${diff}d`, urgent: true, past: false }
+  return { label: `in ${diff}d`, urgent: false, past: false }
 }
 
 export default function CourtCalendarPage() {
@@ -74,10 +75,6 @@ export default function CourtCalendarPage() {
   useEffect(() => { load() }, [scope])
 
   useEffect(() => {
-    // This hit /api/matters, which has no collection route (only
-    // /api/matters/[id]), so it 404'd on every load and the empty .catch
-    // swallowed it. The matter dropdown was therefore always empty and the
-    // form could never be submitted. The list lives at /api/files/matters.
     fetch('/api/files/matters?limit=200')
       .then(r => {
         if (!r.ok) throw new Error(`matters ${r.status}`)
@@ -117,13 +114,27 @@ export default function CourtCalendarPage() {
     )
   }
 
+  // Group dates by month for the upcoming view
+  const grouped: Record<string, CourtDate[]> = {}
+  if (scope === 'upcoming') {
+    dates.forEach(d => {
+      const key = new Date(d.start_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      if (!grouped[key]) grouped[key] = []
+      grouped[key].push(d)
+    })
+  }
+
+  const urgentCount = dates.filter(d => {
+    const diff = Math.ceil((new Date(d.start_at).getTime() - Date.now()) / 86400000)
+    return diff >= 0 && diff <= 3
+  }).length
+
   return (
     <div>
       <PageHeader
         icon={Gavel}
         eyebrow="Court and deadlines"
         title="Court Calendar"
-        description="Every upcoming appearance across all matters, with the court and case number attached."
         meta={[`${dates.length} ${scope}`]}
         actions={
           <button
@@ -141,6 +152,22 @@ export default function CourtCalendarPage() {
         />
       </PageHeader>
 
+      {/* Urgency callout — only when upcoming dates are close */}
+      {scope === 'upcoming' && urgentCount > 0 && (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl border mb-6"
+          style={{
+            background: 'color-mix(in srgb, var(--status-warning) 8%, var(--color-surface))',
+            borderColor: 'color-mix(in srgb, var(--status-warning) 25%, transparent)',
+          }}
+        >
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--status-warning)' }} />
+          <span className="text-sm font-medium" style={{ color: 'var(--status-warning)' }}>
+            {urgentCount} appearance{urgentCount > 1 ? 's' : ''} within the next 3 days
+          </span>
+        </div>
+      )}
+
       {loading ? (
         <LoadingState />
       ) : dates.length === 0 ? (
@@ -149,54 +176,25 @@ export default function CourtCalendarPage() {
           title={scope === 'upcoming' ? 'No upcoming court dates' : 'No past court dates on record'}
           description={scope === 'upcoming' ? 'Log an appearance and it will appear here, sorted by date.' : undefined}
         />
-      ) : (
-        <div className="flex flex-col gap-3">
-          {dates.map(d => {
-            const meta = d.matter ? litigationStatusMeta(d.matter.litigation_status) : null
-            return (
-              <div key={d.id} className="court-date-card">
-                <div className="court-date-when">
-                  <span className="court-date-day">{new Date(d.start_at).getDate()}</span>
-                  <span className="court-date-month">{new Date(d.start_at).toLocaleDateString('en-GB', { month: 'short' })}</span>
-                  <span className="court-date-away">{daysAway(d.start_at)}</span>
-                </div>
-
-                <div className="court-date-body">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="court-date-title">{d.title}</span>
-                    {meta && <StatusPill>{litigationStatusLabel(d.matter!.litigation_status)}</StatusPill>}
-                  </div>
-
-                  {d.matter && (
-                    <Link href={`/admin/matters/${d.matter.id}`} className="court-date-matter">
-                      {d.matter.matter_number} · {d.matter.title}
-                      {d.matter.case_number ? ` · Case ${d.matter.case_number}` : ''}
-                    </Link>
-                  )}
-
-                  <div className="court-date-meta">
-                    <span>{fmtDate(d.start_at)} at {fmtTime(d.start_at)}</span>
-                    {d.court && (
-                      <span className="inline-flex items-center gap-1">
-                        <Gavel className="w-3.5 h-3.5" />
-                        {d.court.name}{d.court.station ? `, ${d.court.station}` : ''}
-                      </span>
-                    )}
-                    {d.location && (
-                      <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{d.location}</span>
-                    )}
-                  </div>
-                  {d.description && <p className="text-xs text-[var(--color-text-secondary)] mt-1.5">{d.description}</p>}
-                </div>
-
-                {scope === 'upcoming' && (
-                  <button onClick={() => cancelDate(d.id)} className="btn btn-ghost p-1.5 !px-1.5 flex-shrink-0" title="Mark vacated">
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+      ) : scope === 'upcoming' ? (
+        /* Grouped monthly view for upcoming */
+        <div className="flex flex-col gap-8">
+          {Object.entries(grouped).map(([month, monthDates]) => (
+            <div key={month}>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">{month}</span>
+                <div className="flex-1 h-px bg-[var(--color-border)]" />
+                <span className="text-xs text-[var(--color-text-muted)] tabular-nums">{monthDates.length}</span>
               </div>
-            )
-          })}
+              <div className="flex flex-col gap-2.5">
+                {monthDates.map(d => <CourtCard key={d.id} d={d} scope={scope} onCancel={cancelDate} />)}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {dates.map(d => <CourtCard key={d.id} d={d} scope={scope} onCancel={cancelDate} />)}
         </div>
       )}
 
@@ -226,8 +224,6 @@ export default function CourtCalendarPage() {
               <option key={m.id} value={m.id}>{m.matter_number} · {m.title}</option>
             ))}
           </select>
-          {/* An empty dropdown with no explanation is what made this screen
-              look broken rather than merely unpopulated. */}
           {mattersError ? (
             <p className="text-xs mt-1.5 text-[var(--status-danger)]">
               Could not load the matter list. Reload the page, and check you are still signed in.
@@ -261,6 +257,103 @@ export default function CourtCalendarPage() {
           <textarea rows={2} className="input text-sm" value={form?.description || ''} onChange={e => form && setForm({ ...form, description: e.target.value })} />
         </div>
       </Modal>
+    </div>
+  )
+}
+
+// Extracted card for a single court appearance
+function CourtCard({ d, scope, onCancel }: { d: CourtDate; scope: string; onCancel: (id: string) => void }) {
+  const meta = d.matter ? litigationStatusMeta(d.matter.litigation_status) : null
+  const away = daysAway(d.start_at)
+
+  return (
+    <div
+      className="flex gap-4 p-4 rounded-xl border transition-colors"
+      style={{
+        background: 'var(--color-surface)',
+        borderColor: away.urgent && !away.past
+          ? 'color-mix(in srgb, var(--status-warning) 28%, var(--color-border))'
+          : 'var(--color-border)',
+      }}
+    >
+      {/* Date column */}
+      <div className="flex flex-col items-center text-center w-12 flex-shrink-0 pt-0.5">
+        <span
+          className="text-2xl font-bold tabular-nums leading-none"
+          style={{ color: away.past ? 'var(--color-text-muted)' : 'var(--color-text-primary)' }}
+        >
+          {new Date(d.start_at).getDate()}
+        </span>
+        <span className="text-[0.65rem] uppercase tracking-wide text-[var(--color-text-muted)] mt-0.5">
+          {new Date(d.start_at).toLocaleDateString('en-GB', { month: 'short' })}
+        </span>
+        {/* Countdown chip */}
+        <span
+          className="mt-2 px-1.5 py-0.5 rounded-md text-[0.6rem] font-semibold tabular-nums"
+          style={{
+            background: away.past
+              ? 'var(--color-surface-raised)'
+              : away.urgent
+              ? 'color-mix(in srgb, var(--status-warning) 15%, transparent)'
+              : 'color-mix(in srgb, var(--color-brand) 10%, transparent)',
+            color: away.past
+              ? 'var(--color-text-muted)'
+              : away.urgent
+              ? 'var(--status-warning)'
+              : 'var(--color-brand)',
+          }}
+        >
+          {away.label}
+        </span>
+      </div>
+
+      {/* Divider */}
+      <div className="w-px bg-[var(--color-border)] self-stretch flex-shrink-0" />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+          <span className="font-semibold text-sm text-[var(--color-text-primary)]">{d.title}</span>
+          {meta && <StatusPill>{litigationStatusLabel(d.matter!.litigation_status)}</StatusPill>}
+        </div>
+
+        {d.matter && (
+          <Link href={`/admin/matters/${d.matter.id}`} className="text-xs text-[var(--color-brand)] hover:underline flex items-center gap-1 mb-1.5 w-fit">
+            {d.matter.matter_number} · {d.matter.title}
+            {d.matter.case_number ? ` · Case ${d.matter.case_number}` : ''}
+          </Link>
+        )}
+
+        <div className="flex items-center gap-3 flex-wrap text-xs text-[var(--color-text-muted)]">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {fmtDate(d.start_at)} at {fmtTime(d.start_at)}
+          </span>
+          {d.court && (
+            <span className="flex items-center gap-1">
+              <Gavel className="w-3 h-3" />
+              {d.court.name}{d.court.station ? `, ${d.court.station}` : ''}
+            </span>
+          )}
+          {d.location && (
+            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{d.location}</span>
+          )}
+        </div>
+
+        {d.description && (
+          <p className="text-xs text-[var(--color-text-secondary)] mt-2 line-clamp-2">{d.description}</p>
+        )}
+      </div>
+
+      {scope === 'upcoming' && (
+        <button
+          onClick={() => onCancel(d.id)}
+          className="btn btn-ghost p-1.5 !px-1.5 flex-shrink-0 self-start"
+          title="Mark vacated"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
     </div>
   )
 }

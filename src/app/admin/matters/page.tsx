@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Eye, Scale, Lock, LayoutGrid, Rows3 } from 'lucide-react'
+import { Plus, Eye, Scale, Lock, LayoutGrid, Rows3, AlertTriangle, TrendingUp, Users, Activity } from 'lucide-react'
 import { formatDate, MATTER_TYPES } from '@/lib/utils'
 import { STAGES } from '@/lib/matterLifecycle'
 import { litigationStatusLabel } from '@/lib/litigationStatus'
@@ -41,8 +41,6 @@ function matterHealth(m: LegalMatter): { label: string; tone: Tone } | null {
   return { label: 'On track', tone: 'safe' }
 }
 
-// Stage drives the pill colour so the list reads by urgency rather than by
-// a per-stage palette nobody can hold in their head.
 function stageTone(stage: string): Tone {
   if (stage === 'closed' || stage === 'archived') return 'done'
   if (stage === 'on_hold') return 'risk'
@@ -52,12 +50,46 @@ function stageTone(stage: string): Tone {
 
 const EMPTY_MATTER = { title: '', type: 'civil_litigation', client_name: '', description: '', is_confidential: false, county: '', claim_value: '' }
 
+// Stage funnel chip — click to filter
+function StageChip({
+  label, count, avgDays, active, onClick,
+}: {
+  label: string; count: number; avgDays?: number; active: boolean; onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className="flex flex-col items-start px-3.5 py-3 rounded-xl border text-left transition-all"
+      style={{
+        background: active
+          ? 'color-mix(in srgb, var(--color-brand) 8%, var(--color-surface))'
+          : 'var(--color-surface)',
+        borderColor: active
+          ? 'color-mix(in srgb, var(--color-brand) 35%, transparent)'
+          : 'var(--color-border)',
+        opacity: count === 0 ? 0.45 : 1,
+        boxShadow: active ? '0 0 0 1px color-mix(in srgb, var(--color-brand) 25%, transparent)' : undefined,
+      }}
+    >
+      <span
+        className="text-2xl font-semibold tabular-nums leading-none mb-1"
+        style={{ color: active ? 'var(--color-brand)' : 'var(--color-text-primary)' }}
+      >
+        {count}
+      </span>
+      <span className="text-[0.7rem] text-[var(--color-text-muted)] truncate w-full">{label}</span>
+      {avgDays !== undefined && count > 0 && (
+        <span className="text-[0.62rem] text-[var(--color-text-muted)] opacity-60 mt-0.5">avg {avgDays}d</span>
+      )}
+    </button>
+  )
+}
+
 export default function AdminMattersPage() {
   const [matters, setMatters] = useState<LegalMatter[]>([])
   // Cards are the brief's pattern and the default; the table is kept
-  // because it is genuinely better for scanning a long list at density,
-  // and removing a working view to satisfy a layout note would be a
-  // downgrade for whoever works this screen all day.
+  // because it is genuinely better for scanning a long list at density.
   const [view, setView] = useState<'cards' | 'table'>('cards')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -76,8 +108,6 @@ export default function AdminMattersPage() {
     if (type !== 'all') params.set('type', type)
     if (status !== 'all') params.set('status', status)
     if (search) params.set('search', search)
-    // /api/team was fetched here on every filter change and the result was
-    // never read, so each keystroke cost an extra round trip for nothing.
     fetch(`/api/files/matters?${params}`)
       .then(r => r.json())
       .then(data => {
@@ -125,6 +155,11 @@ export default function AdminMattersPage() {
       } else toast.error('Creation failed')
     } finally { setCreating(false) }
   }
+
+  // Derive headline KPIs from stage counts
+  const activeCount = ACTIVE_STAGES.reduce((sum, key) => sum + (stageCounts[key] ?? 0), 0)
+  const stalledCount = matters.filter(m => matterHealth(m)?.label === 'Stalled').length
+  const unassigned = matters.filter(m => !m.assigned_attorney).length
 
   const columns: Column<LegalMatter>[] = [
     {
@@ -215,38 +250,77 @@ export default function AdminMattersPage() {
         }
       >
         <SearchInput value={search} onChange={setSearch} placeholder="Search matter, client, number…" className="max-w-sm" />
-        <select value={type} onChange={e => setType(e.target.value)} className="input w-48 text-sm">
+        <select value={type} onChange={e => setType(e.target.value)} className="input w-44 text-sm">
           <option value="all">All Types</option>
           {MATTER_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
-        <select value={status} onChange={e => setStatus(e.target.value)} className="input w-40 text-sm">
+        <select value={status} onChange={e => setStatus(e.target.value)} className="input w-36 text-sm">
           <option value="all">All Stages</option>
           {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
       </PageHeader>
 
-      {/* Stage counts double as the stage filter: clicking one narrows the
-          list below, clicking it again clears. */}
+      {/* Headline KPIs */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="w-8 h-8 rounded-lg bg-[var(--color-surface-raised)] flex items-center justify-center flex-shrink-0">
+            <Activity className="w-4 h-4 text-[var(--color-brand)]" />
+          </div>
+          <div>
+            <div className="text-2xl font-semibold tabular-nums leading-none text-[var(--color-text-primary)]">{activeCount}</div>
+            <div className="text-[0.7rem] text-[var(--color-text-muted)] mt-0.5">Active matters</div>
+          </div>
+        </div>
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+          style={{
+            background: stalledCount > 0 ? 'color-mix(in srgb, var(--status-danger) 6%, var(--color-surface))' : 'var(--color-surface)',
+            borderColor: stalledCount > 0 ? 'color-mix(in srgb, var(--status-danger) 20%, transparent)' : 'var(--color-border)',
+          }}
+        >
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: stalledCount > 0 ? 'color-mix(in srgb, var(--status-danger) 12%, transparent)' : 'var(--color-surface-raised)' }}
+          >
+            <AlertTriangle className="w-4 h-4" style={{ color: stalledCount > 0 ? 'var(--status-danger)' : 'var(--color-text-muted)' }} />
+          </div>
+          <div>
+            <div className="text-2xl font-semibold tabular-nums leading-none" style={{ color: stalledCount > 0 ? 'var(--status-danger)' : 'var(--color-text-primary)' }}>{stalledCount}</div>
+            <div className="text-[0.7rem] text-[var(--color-text-muted)] mt-0.5">Stalled (&gt;14d)</div>
+          </div>
+        </div>
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+          style={{
+            background: unassigned > 0 ? 'color-mix(in srgb, var(--status-warning) 6%, var(--color-surface))' : 'var(--color-surface)',
+            borderColor: unassigned > 0 ? 'color-mix(in srgb, var(--status-warning) 20%, transparent)' : 'var(--color-border)',
+          }}
+        >
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: unassigned > 0 ? 'color-mix(in srgb, var(--status-warning) 12%, transparent)' : 'var(--color-surface-raised)' }}
+          >
+            <Users className="w-4 h-4" style={{ color: unassigned > 0 ? 'var(--status-warning)' : 'var(--color-text-muted)' }} />
+          </div>
+          <div>
+            <div className="text-2xl font-semibold tabular-nums leading-none" style={{ color: unassigned > 0 ? 'var(--status-warning)' : 'var(--color-text-primary)' }}>{unassigned}</div>
+            <div className="text-[0.7rem] text-[var(--color-text-muted)] mt-0.5">Unassigned</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stage funnel — clicking narrows the list */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
-        {STAGES.map((s) => {
-          const active = status === s.key
-          const count = stageCounts[s.key] ?? 0
-          return (
-            <button
-              key={s.key}
-              onClick={() => setStatus(active ? 'all' : s.key)}
-              aria-pressed={active}
-              className={`card px-3 py-2.5 text-left transition-all border-l-[3px] ${active ? '' : 'border-l-transparent'} ${count === 0 ? 'opacity-50' : ''}`}
-              style={active ? { borderLeftColor: 'var(--color-brand)' } : undefined}
-            >
-              <div className="font-display text-xl font-semibold text-[var(--color-text-primary)] tabular-nums leading-none">{count}</div>
-              <div className="text-xs text-[var(--color-text-muted)] mt-1 truncate">{s.label}</div>
-              {stageAvgDays[s.key] !== undefined && count > 0 && (
-                <div className="text-[0.62rem] text-[var(--color-text-muted)] opacity-70 mt-0.5">avg {stageAvgDays[s.key]}d in stage</div>
-              )}
-            </button>
-          )
-        })}
+        {STAGES.map((s) => (
+          <StageChip
+            key={s.key}
+            label={s.label}
+            count={stageCounts[s.key] ?? 0}
+            avgDays={stageAvgDays[s.key]}
+            active={status === s.key}
+            onClick={() => setStatus(status === s.key ? 'all' : s.key)}
+          />
+        ))}
       </div>
 
       {view === 'table' ? (
@@ -263,8 +337,6 @@ export default function AdminMattersPage() {
       ) : matters.length === 0 ? (
         emptyState
       ) : (
-        /* The summary shown here is the matter's own human-written
-           description and is deliberately not badged as AI-generated. */
         <div className="matter-card-list">
           {matters.map(matter => {
             const health = matterHealth(matter)

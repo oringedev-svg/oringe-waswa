@@ -54,7 +54,7 @@ export async function PUT(
     const supabase = createAdminClient()
     const repo = new PostgresCourtsAdminRepository(supabase)
     const container = getCompositionRoot()
-    const contract = new UpdateCourtOutputContract(repo, container.eventPublisher || {})
+    const contract = new UpdateCourtOutputContract(repo, container.getEventPublisher())
 
     const result = await contract.execute({
       courtId: id,
@@ -89,7 +89,7 @@ export async function DELETE(
     const supabase = createAdminClient()
     const repo = new PostgresCourtsAdminRepository(supabase)
     const container = getCompositionRoot()
-    const contract = new DeleteCourtOutputContract(repo, container.eventPublisher || {})
+    const contract = new DeleteCourtOutputContract(repo, container.getEventPublisher())
 
     const result = await contract.execute({ courtId: id })
 

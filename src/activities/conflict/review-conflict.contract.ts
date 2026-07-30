@@ -42,8 +42,10 @@ export class ReviewConflictOutputContract {
     const validation = ReviewConflictInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      logger.warn('ReviewConflict input validation failed', new Error(errors.join('; ')))
-      throw new ValidationError('Invalid conflict review input', { errors })
+      logger.warn('ReviewConflict input validation failed', {
+        errors,
+      })
+      throw new ValidationError(`Invalid conflict review input: ${errors.join('; ')}`)
     }
 
     const { conflictId, approved, reviewedBy, notes } = validation.data
@@ -60,7 +62,7 @@ export class ReviewConflictOutputContract {
         .then((conflicts) => conflicts.find((c) => c.id === conflictId))
 
       if (!conflict) {
-        throw new NotFoundError('Conflict not found', { conflictId })
+        throw new NotFoundError('Conflict', conflictId)
       }
 
       // 3. Update conflict status
@@ -69,14 +71,12 @@ export class ReviewConflictOutputContract {
 
       if (approved) {
         // Mark as reviewed then promoted (user confirmed it)
-        await this.conflictEngineRepository.markConflictReviewed(conflictId, reviewedBy)
-        // In production, could also promote directly here
+        await this.conflictEngineRepository.markConflictReviewed(conflictId, reviewedBy, newStatus)
       } else {
-        // Mark as rejected (user dismissed it)
-        await this.conflictEngineRepository.recordFailure(conflictId, {
-          error: notes || 'Rejected by user',
-          timestamp: updatedAt.toISOString(),
-        })
+        // Mark as rejected (user dismissed it). recordFailure's second
+        // param is the error string itself, not a { error, timestamp }
+        // wrapper, the repository stamps its own occurred-at time.
+        await this.conflictEngineRepository.recordFailure(conflictId, notes || 'Rejected by user')
       }
 
       logger.info('ReviewConflict status updated', {
@@ -84,12 +84,16 @@ export class ReviewConflictOutputContract {
         newStatus,
       })
 
-      // 4. Emit domain event (after commit)
+      // 4. Emit domain event (after commit). DomainEvent uses `type` and
+      // `occurredAt`, not the `eventType`/`timestamp` this used to send.
       await this.eventPublisher.publish({
         eventId: `conflict_review_${conflictId}_${Date.now()}`,
-        eventType: 'conflict_review_completed',
+        type: 'conflict_review_completed',
+        firmId: this.firmId,
         matterId: conflict.matterId,
-        timestamp: updatedAt,
+        aggregateId: conflictId,
+        aggregateType: 'conflict',
+        occurredAt: updatedAt,
         payload: {
           conflictId,
           approved,

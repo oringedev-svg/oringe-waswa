@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Eye, RefreshCw, Download, Inbox } from 'lucide-react'
+import { Eye, RefreshCw, Download, Inbox, Clock, AlertCircle, CheckCircle2, Layers } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSelection } from '@/hooks/useSelection'
@@ -48,6 +48,58 @@ function AiScore({ score }: { score?: number }) {
         <div className="h-full rounded-full bg-[var(--color-brand)]" style={{ width: `${score * 10}%` }} />
       </div>
       <span className="text-xs text-[var(--color-text-muted)] tabular-nums">{score}/10</span>
+    </div>
+  )
+}
+
+// Lean stat chip used in the KPI strip
+function KpiChip({
+  label, value, icon: Icon, accent = false, warning = false,
+}: {
+  label: string; value: number | string; icon: React.ElementType; accent?: boolean; warning?: boolean
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors"
+      style={{
+        background: warning
+          ? 'color-mix(in srgb, var(--status-warning) 8%, var(--color-surface))'
+          : accent
+          ? 'color-mix(in srgb, var(--color-brand) 8%, var(--color-surface))'
+          : 'var(--color-surface)',
+        borderColor: warning
+          ? 'color-mix(in srgb, var(--status-warning) 22%, transparent)'
+          : accent
+          ? 'color-mix(in srgb, var(--color-brand) 22%, transparent)'
+          : 'var(--color-border)',
+      }}
+    >
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+        style={{
+          background: warning
+            ? 'color-mix(in srgb, var(--status-warning) 15%, transparent)'
+            : accent
+            ? 'color-mix(in srgb, var(--color-brand) 15%, transparent)'
+            : 'var(--color-surface-raised)',
+        }}
+      >
+        <Icon
+          className="w-4 h-4"
+          style={{
+            color: warning ? 'var(--status-warning)' : accent ? 'var(--color-brand)' : 'var(--color-text-muted)',
+          }}
+        />
+      </div>
+      <div className="min-w-0">
+        <div
+          className="text-xl font-semibold tabular-nums leading-none"
+          style={{ color: warning ? 'var(--status-warning)' : accent ? 'var(--color-brand)' : 'var(--color-text-primary)' }}
+        >
+          {value}
+        </div>
+        <div className="text-[0.7rem] text-[var(--color-text-muted)] mt-0.5 truncate">{label}</div>
+      </div>
     </div>
   )
 }
@@ -115,6 +167,9 @@ export default function AdminSubmissionsPage() {
   }
 
   const unopened = submissions.filter(s => !s.first_opened_at).length
+  const pending = submissions.filter(s => s.status === 'pending').length
+  const underReview = submissions.filter(s => s.status === 'under_review').length
+  const accepted = submissions.filter(s => s.status === 'accepted').length
   const hasFilters = Boolean(search || type !== 'all' || status !== 'all')
 
   const emptyState = (
@@ -177,28 +232,27 @@ export default function AdminSubmissionsPage() {
         icon={Inbox}
         eyebrow="New work"
         title="Submissions"
-        description="Enquiries from the website, waiting to be triaged into matters."
         meta={[
           `${total} ${trash ? 'in trash' : 'total'}`,
-          !trash && unopened > 0 ? `${unopened} not yet opened on this page` : null,
+          !trash && unopened > 0 ? `${unopened} not yet opened` : null,
         ]}
         actions={
           <>
             <ViewToggle isGridView={gridView} onToggle={setGridView} />
             <button onClick={handleExport} className="btn btn-outline gap-2 text-sm" disabled={!submissions.length}>
-              <Download className="w-4 h-4" /> Export CSV
+              <Download className="w-4 h-4" /> Export
             </button>
             <button onClick={load} className="btn btn-ghost gap-2 text-sm" title="Reload">
-              <RefreshCw className="w-4 h-4" /> Refresh
+              <RefreshCw className="w-4 h-4" />
             </button>
           </>
         }
       >
-        <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email, or code…" className="max-w-sm" />
-        <select value={type} onChange={e => { setType(e.target.value); setPage(1) }} className="input w-40 text-sm">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email, or code…" className="max-w-xs" />
+        <select value={type} onChange={e => { setType(e.target.value); setPage(1) }} className="input w-36 text-sm">
           {TYPES.map(t => <option key={t} value={t}>{t === 'all' ? 'All Types' : t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
         </select>
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} className="input w-44 text-sm">
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} className="input w-40 text-sm">
           {STATUSES.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s.replace(/_/g, ' ')}</option>)}
         </select>
         <FilterTabs
@@ -208,11 +262,21 @@ export default function AdminSubmissionsPage() {
         />
       </PageHeader>
 
+      {/* KPI strip — hidden in trash view, it's about live triage */}
+      {!trash && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <KpiChip icon={Layers} label="Total submissions" value={total} />
+          <KpiChip icon={AlertCircle} label="Awaiting triage" value={pending} warning={pending > 0} />
+          <KpiChip icon={Clock} label="Under review" value={underReview} accent={underReview > 0} />
+          <KpiChip icon={CheckCircle2} label="Accepted" value={accepted} />
+        </div>
+      )}
+
       {gridView ? (
         loading ? <LoadingState /> : submissions.length === 0 ? emptyState : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
             {submissions.map(sub => (
-              <Link key={sub.id} href={`/admin/submissions/${sub.id}`} className="card p-4 h-full hover:shadow-[var(--shadow-md)] transition-shadow flex flex-col">
+              <Link key={sub.id} href={`/admin/submissions/${sub.id}`} className="card p-4 h-full hover:shadow-[var(--shadow-md)] transition-all hover:-translate-y-0.5 flex flex-col">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0">
                     <p className="font-mono text-xs text-[var(--color-text-muted)] mb-1">{sub.tracking_code}</p>

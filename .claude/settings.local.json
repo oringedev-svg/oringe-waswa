@@ -310,7 +310,12 @@
       "Bash(grep -E 'NEXT_BUILD_EXIT|Failed to compile|Compiled successfully|Type error' __TRACKED_VAR__/build12.log)",
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} in %{time_total}s\\\\n\" --max-time 170 \"http://localhost:54112/\")",
       "Bash(grep -qE NEXT_BUILD_EXIT __TRACKED_VAR__/build13.log)",
-      "Bash(grep -E 'NEXT_BUILD_EXIT|Failed to compile|Compiled successfully|Type error' __TRACKED_VAR__/build13.log)"
+      "Bash(grep -E 'NEXT_BUILD_EXIT|Failed to compile|Compiled successfully|Type error' __TRACKED_VAR__/build13.log)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} in %{time_total}s\\\\n\" --max-time 170 \"http://localhost:63296/\")",
+      "Bash(grep -qE NEXT_BUILD_EXIT __TRACKED_VAR__/build14.log)",
+      "Bash(grep -E 'NEXT_BUILD_EXIT|Failed to compile|Compiled successfully|Type error' __TRACKED_VAR__/build14.log)",
+      "Bash(tee /tmp/tsc_errors.txt)",
+      "Bash(tee /tmp/tsc_errors2.txt)"
     ]
   }
 }

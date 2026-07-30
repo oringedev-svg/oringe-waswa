@@ -6,7 +6,8 @@ import { z } from 'zod'
 import { PostgresCourtDivisionsAdminRepository } from '@/lib/repositories/knowledge-hub/CourtDivisionsAdminRepository'
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
-import { NotFoundError } from '@/lib/errors/DomainError'
+import { NotFoundError, ValidationError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const UpdateCourtDivisionInputSchema = z.object({
   divisionId: z.string().uuid(),
@@ -26,7 +27,10 @@ export class UpdateCourtDivisionOutputContract {
 
   async execute(input: unknown) {
     const validation = UpdateCourtDivisionInputSchema.safeParse(input)
-    if (!validation.success) throw new Error('Invalid input')
+    if (!validation.success) {
+      const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
+      throw new ValidationError(`Invalid court division update input: ${errors.join('; ')}`)
+    }
 
     const { divisionId, updates } = validation.data
 
@@ -34,15 +38,17 @@ export class UpdateCourtDivisionOutputContract {
       logger.info('UpdateCourtDivision contract executing', { divisionId })
 
       const existing = await this.divisionsRepository.getDivision(divisionId)
-      if (!existing) throw new NotFoundError('Court division not found', { divisionId })
+      if (!existing) throw new NotFoundError('Court division', divisionId)
 
       const division = await this.divisionsRepository.updateDivision(divisionId, updates)
 
       await this.eventPublisher.publish({
         eventId: `court_division_updated_${divisionId}_${Date.now()}`,
-        eventType: 'court_division_updated',
-        matterId: null,
-        timestamp: division.updatedAt,
+        type: 'court_division_updated',
+        firmId: (await getCurrentFirmId())!,
+        aggregateId: divisionId,
+        aggregateType: 'court_division',
+        occurredAt: division.updatedAt,
         payload: { divisionId, ...updates },
       })
 

@@ -6,7 +6,8 @@ import { z } from 'zod'
 import { PostgresLegalIssuesRepository } from '@/lib/repositories/LegalIssuesRepository'
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
-import { NotFoundError } from '@/lib/errors/DomainError'
+import { NotFoundError, ValidationError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const DeleteLegalIssueInputSchema = z.object({
   issueId: z.string().uuid(),
@@ -20,7 +21,10 @@ export class DeleteLegalIssueOutputContract {
 
   async execute(input: unknown) {
     const validation = DeleteLegalIssueInputSchema.safeParse(input)
-    if (!validation.success) throw new Error('Invalid input')
+    if (!validation.success) {
+      const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
+      throw new ValidationError(`Invalid legal issue deletion input: ${errors.join('; ')}`)
+    }
 
     const { issueId } = validation.data
 
@@ -28,19 +32,23 @@ export class DeleteLegalIssueOutputContract {
       logger.info('DeleteLegalIssue contract executing', { issueId })
 
       const existing = await this.issuesRepository.getIssue(issueId)
-      if (!existing) throw new NotFoundError('Legal issue not found', { issueId })
+      if (!existing) throw new NotFoundError('Legal issue', issueId)
 
       await this.issuesRepository.deleteIssue(issueId)
 
+      const deletedAt = new Date()
       await this.eventPublisher.publish({
         eventId: `legal_issue_deleted_${issueId}_${Date.now()}`,
-        eventType: 'legal_issue_deleted',
+        type: 'legal_issue_deleted',
+        firmId: (await getCurrentFirmId())!,
         matterId: existing.matterId,
-        timestamp: new Date(),
+        aggregateId: issueId,
+        aggregateType: 'legal_issue',
+        occurredAt: deletedAt,
         payload: { issueId },
       })
 
-      return { issueId, deletedAt: new Date() }
+      return { issueId, deletedAt }
     } catch (error) {
       logger.error('DeleteLegalIssue contract failed', error as Error, { issueId })
       throw error

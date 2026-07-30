@@ -115,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-[var(--color-surface)]">
       {/* Top bar, persistent chrome. */}
-      <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-md">
+      <header className="admin-topbar">
         <div className="flex items-center gap-4 px-4 md:px-6 h-14">
           {/* The launcher only ever points at the dashboard, the 4 domains,
               and system pages, none of which a pupil or admin assistant can
@@ -127,7 +127,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               onClick={() => setLauncherOpen(o => !o)}
               className={cn(
                 'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors',
-                launcherOpen ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]'
+                launcherOpen
+                  ? 'bg-[color-mix(in_srgb,var(--color-brand)_12%,var(--color-surface))] text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]'
               )}
               title="Open navigation"
             >
@@ -136,13 +138,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
 
             {launcherOpen && (
-              <div className="absolute left-0 top-full mt-2 w-[min(92vw,640px)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-xl)] p-4 animate-slide-down">
+              <div className="absolute left-0 top-full mt-2 w-[min(92vw,640px)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-xl)] p-4 animate-slide-down">
                 <Link href="/admin"
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm mb-2 transition-colors',
-                    pathname === '/admin' ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]'
+                    pathname === '/admin'
+                      ? 'bg-[color-mix(in_srgb,var(--color-brand)_10%,var(--color-surface))] text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)] font-medium'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]'
                   )}>
-                  <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+                  <LayoutDashboard className={cn('w-4 h-4 flex-shrink-0', pathname === '/admin' && 'text-[var(--color-brand)]')} />
                   Dashboard
                 </Link>
 
@@ -151,14 +155,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link key={d.key} href={d.href}
                       className={cn(
                         'flex items-start gap-3 p-3 rounded-md transition-colors border',
-                        pathname === d.href ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5' : 'border-transparent hover:bg-[var(--color-surface-overlay)]'
+                        pathname === d.href
+                          ? 'border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-brand)_8%,var(--color-surface))]'
+                          : 'border-transparent hover:bg-[var(--color-surface-overlay)]'
                       )}>
-                      <div className="w-8 h-8 rounded-md bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-                        <d.icon className="w-4 h-4 text-[var(--color-accent)]" />
+                      <div className="w-8 h-8 rounded-md bg-[color-mix(in_srgb,var(--color-brand)_12%,transparent)] flex items-center justify-center flex-shrink-0">
+                        <d.icon className="w-4 h-4 text-[var(--color-brand)]" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-[var(--color-text-primary)]">{d.label}</div>
-                        <div className="text-xs text-[var(--color-muted)] line-clamp-2 mt-0.5">{d.description}</div>
+                        <div className="text-xs text-[var(--color-text-muted)] line-clamp-2 mt-0.5">{d.description}</div>
                       </div>
                     </Link>
                   ))}
@@ -169,9 +175,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link key={item.href} href={item.href}
                       className={cn(
                         'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors',
-                        pathname.startsWith(item.href) ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)]'
+                        pathname.startsWith(item.href)
+                          ? 'bg-[color-mix(in_srgb,var(--color-brand)_10%,var(--color-surface))] text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)] font-medium'
+                          : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)]'
                       )}>
-                      <item.icon className="w-3.5 h-3.5" />
+                      <item.icon className={cn('w-3.5 h-3.5', pathname.startsWith(item.href) && 'text-[var(--color-brand)]')} />
                       {item.label}
                     </Link>
                   ))}
@@ -181,7 +189,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           )}
 
-          <Link href="/admin" className="font-display font-semibold text-[var(--color-text-primary)] hidden sm:block flex-shrink-0">{brandLabel}</Link>
+          <Link href="/admin" className="font-display text-[var(--color-text-primary)] hidden sm:block flex-shrink-0 tracking-tight">{brandLabel}</Link>
 
           <div className="flex-1" />
 
@@ -198,7 +206,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="flex items-center gap-2 pl-2 ml-1 border-l border-[var(--color-border)]">
                 <div className="text-right hidden lg:block">
                   <div className="text-sm font-medium text-[var(--color-text-primary)] leading-tight">{profile.fullName}</div>
-                  <div className="text-xs text-[var(--color-muted)] leading-tight capitalize">{profile.role}</div>
+                  <div className="text-xs text-[var(--color-text-muted)] leading-tight capitalize">{profile.role}</div>
                 </div>
                 <button onClick={handleSignOut} className="btn btn-ghost p-2 !px-2" title="Sign out">
                   <LogOut className="w-4 h-4" />

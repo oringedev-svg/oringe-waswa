@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCompositionRoot } from '@/lib/di/CompositionRoot'
 import { logger } from '@/lib/logging/logger'
-import { PostgresCourtDivisionsAdminRepository } from '@/lib/repositories/knowledge-hub/CourtDivisionsAdminRepository'
+import { PostgresCourtDivisionsAdminRepository, CourtDivision } from '@/lib/repositories/knowledge-hub/CourtDivisionsAdminRepository'
 import { CreateCourtDivisionOutputContract } from '@/activities/court-divisions/create-division.contract'
 import { createAdminClient } from '@/lib/supabase'
 
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const supabase = createAdminClient()
     const repo = new PostgresCourtDivisionsAdminRepository(supabase)
 
-    let divisions
+    let divisions: CourtDivision[]
     if (courtId) {
       divisions = await repo.getDivisionsByCourtId(courtId)
     } else {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient()
     const repo = new PostgresCourtDivisionsAdminRepository(supabase)
     const container = getCompositionRoot()
-    const contract = new CreateCourtDivisionOutputContract(repo, container.eventPublisher || {})
+    const contract = new CreateCourtDivisionOutputContract(repo, container.getEventPublisher())
 
     const result = await contract.execute(body)
 

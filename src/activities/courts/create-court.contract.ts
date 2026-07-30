@@ -14,6 +14,7 @@ import { PostgresCourtsAdminRepository } from '@/lib/repositories/knowledge-hub/
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const CreateCourtInputSchema = z.object({
   name: z.string().min(1, 'Court name is required'),
@@ -43,8 +44,8 @@ export class CreateCourtOutputContract {
     const validation = CreateCourtInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      logger.warn('CreateCourt input validation failed', new Error(errors.join('; ')))
-      throw new ValidationError('Invalid court creation input', { errors })
+      logger.warn('CreateCourt input validation failed', { errors })
+      throw new ValidationError(`Invalid court creation input: ${errors.join('; ')}`)
     }
 
     const { name, jurisdiction, address, phone, website } = validation.data
@@ -73,9 +74,11 @@ export class CreateCourtOutputContract {
       // 3. Emit domain event (after commit)
       await this.eventPublisher.publish({
         eventId: `court_created_${court.id}_${Date.now()}`,
-        eventType: 'court_created',
-        matterId: null, // Knowledge Hub events don't have a matter
-        timestamp: court.createdAt,
+        type: 'court_created',
+        firmId: (await getCurrentFirmId())!,
+        aggregateId: court.id,
+        aggregateType: 'court',
+        occurredAt: court.createdAt,
         payload: {
           courtId: court.id,
           name: court.name,

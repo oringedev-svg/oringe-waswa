@@ -14,6 +14,7 @@ import { PostgresCourtDivisionsAdminRepository } from '@/lib/repositories/knowle
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const CreateCourtDivisionInputSchema = z.object({
   courtId: z.string().uuid('courtId must be a valid UUID'),
@@ -44,8 +45,8 @@ export class CreateCourtDivisionOutputContract {
     const validation = CreateCourtDivisionInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      logger.warn('CreateCourtDivision input validation failed', new Error(errors.join('; ')))
-      throw new ValidationError('Invalid court division creation input', { errors })
+      logger.warn('CreateCourtDivision input validation failed', { errors })
+      throw new ValidationError(`Invalid court division creation input: ${errors.join('; ')}`)
     }
 
     const { courtId, name, divisionCode, address, phone } = validation.data
@@ -75,9 +76,11 @@ export class CreateCourtDivisionOutputContract {
       // 3. Emit domain event
       await this.eventPublisher.publish({
         eventId: `court_division_created_${division.id}_${Date.now()}`,
-        eventType: 'court_division_created',
-        matterId: null,
-        timestamp: division.createdAt,
+        type: 'court_division_created',
+        firmId: (await getCurrentFirmId())!,
+        aggregateId: division.id,
+        aggregateType: 'court_division',
+        occurredAt: division.createdAt,
         payload: {
           divisionId: division.id,
           courtId: division.courtId,

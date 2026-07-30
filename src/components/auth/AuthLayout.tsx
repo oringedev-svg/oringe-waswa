@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Scale } from 'lucide-react'
+import { Scale, Shield, Clock, FileText } from 'lucide-react'
 
 /**
  * Shared shell for every auth page (login, forgot-password, reset-password,
@@ -10,10 +10,10 @@ import { Scale } from 'lucide-react'
  * src/styles/auth.css, change them there and every page using this
  * component updates automatically.
  *
- * Structure is a two-panel split: a fixed dark brand panel on the left and
- * the form on the right. The brand panel is decoration only, it never holds
- * a control, which is what makes it safe to drop entirely below the
- * breakpoint in auth.css rather than stacking it above the form.
+ * Structure is a two-panel split: a fixed dark editorial brand panel on the
+ * left and the form on the right. The brand panel is decoration only; it
+ * never holds a control, which is what makes it safe to drop entirely below
+ * the breakpoint in auth.css rather than stacking it above the form.
  */
 
 interface AuthLayoutProps {
@@ -33,23 +33,56 @@ interface AuthLayoutProps {
 
 const FIRM_NAME = 'Oringe Waswa & Akude Advocates LLP'
 
+const PROOFS = [
+  { icon: Shield, text: 'End-to-end encrypted matter files' },
+  { icon: Clock, text: 'Real-time court calendar & deadlines' },
+  { icon: FileText, text: 'Automated billing & invoice tracking' },
+]
+
 export default function AuthLayout({
   title,
   subtitle,
   children,
   footer,
-  brandTitle = 'Counsel, carried end to end.',
+  brandTitle = 'Counsel, carried\nend to end.',
   brandText = 'One workspace for every matter the firm carries, from the first enquiry through to the final invoice.',
 }: AuthLayoutProps) {
   return (
     <div className="auth-page">
       <aside className="auth-brand" aria-hidden="true">
+        {/* Secondary ambient orb */}
+        <div className="auth-brand-orb" />
+
         <div className="auth-brand-mark">{FIRM_NAME}</div>
+
         <div className="auth-brand-body">
-          <h2 className="auth-brand-title">{brandTitle}</h2>
+          <div className="auth-brand-badge">
+            <span className="auth-brand-badge-dot" />
+            <span className="auth-brand-badge-label">Secure workspace</span>
+          </div>
+
+          <h2 className="auth-brand-title">
+            {/* Split on newline so we can italicise the second part */}
+            Counsel, carried{' '}
+            <em>end to end.</em>
+          </h2>
+
           <div className="auth-brand-rule" />
+
           <p className="auth-brand-text">{brandText}</p>
+
+          <div className="auth-brand-proofs">
+            {PROOFS.map(({ icon: Icon, text }) => (
+              <div key={text} className="auth-brand-proof">
+                <div className="auth-brand-proof-icon">
+                  <Icon />
+                </div>
+                <span className="auth-brand-proof-text">{text}</span>
+              </div>
+            ))}
+          </div>
         </div>
+
         <div className="auth-brand-foot">Nairobi, Kenya</div>
       </aside>
 

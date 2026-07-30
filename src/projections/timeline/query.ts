@@ -145,15 +145,18 @@ export class PostgresTimelineQuery implements TimelineQuery {
     // Map hearings
     if (hearings) {
       for (const h of hearings) {
+        const matterTitle = Array.isArray(h.legal_matters)
+          ? h.legal_matters[0]?.title
+          : (h.legal_matters as { title?: string } | null)?.title
         entries.push({
           id: h.id,
           matterId: h.matter_id,
           type: 'hearing_scheduled',
-          title: `${h.legal_matters?.title || 'Matter'}: ${h.purpose}`,
+          title: `${matterTitle || 'Matter'}: ${h.purpose}`,
           description: `Hearing scheduled for ${new Date(h.hearing_date).toDateString()}`,
           timestamp: new Date(h.created_at),
           metadata: {
-            matterTitle: h.legal_matters?.title,
+            matterTitle,
             purpose: h.purpose,
           },
         })

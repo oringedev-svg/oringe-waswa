@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logging/logger'
-import { PostgresJudgesAdminRepository } from '@/lib/repositories/knowledge-hub/JudgesAdminRepository'
+import { PostgresJudgesAdminRepository, Judge } from '@/lib/repositories/knowledge-hub/JudgesAdminRepository'
 import { createAdminClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const supabase = createAdminClient()
     const repo = new PostgresJudgesAdminRepository(supabase)
 
-    let judges
+    let judges: Judge[]
     if (divisionId) {
       judges = await repo.getJudgesByDivisionId(divisionId)
     } else {

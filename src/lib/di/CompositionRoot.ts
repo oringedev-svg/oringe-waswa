@@ -15,9 +15,18 @@ import { PostgresMatterRecordRepository } from '@/lib/repositories/PostgresMatte
 import { PostgresCountrRepository } from '@/lib/repositories/knowledge-hub/CourtsRepository'
 import { PostgresCourtDivisionsRepository } from '@/lib/repositories/knowledge-hub/CourtDivisionsRepository'
 import { PostgresJudgesRepository } from '@/lib/repositories/knowledge-hub/JudgesRepository'
-import { EventBusPublisher } from '@/lib/repositories/EventPublisher'
+import { EventBusPublisher, EventPublisher } from '@/lib/repositories/EventPublisher'
 import { PostgresDeadlineEngineRepository } from '@/lib/repositories/engines/DeadlineEngineRepository'
-import { PostgresConflictEngineRepository } from '@/lib/repositories/engines/PostgresConflictEngineRepository'
+// The real implementation lives alongside its interface in
+// ConflictEngineRepository.ts. A second, divergent PostgresConflictEngineRepository
+// used to live in its own file (different ConflictResult shape, a 2-arg
+// markConflictReviewed instead of 3, a string recordFailure instead of an
+// object) and this import pointed at that one, the only place in the app that
+// did. Every real caller — the engine subscriber, review-conflict.contract.ts,
+// its test — was already written against the interface's shape, so the
+// stray file was the bug, not the interface. Deleted; this now wires the
+// same implementation everything else already assumes.
+import { PostgresConflictEngineRepository } from '@/lib/repositories/engines/ConflictEngineRepository'
 import { PostgresRiskAssessmentEngineRepository } from '@/lib/repositories/engines/RiskAssessmentEngineRepository'
 import { PostgresDocumentIntelligenceEngineRepository } from '@/lib/repositories/engines/DocumentIntelligenceEngineRepository'
 import { PostgresLegalIssuesRepository } from '@/lib/repositories/LegalIssuesRepository'
@@ -174,7 +183,13 @@ export class CompositionRoot {
     return this.divisionsRepository
   }
 
-  get eventPublisher() {
+  // Was `get eventPublisher()`, a property accessor sharing its name with
+  // the private field above. That is a duplicate identifier (fields and
+  // accessors can't coexist under the same name), and had it compiled it
+  // would have called itself recursively. Renamed to match every other
+  // accessor on this class (getEventBus, getMatterRecordRepository, ...);
+  // the one external caller is updated alongside this.
+  getEventPublisher(): EventPublisher {
     return this.eventPublisher
   }
 }

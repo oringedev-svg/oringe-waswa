@@ -15,6 +15,7 @@ import { MatterRecordRepository } from '@/lib/repositories/MatterRecordRepositor
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError, NotFoundError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const CreateLegalIssueInputSchema = z.object({
   matterId: z.string().uuid('matterId must be a valid UUID'),
@@ -46,8 +47,8 @@ export class CreateLegalIssueOutputContract {
     const validation = CreateLegalIssueInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      logger.warn('CreateLegalIssue input validation failed', new Error(errors.join('; ')))
-      throw new ValidationError('Invalid legal issue input', { errors })
+      logger.warn('CreateLegalIssue input validation failed', { errors })
+      throw new ValidationError(`Invalid legal issue input: ${errors.join('; ')}`)
     }
 
     const { matterId, issueType, title, description, severity } = validation.data
@@ -62,7 +63,7 @@ export class CreateLegalIssueOutputContract {
       // 2. Verify matter exists
       const matter = await this.matterRecordRepository.getMatter(matterId)
       if (!matter) {
-        throw new NotFoundError('Matter not found', { matterId })
+        throw new NotFoundError('Matter', matterId)
       }
 
       // 3. Create legal issue
@@ -83,9 +84,12 @@ export class CreateLegalIssueOutputContract {
       // 4. Emit domain event (triggers Risk Assessment Engine)
       await this.eventPublisher.publish({
         eventId: `legal_issue_created_${issue.id}_${Date.now()}`,
-        eventType: 'legal_issue_created',
+        type: 'legal_issue_created',
+        firmId: (await getCurrentFirmId())!,
         matterId: issue.matterId,
-        timestamp: issue.createdAt,
+        aggregateId: issue.id,
+        aggregateType: 'legal_issue',
+        occurredAt: issue.createdAt,
         payload: {
           issueId: issue.id,
           matterId: issue.matterId,

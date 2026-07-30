@@ -7,6 +7,7 @@ import { PostgresLegalIssuesRepository } from '@/lib/repositories/LegalIssuesRep
 import { EventPublisher } from '@/lib/repositories/EventPublisher'
 import { logger } from '@/lib/logging/logger'
 import { ValidationError, NotFoundError } from '@/lib/errors/DomainError'
+import { getCurrentFirmId } from '@/lib/domainEvents'
 
 const UpdateLegalIssueInputSchema = z.object({
   issueId: z.string().uuid(),
@@ -27,7 +28,7 @@ export class UpdateLegalIssueOutputContract {
     const validation = UpdateLegalIssueInputSchema.safeParse(input)
     if (!validation.success) {
       const errors = validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
-      throw new ValidationError('Invalid legal issue update input', { errors })
+      throw new ValidationError(`Invalid legal issue update input: ${errors.join('; ')}`)
     }
 
     const { issueId, ...updates } = validation.data
@@ -37,16 +38,19 @@ export class UpdateLegalIssueOutputContract {
 
       const existing = await this.issuesRepository.getIssue(issueId)
       if (!existing) {
-        throw new NotFoundError('Legal issue not found', { issueId })
+        throw new NotFoundError('Legal issue', issueId)
       }
 
       const issue = await this.issuesRepository.updateIssue(issueId, updates)
 
       await this.eventPublisher.publish({
         eventId: `legal_issue_updated_${issueId}_${Date.now()}`,
-        eventType: 'legal_issue_updated',
+        type: 'legal_issue_updated',
+        firmId: (await getCurrentFirmId())!,
         matterId: issue.matterId,
-        timestamp: issue.updatedAt,
+        aggregateId: issueId,
+        aggregateType: 'legal_issue',
+        occurredAt: issue.updatedAt,
         payload: { issueId, ...updates },
       })
 

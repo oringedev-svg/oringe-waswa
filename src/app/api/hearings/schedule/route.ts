@@ -49,7 +49,11 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
 
     if (err instanceof ValidationError) {
-      logger.warn('POST /api/hearings/schedule validation failed', err, { duration })
+      logger.warn('POST /api/hearings/schedule validation failed', {
+        field: err.field,
+        message: err.message,
+        duration,
+      })
       return NextResponse.json(
         {
           error: 'Validation failed',

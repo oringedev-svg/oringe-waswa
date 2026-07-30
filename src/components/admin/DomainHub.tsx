@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, AlertCircle } from 'lucide-react'
+import { ArrowRight, AlertCircle, ChevronRight } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { ADMIN_DOMAINS, type AdminDomain } from '@/lib/adminDomains'
-import { PageHeader, StatCard, StatusPill, LoadingState, type Tone } from '@/components/admin/ui'
+import { PageHeader, StatusPill, LoadingState, type Tone } from '@/components/admin/ui'
 import type { SectionColor } from '@/lib/sectionColors'
 
 // `urgency`, not `tone`. /api/dashboard/overview has always sent urgency;
@@ -26,8 +26,6 @@ const URGENCY_TONE: Record<Urgency, Tone> = {
   safe: 'done',
 }
 
-// Each domain borrows the section colour of what it is about, so the hub
-// reads as part of the same system as the cards inside it.
 const DOMAIN_COLOR: Record<AdminDomain['key'], SectionColor> = {
   website: 'blue',
   clients: 'purple',
@@ -69,6 +67,31 @@ function figuresFor(key: AdminDomain['key'], o: Overview): Figure[] {
   }
 }
 
+// Lean KPI chip — same style language as the redesigned admin pages
+function KpiChip({ label, value, alert }: Figure) {
+  return (
+    <div
+      className="flex flex-col justify-between px-4 py-3.5 rounded-xl border transition-colors"
+      style={{
+        background: alert
+          ? 'color-mix(in srgb, var(--status-warning) 7%, var(--color-surface))'
+          : 'var(--color-surface)',
+        borderColor: alert
+          ? 'color-mix(in srgb, var(--status-warning) 22%, transparent)'
+          : 'var(--color-border)',
+      }}
+    >
+      <div
+        className="text-2xl font-semibold tabular-nums leading-none mb-1.5"
+        style={{ color: alert ? 'var(--status-warning)' : 'var(--color-text-primary)' }}
+      >
+        {value}
+      </div>
+      <div className="text-[0.7rem] text-[var(--color-text-muted)]">{label}</div>
+    </div>
+  )
+}
+
 export default function DomainHub({ domainKey }: { domainKey: AdminDomain['key'] }) {
   const domain = ADMIN_DOMAINS.find(d => d.key === domainKey)!
   const [overview, setOverview] = useState<Overview | null>(null)
@@ -83,66 +106,86 @@ export default function DomainHub({ domainKey }: { domainKey: AdminDomain['key']
 
   const toolHrefs = new Set(domain.tools.map(t => t.href))
   const attention = (overview?.attention || []).filter(a => toolHrefs.has(a.href))
-  const color = DOMAIN_COLOR[domainKey]
 
   return (
     <div>
-      <PageHeader icon={domain.icon} eyebrow="Domain" title={domain.label} description={domain.description} />
+      <PageHeader icon={domain.icon} eyebrow="Domain" title={domain.label} />
 
       {loading ? (
         <LoadingState />
       ) : overview && (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
             {figuresFor(domainKey, overview).map(f => (
-              <StatCard
-                key={f.label}
-                label={f.label}
-                value={f.value}
-                color={f.alert ? 'red' : color}
-                emphasis={f.alert}
-              />
+              <KpiChip key={f.label} label={f.label} value={f.value} alert={f.alert} />
             ))}
           </div>
 
-          {/* Decisions waiting inside this domain. Kept above the tool grid
-              because a queue with something in it outranks navigation. */}
+          {/* Attention queue — kept above the tool grid */}
           {attention.length > 0 && (
-            <div className="card p-5 mb-6 border-l-[3px]" style={{ borderLeftColor: 'var(--status-danger)' }}>
-              <h2 className="font-display font-semibold text-[var(--color-text-primary)] mb-3 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-[var(--status-danger)]" /> Needs attention
-              </h2>
-              <div className="flex flex-col gap-1">
-                {attention.map((item, i) => (
-                  <Link
-                    key={i}
-                    href={item.href}
-                    className="flex items-center justify-between gap-3 py-2 px-3 rounded-[var(--radius-md)] hover:bg-[var(--color-surface-overlay)] transition-colors group"
-                  >
-                    <span className="flex items-center gap-3 min-w-0">
-                      <StatusPill tone={URGENCY_TONE[item.urgency]}>{item.count}</StatusPill>
-                      <span className="text-sm text-[var(--color-text-primary)]">{item.label}</span>
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  </Link>
-                ))}
+            <div
+              className="flex flex-col gap-1 rounded-xl border px-4 py-3.5 mb-6"
+              style={{
+                background: 'color-mix(in srgb, var(--status-danger) 6%, var(--color-surface))',
+                borderColor: 'color-mix(in srgb, var(--status-danger) 22%, transparent)',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--status-danger)' }} />
+                <span className="text-xs font-semibold uppercase tracking-[0.1em]" style={{ color: 'var(--status-danger)' }}>
+                  Needs attention
+                </span>
               </div>
+              {attention.map((item, i) => (
+                <Link
+                  key={i}
+                  href={item.href}
+                  className="flex items-center justify-between gap-3 py-2 px-2.5 rounded-lg hover:bg-[var(--color-surface-overlay)] transition-colors group"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <StatusPill tone={URGENCY_TONE[item.urgency]}>{item.count}</StatusPill>
+                    <span className="text-sm text-[var(--color-text-primary)] truncate">{item.label}</span>
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                </Link>
+              ))}
             </div>
           )}
         </>
       )}
 
-      <h2 className="font-mono text-[0.66rem] tracking-[0.12em] uppercase text-[var(--color-text-muted)] mb-3">
-        Tools in {domain.label}
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {/* Tool grid */}
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
+          Tools in {domain.label}
+        </span>
+        <div className="flex-1 h-px bg-[var(--color-border)]" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
         {domain.tools.map(({ href, icon: Icon, label, description }) => (
-          <Link key={label} href={href} className="card p-5 hover:shadow-[var(--shadow-md)] transition-shadow group">
-            <div className="flex items-center gap-2.5 mb-2">
-              <Icon className="w-4 h-4 flex-shrink-0 text-[var(--color-text-muted)] group-hover:text-[var(--color-brand)] transition-colors" />
-              <span className="font-display font-semibold text-[var(--color-text-primary)]">{label}</span>
+          <Link
+            key={label}
+            href={href}
+            className="group flex items-start gap-3.5 p-4 rounded-xl border bg-[var(--color-surface)] hover:border-[var(--color-brand)] hover:-translate-y-0.5 transition-all"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors"
+              style={{ background: 'var(--color-surface-raised)' }}
+            >
+              <Icon className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-brand)] transition-colors" />
             </div>
-            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{description}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-sm text-[var(--color-text-primary)] leading-tight">{label}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+              </div>
+              {description && (
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-relaxed line-clamp-2">{description}</p>
+              )}
+            </div>
           </Link>
         ))}
       </div>
