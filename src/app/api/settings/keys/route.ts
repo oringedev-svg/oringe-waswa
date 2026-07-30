@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import { requirePermissionApi } from '@/lib/auth'
 
 export async function GET() {
+  const guard = await requirePermissionApi('manage_settings')
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('api_keys')
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requirePermissionApi('manage_settings')
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { name, service, key } = await req.json()
   if (!name || !service || !key) {
@@ -29,6 +36,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const guard = await requirePermissionApi('manage_settings')
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { id, is_active } = await req.json()
   const { data, error } = await supabase
@@ -42,6 +52,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const guard = await requirePermissionApi('manage_settings')
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')

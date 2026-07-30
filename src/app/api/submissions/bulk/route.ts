@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { logAudit } from '@/lib/audit'
+import { requireAdminApi } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const body = await req.json()
   const ids = body?.ids as string[]
   const action = body?.action as 'delete' | 'restore'

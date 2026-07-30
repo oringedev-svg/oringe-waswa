@@ -31,7 +31,8 @@ interface StageHistoryEntry {
   actor?: { full_name: string } | null
 }
 interface TeamMember { id: string; full_name: string; professional_type?: { id: string; name: string } | null }
-interface TaskForm { title: string; assigned_to: string; due_date: string }
+interface PipelineStageOption { id: string; key: string; label: string }
+interface TaskForm { title: string; assigned_to: string; stage_id: string; due_date: string }
 
 export default function MatterPipeline({
   status, stageHistory, conflictChecks, permissions,
@@ -39,7 +40,7 @@ export default function MatterPipeline({
   decisionDraft, setDecisionDraft, decidingId, onRecordDecision,
   canMakeTransition, onTransitionClick,
   submissionOrigin, clientInstruction, description,
-  team, taskForm, setTaskForm, addingTask, onAddTask,
+  team, stages, taskForm, setTaskForm, addingTask, onAddTask,
   noteDraft, setNoteDraft, addingNote, onAddNote,
   onInvokeService, onInvokeCostEstimate,
 }: {
@@ -61,6 +62,7 @@ export default function MatterPipeline({
   clientInstruction?: string | null
   description?: string | null
   team: TeamMember[]
+  stages: PipelineStageOption[]
   taskForm: TaskForm
   setTaskForm: (updater: (f: TaskForm) => TaskForm) => void
   addingTask: boolean
@@ -100,6 +102,7 @@ export default function MatterPipeline({
   const taskCategories = Array.from(new Set(team.map(t => t.professional_type?.name || 'Unclassified'))).sort()
   const teamInCategory = team.filter(t => (t.professional_type?.name || 'Unclassified') === taskCategory)
   const taskSuggestions = stageTaskSuggestions(status)
+  const currentPipelineStage = stages.find(s => s.key === status)
 
   return (
     <SectionCard
@@ -329,7 +332,13 @@ export default function MatterPipeline({
                   ))}
                 {canManage && (
                   <>
-                    <button onClick={() => setShowTaskForm(v => !v)} className="btn btn-ghost gap-1.5 text-sm">
+                    <button
+                      onClick={() => {
+                        setShowTaskForm(v => !v)
+                        if (currentPipelineStage) setTaskForm(f => ({ ...f, stage_id: currentPipelineStage.id }))
+                      }}
+                      className="btn btn-ghost gap-1.5 text-sm"
+                    >
                       <ListPlus className="w-4 h-4" /> Assign Task
                     </button>
                     <button onClick={() => setShowNoteForm(v => !v)} className="btn btn-ghost gap-1.5 text-sm">
@@ -347,6 +356,11 @@ export default function MatterPipeline({
 
               {showTaskForm && (
                 <div className="flex flex-col gap-2 p-3 rounded-md bg-[var(--color-surface-overlay)] mb-2">
+                  {!currentPipelineStage && (
+                    <p className="text-xs text-amber-600">
+                      No pipeline stage is configured for &quot;{stageLabel(status)}&quot; yet, this work item can&apos;t be created until one is.
+                    </p>
+                  )}
                   {taskSuggestions.length > 0 && (
                     <select
                       className="input text-sm"
@@ -381,7 +395,7 @@ export default function MatterPipeline({
                       </select>
                     )}
                     <input type="date" className="input text-sm w-36" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} />
-                    <button onClick={onAddTask} disabled={addingTask} className="btn btn-primary text-sm">
+                    <button onClick={onAddTask} disabled={addingTask || !currentPipelineStage} className="btn btn-primary text-sm">
                       {addingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
                     </button>
                   </div>

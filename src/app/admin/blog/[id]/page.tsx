@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Save, Plus, Trash2, Loader2, Sparkles, AlertCircle, History, RotateCcw, FileClock, ArrowRight } from 'lucide-react'
+import { Save, Plus, Trash2, Loader2, Sparkles, AlertCircle, History, RotateCcw, FileClock, ArrowRight, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ImagePicker from '@/components/ui/ImagePicker'
 import MarkdownEditor from '@/components/admin/blog/MarkdownEditor'
@@ -534,7 +534,7 @@ export default function BlogEditorPage() {
               <h3 className="font-display font-semibold text-[var(--color-text-primary)]">
                 {formatDate(viewingRevision.created_at, 'short')}{viewingRevision.author?.full_name ? ` · ${viewingRevision.author.full_name}` : ''}
               </h3>
-              <button onClick={() => setViewingRevision(null)} className="text-[var(--color-muted)] hover:text-[var(--color-text-primary)]">✕</button>
+              <button onClick={() => setViewingRevision(null)} className="btn btn-ghost p-1.5 !px-1.5" aria-label="Close"><X className="w-4 h-4" /></button>
             </div>
             <div className="text-sm flex flex-col gap-3">
               <div>

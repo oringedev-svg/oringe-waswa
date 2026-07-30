@@ -42,13 +42,26 @@ export async function GET() {
   }
 
   const now = new Date().toISOString()
-  const [{ data: tasks }, { data: meetingRows }, { data: messages }] = await Promise.all([
+  const [{ data: assignments }, { data: submittedForReview }, { data: meetingRows }, { data: messages }] = await Promise.all([
+    // Assignments is the single work-tracking system (matter_tasks is
+    // deprecated), a work item stays "open" on the desk through Assigned,
+    // Accepted, and In Progress, it drops off once submitted for review.
     supabase
-      .from('matter_tasks')
-      .select('id, title, due_date, status, matter:legal_matters(id, matter_number, title), submission:submissions(id, tracking_code, submitter_name)')
+      .from('assignments')
+      .select('id, instructions, status, assigned_at, submission_id, matter:legal_matters(id, matter_number, title, submission_id)')
       .eq('assigned_to', teamMember.id)
-      .eq('status', 'open')
-      .order('due_date', { ascending: true, nullsFirst: false }),
+      .in('status', ['Assigned', 'Accepted', 'In Progress'])
+      .order('assigned_at', { ascending: false }),
+    // The other side of the same coin: work THIS person handed out that's
+    // now sitting Submitted, waiting on their approve/reject decision.
+    // Nothing surfaced this before, an assigner had no way to discover a
+    // submission short of already knowing to check /admin/assignments.
+    supabase
+      .from('assignments')
+      .select('id, instructions, status, submitted_at, submission_id, assignee:assigned_to(full_name), matter:legal_matters(id, matter_number, title, submission_id)')
+      .eq('assigned_by', profile.id)
+      .eq('status', 'Submitted')
+      .order('submitted_at', { ascending: false }),
     supabase
       .from('calendar_event_attendees')
       .select('event:calendar_events(id, title, type, start_at, end_at, location, meeting_link, status)')
@@ -66,5 +79,40 @@ export async function GET() {
     .filter((e): e is DeskEvent => !!e && e.status !== 'cancelled' && e.start_at >= now)
     .sort((a, b) => a.start_at.localeCompare(b.start_at))
 
-  return NextResponse.json({ teamMember, tasks: tasks || [], meetings, messages: messages || [], permissions })
+  // An assignment may point at a submission directly (pre-matter intake
+  // work) and/or, once promoted, at the matter that submission became,
+  // fetched separately since Supabase can't follow that second hop in one
+  // select.
+  type AssignmentRow = { id: string; instructions: string | null; status: string; submission_id: string | null; matter: { id: string; matter_number: string; title: string; submission_id: string | null } | null }
+  type ReviewRow = AssignmentRow & { assignee?: { full_name: string } | null }
+  const rows = (assignments || []) as unknown as AssignmentRow[]
+  const reviewRows = (submittedForReview || []) as unknown as ReviewRow[]
+  const submissionIds = Array.from(new Set(
+    [...rows, ...reviewRows].flatMap((r) => [r.submission_id, r.matter?.submission_id]).filter((v): v is string => !!v)
+  ))
+  const submissionsById = new Map<string, { id: string; tracking_code: string; submitter_name: string }>()
+  if (submissionIds.length > 0) {
+    const { data: subs } = await supabase
+      .from('submissions')
+      .select('id, tracking_code, submitter_name')
+      .in('id', submissionIds)
+    for (const s of subs || []) submissionsById.set(s.id, s)
+  }
+
+  function toTask(r: AssignmentRow) {
+    const submissionId = r.submission_id || r.matter?.submission_id || null
+    return {
+      id: r.id,
+      title: r.instructions || 'Assignment',
+      status: r.status,
+      due_date: null as string | null,
+      matter: r.matter ? { id: r.matter.id, matter_number: r.matter.matter_number, title: r.matter.title } : null,
+      submission: submissionId ? submissionsById.get(submissionId) || null : null,
+    }
+  }
+
+  const tasks = rows.map(toTask)
+  const reviewQueue = reviewRows.map((r) => ({ ...toTask(r), assigneeName: r.assignee?.full_name || null }))
+
+  return NextResponse.json({ teamMember, tasks, reviewQueue, meetings, messages: messages || [], permissions })
 }

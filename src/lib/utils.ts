@@ -136,6 +136,7 @@ export function formatMinutes(minutes: number): string {
 
 export const MATTER_TYPES = [
   { value: 'civil_litigation', label: 'Civil Litigation' },
+  { value: 'debt_recovery', label: 'Debt Recovery' },
   { value: 'criminal_defense', label: 'Criminal Defense' },
   { value: 'family_law', label: 'Family Law' },
   { value: 'corporate', label: 'Corporate Law' },

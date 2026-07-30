@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
+import { createAdminClient } from './supabase'
 import { userHasPermission } from './permissions'
 import { checkPermission, recordSecurityAudit, type ScopeType } from './checkPermission'
 
@@ -52,7 +53,20 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
+  // Identity is already proven above by auth.getUser(), which validates the
+  // session token. Loading that user's own profile row is a trusted
+  // server-side step, so it goes through the service-role client rather
+  // than the RLS-bound session client.
+  //
+  // This is not a shortcut, it is the fix for a real outage: this function
+  // backs both /api/me and requireAdminApi, so EVERY admin API depends on
+  // it. When a policy on profiles is missing, or queries profiles and
+  // therefore recurses, an RLS-bound read here returns nothing, this
+  // returns null, and every admin endpoint answers 401 while the user is
+  // perfectly well signed in. The panel loads and then fails at everything,
+  // which reads to the user as "I cannot log in".
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from('profiles')
     .select('id, full_name, email, role')
     .eq('user_id', user.id)

@@ -3,8 +3,12 @@ import { createAdminClient } from '@/lib/supabase'
 import { sendEmail, submissionConfirmationEmail } from '@/lib/email'
 import { analyzeSubmission } from '@/lib/openai'
 import { generateTrackingCode } from '@/lib/utils'
+import { requirePermissionApi } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
+  const guard = await requirePermissionApi('triage_intake')
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type')

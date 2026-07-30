@@ -1,9 +1,26 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, Clock, MapPin, Video, X, UserPlus, Trash2 } from 'lucide-react'
+import { Plus, Loader2, Clock, MapPin, Video, X, UserPlus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+
+interface DueAssignment {
+  id: string
+  instructions: string | null
+  due_date: string
+  status: string
+}
+
+// Font colour is urgency (overdue/soon/safe), reused from the same scheme
+// the dashboard already uses; the meeting ring is a fixed, separate colour
+// so the two encodings never collide, a day can carry both at once.
+const TASK_FONT: Record<'overdue' | 'soon' | 'safe', string> = {
+  overdue: 'text-red-600 dark:text-red-400',
+  soon: 'text-orange-600 dark:text-orange-400',
+  safe: 'text-blue-600 dark:text-blue-400',
+}
+const MEETING_RING = 'ring-2 ring-[var(--color-accent)]'
 
 // The shared calendar merges two sources into one agenda: appointments
 // (client-booked consultations from the public site) and calendar_events
@@ -60,11 +77,14 @@ const TYPE_BADGE: Record<string, string> = {
 
 export default function AdminCalendarPage() {
   const [items, setItems] = useState<AgendaItem[]>([])
+  const [dueAssignments, setDueAssignments] = useState<DueAssignment[]>([])
   const [loading, setLoading] = useState(true)
   const [team, setTeam] = useState<{ id: string; full_name: string }[]>([])
   const [showNew, setShowNew] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<CalEvent | null>(null)
+  const [viewMonth, setViewMonth] = useState(() => { const d = new Date(); d.setDate(1); return d })
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     title: '', description: '', type: 'meeting', date: '', startTime: '', endTime: '',
@@ -82,13 +102,15 @@ export default function AdminCalendarPage() {
       fetch(`/api/calendar-events?from=${from.toISOString()}&to=${to.toISOString()}`).then(r => r.json()),
       fetch('/api/appointments?limit=100').then(r => r.json()),
       fetch('/api/team').then(r => r.json()),
-    ]).then(([events, appts, teamData]) => {
+      fetch('/api/assignments?status=Assigned,Accepted,In Progress,Submitted').then(r => (r.ok ? r.json() : { assignments: [] })).catch(() => ({ assignments: [] })),
+    ]).then(([events, appts, teamData, assignRes]) => {
       const eventItems: AgendaItem[] = (Array.isArray(events) ? events : []).map((e: CalEvent) => ({ ...e, source: 'event', sortKey: e.start_at }))
       const apptItems: AgendaItem[] = (appts.data || []).filter((a: Appointment) => a.scheduled_date).map((a: Appointment) => ({
         ...a, source: 'appointment',
         sortKey: `${a.scheduled_date}T${a.scheduled_time || '00:00:00'}`,
       }))
       setItems([...eventItems, ...apptItems].sort((x, y) => x.sortKey.localeCompare(y.sortKey)))
+      setDueAssignments((assignRes.assignments || []).filter((a: DueAssignment) => a.due_date))
       setTeam(Array.isArray(teamData) ? teamData : [])
     }).finally(() => setLoading(false))
   }
@@ -160,6 +182,41 @@ export default function AdminCalendarPage() {
   }
   const days = Object.keys(grouped).sort()
 
+  // Month grid: which days have a meeting (ring) and which have a task due
+  // (font colour, worst-urgency-wins if more than one falls on the same day).
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+
+  const meetingDays = useMemo(() => {
+    const set = new Set<string>()
+    for (const item of items) set.add(item.sortKey.slice(0, 10))
+    return set
+  }, [items])
+
+  const taskUrgencyByDay = useMemo(() => {
+    const map: Record<string, 'overdue' | 'soon' | 'safe'> = {}
+    for (const a of dueAssignments) {
+      const urgency: 'overdue' | 'soon' | 'safe' =
+        a.due_date < todayStr ? 'overdue' : (a.due_date === todayStr || a.due_date === tomorrowStr) ? 'soon' : 'safe'
+      const existing = map[a.due_date]
+      const rank = { overdue: 2, soon: 1, safe: 0 }
+      if (!existing || rank[urgency] > rank[existing]) map[a.due_date] = urgency
+    }
+    return map
+  }, [dueAssignments, todayStr, tomorrowStr])
+
+  const monthYear = viewMonth.getFullYear()
+  const monthIdx = viewMonth.getMonth()
+  const firstWeekday = new Date(monthYear, monthIdx, 1).getDay()
+  const totalDays = new Date(monthYear, monthIdx + 1, 0).getDate()
+  const monthCells: (string | null)[] = [
+    ...Array(firstWeekday).fill(null),
+    ...Array.from({ length: totalDays }, (_, i) => `${monthYear}-${String(monthIdx + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`),
+  ]
+
+  const selectedDayMeetings = selectedDay ? items.filter(i => i.sortKey.slice(0, 10) === selectedDay) : []
+  const selectedDayTasks = selectedDay ? dueAssignments.filter(a => a.due_date === selectedDay) : []
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -170,6 +227,98 @@ export default function AdminCalendarPage() {
         <button onClick={() => setShowNew(true)} className="btn btn-primary gap-2 text-sm">
           <Plus className="w-4 h-4" /> Schedule Meeting
         </button>
+      </div>
+
+      {/* Month grid: font colour is a task deadline's urgency, a ring is a
+          meeting that day, both together if a day carries both. Compact on
+          purpose, this is a glance-and-click surface, not the main agenda. */}
+      <div className="card p-4 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} className="btn btn-ghost p-1.5 !px-1.5">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+            {viewMonth.toLocaleDateString('en-KE', { month: 'long', year: 'numeric' })}
+          </span>
+          <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} className="btn btn-ghost p-1.5 !px-1.5">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+            <div key={i} className="text-[10px] uppercase tracking-wide text-[var(--color-muted)] pb-1">{d}</div>
+          ))}
+          {monthCells.map((key, i) => {
+            if (!key) return <div key={i} />
+            const hasMeeting = meetingDays.has(key)
+            const urgency = taskUrgencyByDay[key]
+            const isToday = key === todayStr
+            const isSelected = key === selectedDay
+            return (
+              <button
+                key={key}
+                onClick={() => setSelectedDay(prev => (prev === key ? null : key))}
+                className={`aspect-square rounded-md text-xs flex items-center justify-center transition-colors ${
+                  isSelected ? 'bg-[var(--color-accent)]/10' : 'hover:bg-[var(--color-surface-overlay)]'
+                }`}
+              >
+                <span
+                  className={`w-6 h-6 flex items-center justify-center rounded-full ${hasMeeting ? MEETING_RING : ''} ${
+                    urgency ? `${TASK_FONT[urgency]} font-semibold` : 'text-[var(--color-text-secondary)]'
+                  } ${isToday ? 'underline underline-offset-2' : ''}`}
+                >
+                  {parseInt(key.slice(8, 10), 10)}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 pt-3 border-t border-[var(--color-border)] text-[11px] text-[var(--color-muted)]">
+          <span className="flex items-center gap-1.5"><span className={`w-3 h-3 rounded-full ${MEETING_RING} ring-inset inline-block`} /> Meeting</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Overdue task</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Due soon</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Upcoming task</span>
+        </div>
+
+        {selectedDay && (
+          <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(selectedDay, 'long')}</span>
+              <button onClick={() => setSelectedDay(null)} className="text-[var(--color-muted)] hover:text-[var(--color-text-primary)]"><X className="w-4 h-4" /></button>
+            </div>
+            {selectedDayMeetings.length === 0 && selectedDayTasks.length === 0 ? (
+              <p className="text-xs text-[var(--color-muted)]">Nothing on this day.</p>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {selectedDayMeetings.map(item => item.source === 'event' ? (
+                  <div key={item.id} className="flex items-center justify-between gap-3 text-xs bg-[var(--color-surface-overlay)] rounded-md px-2.5 py-2">
+                    <button onClick={() => setSelected(item as CalEvent)} className="text-left flex-1 min-w-0 hover:text-[var(--color-accent)]">
+                      <span className="font-medium text-[var(--color-text-primary)]">{item.title}</span>
+                      <span className="text-[var(--color-muted)]"> · {new Date(item.start_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </button>
+                    {(item as CalEvent).meeting_link && (
+                      <a href={(item as CalEvent).meeting_link!} target="_blank" rel="noopener noreferrer"
+                        className="btn btn-primary !py-1 !px-2.5 text-xs gap-1 flex-shrink-0">
+                        <Video className="w-3 h-3" /> Join
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <Link key={item.id} href="/admin/appointments" className="flex items-center justify-between gap-3 text-xs bg-[var(--color-surface-overlay)] rounded-md px-2.5 py-2 hover:text-[var(--color-accent)]">
+                    <span className="font-medium text-[var(--color-text-primary)]">{(item as Appointment).client_name}</span>
+                    {(item as Appointment).meeting_link && <span className="flex items-center gap-1 text-[var(--color-accent)]"><Video className="w-3 h-3" /> Online</span>}
+                  </Link>
+                ))}
+                {selectedDayTasks.map(t => (
+                  <Link key={t.id} href={`/admin/assignments/${t.id}`} className="flex items-center justify-between gap-3 text-xs bg-[var(--color-surface-overlay)] rounded-md px-2.5 py-2 hover:text-[var(--color-accent)]">
+                    <span className="text-[var(--color-text-primary)] truncate">{t.instructions || 'Assignment'}</span>
+                    <span className="badge status-pending text-xs flex-shrink-0">{t.status}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {loading ? (

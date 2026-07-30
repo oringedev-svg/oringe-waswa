@@ -45,9 +45,9 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
   const body = await req.json()
-  const { title, description, type, start_at, end_at, location, meeting_link, matter_id, submission_id, attendees } = body as {
+  const { title, description, type, start_at, end_at, location, meeting_link, matter_id, submission_id, job_application_id, attendees } = body as {
     title: string; description?: string; type?: string; start_at: string; end_at: string
-    location?: string; meeting_link?: string; matter_id?: string; submission_id?: string
+    location?: string; meeting_link?: string; matter_id?: string; submission_id?: string; job_application_id?: string
     attendees?: AttendeeInput[]
   }
 
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     .insert({
       title, description: description || null, type: type || 'meeting', start_at, end_at,
       location: location || null, meeting_link: meeting_link || null,
-      matter_id: matter_id || null, submission_id: submission_id || null,
+      matter_id: matter_id || null, submission_id: submission_id || null, job_application_id: job_application_id || null,
       created_by: guard.profile.id,
     })
     .select()

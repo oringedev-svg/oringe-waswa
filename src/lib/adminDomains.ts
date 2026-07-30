@@ -2,7 +2,7 @@ import {
   Globe, Scale, Users, Landmark, BookOpen, Newspaper, MessageSquare, Image,
   Map, Award, Calendar, FileText, Mail, Settings, BarChart2, Folder, Shield,
   Receipt, Clock, Lightbulb, Calculator, Network, Search, TrendingUp, Briefcase, Trophy, HelpCircle,
-  Gavel, type LucideIcon,
+  Gavel, Building2, type LucideIcon,
 } from 'lucide-react'
 
 // ============================================================
@@ -53,7 +53,6 @@ export const ADMIN_DOMAINS: AdminDomain[] = [
       { href: '/admin/coverage', icon: Map, label: 'Coverage Map', description: 'Locations the firm serves' },
       { href: '/admin/awards', icon: Award, label: 'Awards', description: 'Recognition and accolades' },
       { href: '/admin/events', icon: Calendar, label: 'Events', description: 'Firm events and appearances' },
-      { href: '/admin/careers', icon: Briefcase, label: 'Careers', description: 'Job openings and applications' },
       { href: '/admin/faqs', icon: HelpCircle, label: 'FAQs', description: 'Common questions shown on the Contact page' },
       { href: '/admin/resources', icon: FileText, label: 'Resources', description: 'Client-facing downloads' },
       { href: '/admin/mail', icon: Mail, label: 'Mail List', description: 'Subscribers and campaigns' },
@@ -72,6 +71,7 @@ export const ADMIN_DOMAINS: AdminDomain[] = [
       { href: '/admin/matters', icon: Scale, label: 'Matters', description: 'Case files through their lifecycle' },
       { href: '/admin/court-calendar', icon: Gavel, label: 'Court Calendar', description: 'Every upcoming court appearance across all matters' },
       { href: '/admin/courts', icon: Landmark, label: 'Courts Register', description: 'The controlled list of courts matters are filed in' },
+      { href: '/admin/justice', icon: Building2, label: 'Justice Directory', description: 'Kenyan courts, police stations and prisons, as reference data' },
       { href: '/admin/submissions', icon: FileText, label: 'Submissions', description: 'The raw enquiry inbox behind pre-accounts' },
       { href: '/admin/conflict-check', icon: Search, label: 'Conflict Check', description: 'Quick pre-instruction search, before there’s an enquiry or matter to attach it to' },
       { href: '/admin/appointments', icon: Calendar, label: 'Appointments', description: 'Consultation bookings' },
@@ -89,6 +89,7 @@ export const ADMIN_DOMAINS: AdminDomain[] = [
     icon: Users,
     description: 'The people who carry the work, public profiles, accounts, and internal communication.',
     tools: [
+      { href: '/admin/recruitment', icon: Briefcase, label: 'Recruitment', description: 'Postings and applications, from first contact through onboarding' },
       { href: '/admin/calendar', icon: Calendar, label: 'Calendar', description: 'Meetings, court dates, and deadlines, with attendees and notifications' },
       { href: '/admin/team', icon: Shield, label: 'Team', description: 'Public team profiles and bios' },
       { href: '/admin/organization', icon: Network, label: 'Organization', description: 'Structure, positions, legal authorities, and document requirements' },

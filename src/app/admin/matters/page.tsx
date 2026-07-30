@@ -1,12 +1,16 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Eye, Loader2, Scale, Lock, LayoutGrid, Rows3 } from 'lucide-react'
-import { formatDate, getStatusColor, MATTER_TYPES } from '@/lib/utils'
+import { Plus, Eye, Scale, Lock, LayoutGrid, Rows3 } from 'lucide-react'
+import { formatDate, MATTER_TYPES } from '@/lib/utils'
 import { STAGES } from '@/lib/matterLifecycle'
 import { litigationStatusLabel } from '@/lib/litigationStatus'
 import { KENYA_COUNTIES } from '@/lib/kenyaCounties'
 import toast from 'react-hot-toast'
+import {
+  PageHeader, Modal, DataTable, StatusPill, EmptyState, LoadingState,
+  SearchInput, type Column, type Tone,
+} from '@/components/admin/ui'
 
 interface LegalMatter {
   id: string
@@ -29,13 +33,24 @@ const ACTIVE_STAGES = ['lead', 'conflict_check', 'engagement_letter', 'retainer_
 
 // Health is derived from real activity, not asserted: an active matter
 // nobody has touched in 7 days is drifting; in 14, it's stalled.
-function matterHealth(m: LegalMatter): { label: string; cls: string } | null {
+function matterHealth(m: LegalMatter): { label: string; tone: Tone } | null {
   if (!ACTIVE_STAGES.includes(m.status) || !m.updated_at) return null
   const days = (Date.now() - new Date(m.updated_at).getTime()) / 86400000
-  if (days > 14) return { label: 'Stalled', cls: 'status-rejected' }
-  if (days > 7) return { label: 'At risk', cls: 'status-pending' }
-  return { label: 'On track', cls: 'status-active' }
+  if (days > 14) return { label: 'Stalled', tone: 'overdue' }
+  if (days > 7) return { label: 'At risk', tone: 'risk' }
+  return { label: 'On track', tone: 'safe' }
 }
+
+// Stage drives the pill colour so the list reads by urgency rather than by
+// a per-stage palette nobody can hold in their head.
+function stageTone(stage: string): Tone {
+  if (stage === 'closed' || stage === 'archived') return 'done'
+  if (stage === 'on_hold') return 'risk'
+  if (stage === 'lead' || stage === 'conflict_check') return 'review'
+  return 'safe'
+}
+
+const EMPTY_MATTER = { title: '', type: 'civil_litigation', client_name: '', description: '', is_confidential: false, county: '', claim_value: '' }
 
 export default function AdminMattersPage() {
   const [matters, setMatters] = useState<LegalMatter[]>([])
@@ -50,8 +65,8 @@ export default function AdminMattersPage() {
   const [status, setStatus] = useState('all')
   const [total, setTotal] = useState(0)
   const [showCreate, setShowCreate] = useState(false)
-  const [newMatter, setNewMatter] = useState({ title: '', type: 'civil_litigation', client_name: '', description: '', is_confidential: false, county: '', claim_value: '' })
-  const [team, setTeam] = useState<{ id: string; full_name: string }[]>([])
+  const [creating, setCreating] = useState(false)
+  const [newMatter, setNewMatter] = useState(EMPTY_MATTER)
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({})
   const [stageAvgDays, setStageAvgDays] = useState<Record<string, number>>({})
 
@@ -61,14 +76,15 @@ export default function AdminMattersPage() {
     if (type !== 'all') params.set('type', type)
     if (status !== 'all') params.set('status', status)
     if (search) params.set('search', search)
-    Promise.all([
-      fetch(`/api/files/matters?${params}`).then(r => r.json()),
-      fetch('/api/team').then(r => r.json()),
-    ]).then(([data, teamData]) => {
-      setMatters(data.data || [])
-      setTotal(data.count || 0)
-      setTeam(teamData || [])
-    }).finally(() => setLoading(false))
+    // /api/team was fetched here on every filter change and the result was
+    // never read, so each keystroke cost an extra round trip for nothing.
+    fetch(`/api/files/matters?${params}`)
+      .then(r => r.json())
+      .then(data => {
+        setMatters(data.data || [])
+        setTotal(data.count || 0)
+      })
+      .finally(() => setLoading(false))
   }
 
   function loadStageCounts() {
@@ -89,89 +105,166 @@ export default function AdminMattersPage() {
 
   async function createMatter() {
     if (!newMatter.title || !newMatter.client_name) { toast.error('Title and client name required'); return }
-    const { county, claim_value, ...rest } = newMatter
-    const payload: Record<string, unknown> = { ...rest }
-    if (county) payload.county = county
-    if (claim_value) payload.claim_value = Number(claim_value)
-    const res = await fetch('/api/files/matters', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (res.ok) { toast.success('Matter created!'); setShowCreate(false); load(); loadStageCounts() }
-    else toast.error('Creation failed')
+    setCreating(true)
+    try {
+      const { county, claim_value, ...rest } = newMatter
+      const payload: Record<string, unknown> = { ...rest }
+      if (county) payload.county = county
+      if (claim_value) payload.claim_value = Number(claim_value)
+      const res = await fetch('/api/files/matters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        toast.success('Matter opened')
+        setShowCreate(false)
+        setNewMatter(EMPTY_MATTER)
+        load()
+        loadStageCounts()
+      } else toast.error('Creation failed')
+    } finally { setCreating(false) }
   }
+
+  const columns: Column<LegalMatter>[] = [
+    {
+      label: 'Matter No.',
+      render: m => (
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-xs text-[var(--color-text-primary)] font-semibold">{m.matter_number}</span>
+          {m.is_confidential && <Lock className="w-3 h-3 text-[var(--color-text-muted)]" aria-label="Confidential" />}
+        </div>
+      ),
+    },
+    {
+      label: 'Title / Client',
+      render: m => (
+        <div className="min-w-0">
+          <div className="font-medium text-[var(--color-text-primary)] line-clamp-1">{m.title}</div>
+          <div className="text-xs text-[var(--color-text-muted)]">{m.client_name}</div>
+        </div>
+      ),
+    },
+    { label: 'Type', secondary: true, render: m => MATTER_TYPES.find(t => t.value === m.type)?.label || m.type },
+    {
+      label: 'Status',
+      render: m => <StatusPill tone={stageTone(m.status)}>{STAGES.find(s => s.key === m.status)?.label || m.status}</StatusPill>,
+    },
+    {
+      label: 'Health',
+      render: m => {
+        const h = matterHealth(m)
+        return h ? <StatusPill tone={h.tone} dot>{h.label}</StatusPill> : <span className="opacity-50">-</span>
+      },
+    },
+    {
+      label: 'Attorney',
+      secondary: true,
+      render: m => m.assigned_attorney?.full_name || <StatusPill tone="risk">Unassigned</StatusPill>,
+    },
+    {
+      label: 'Last Activity',
+      secondary: true,
+      render: m => formatDate(m.updated_at || m.opening_date, 'short'),
+    },
+    {
+      label: '',
+      className: 'w-12 text-right',
+      render: m => (
+        <Link href={`/admin/matters/${m.id}`} className="btn btn-ghost p-1.5 !px-1.5" title="Open matter">
+          <Eye className="w-4 h-4" />
+        </Link>
+      ),
+    },
+  ]
+
+  const emptyState = (
+    <EmptyState
+      icon={Scale}
+      title={search || type !== 'all' || status !== 'all' ? 'No matters match those filters' : 'No matters yet'}
+      description={search || type !== 'all' || status !== 'all' ? 'Clear the search, or pick a different type or stage.' : 'Open the first matter to start the pipeline.'}
+      action={!search && type === 'all' && status === 'all' && (
+        <button onClick={() => setShowCreate(true)} className="btn btn-primary gap-2 text-sm">
+          <Plus className="w-4 h-4" /> Open New Matter
+        </button>
+      )}
+    />
+  )
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">Legal Matters</h1>
-          <p className="text-[var(--color-text-muted)] text-sm mt-1">{total} matters on record</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="matter-view-toggle" role="group" aria-label="View">
-            <button onClick={() => setView('cards')} className={view === 'cards' ? 'is-active' : ''} aria-pressed={view === 'cards'}>
-              <LayoutGrid className="w-3.5 h-3.5" /> Cards
+      <PageHeader
+        icon={Scale}
+        eyebrow="Matters"
+        title="Legal Matters"
+        meta={[`${total} on record`, status !== 'all' ? STAGES.find(s => s.key === status)?.label : null]}
+        actions={
+          <>
+            <div className="matter-view-toggle" role="group" aria-label="View">
+              <button onClick={() => setView('cards')} className={view === 'cards' ? 'is-active' : ''} aria-pressed={view === 'cards'}>
+                <LayoutGrid className="w-3.5 h-3.5" /> Cards
+              </button>
+              <button onClick={() => setView('table')} className={view === 'table' ? 'is-active' : ''} aria-pressed={view === 'table'}>
+                <Rows3 className="w-3.5 h-3.5" /> Table
+              </button>
+            </div>
+            <button onClick={() => setShowCreate(true)} className="btn btn-primary gap-2 text-sm">
+              <Plus className="w-4 h-4" /> Open New Matter
             </button>
-            <button onClick={() => setView('table')} className={view === 'table' ? 'is-active' : ''} aria-pressed={view === 'table'}>
-              <Rows3 className="w-3.5 h-3.5" /> Table
-            </button>
-          </div>
-          <button onClick={() => setShowCreate(true)} className="btn btn-primary gap-2 text-sm">
-            <Plus className="w-4 h-4" /> Open New Matter
-          </button>
-        </div>
-      </div>
-
-      {/* Stage counts, click a stage to filter the table below by it */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {STAGES.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => setStatus(status === s.key ? 'all' : s.key)}
-            className={`card px-4 py-2.5 text-left transition-all ${status === s.key ? 'border-[var(--color-accent)]' : ''}`}
-          >
-            <div className="text-lg font-display font-semibold text-[var(--color-text-primary)]">{stageCounts[s.key] ?? 0}</div>
-            <div className="text-xs text-[var(--color-muted)]">{s.label}</div>
-            {stageAvgDays[s.key] !== undefined && (stageCounts[s.key] ?? 0) > 0 && (
-              <div className="text-[10px] text-[var(--color-muted)] mt-0.5">avg {stageAvgDays[s.key]}d in stage</div>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="card p-4 mb-6 flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-40">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search matter, client, number…" className="input pl-9 text-sm" />
-        </div>
+          </>
+        }
+      >
+        <SearchInput value={search} onChange={setSearch} placeholder="Search matter, client, number…" className="max-w-sm" />
         <select value={type} onChange={e => setType(e.target.value)} className="input w-48 text-sm">
           <option value="all">All Types</option>
           {MATTER_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
-        <select value={status} onChange={e => setStatus(e.target.value)} className="input w-36 text-sm">
-          <option value="all">All Statuses</option>
+        <select value={status} onChange={e => setStatus(e.target.value)} className="input w-40 text-sm">
+          <option value="all">All Stages</option>
           {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
+      </PageHeader>
+
+      {/* Stage counts double as the stage filter: clicking one narrows the
+          list below, clicking it again clears. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+        {STAGES.map((s) => {
+          const active = status === s.key
+          const count = stageCounts[s.key] ?? 0
+          return (
+            <button
+              key={s.key}
+              onClick={() => setStatus(active ? 'all' : s.key)}
+              aria-pressed={active}
+              className={`card px-3 py-2.5 text-left transition-all border-l-[3px] ${active ? '' : 'border-l-transparent'} ${count === 0 ? 'opacity-50' : ''}`}
+              style={active ? { borderLeftColor: 'var(--color-brand)' } : undefined}
+            >
+              <div className="font-display text-xl font-semibold text-[var(--color-text-primary)] tabular-nums leading-none">{count}</div>
+              <div className="text-xs text-[var(--color-text-muted)] mt-1 truncate">{s.label}</div>
+              {stageAvgDays[s.key] !== undefined && count > 0 && (
+                <div className="text-[0.62rem] text-[var(--color-text-muted)] opacity-70 mt-0.5">avg {stageAvgDays[s.key]}d in stage</div>
+              )}
+            </button>
+          )
+        })}
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
+      {view === 'table' ? (
+        <DataTable
+          caption="Legal matters"
+          columns={columns}
+          rows={matters}
+          rowKey={m => m.id}
+          loading={loading}
+          empty={emptyState}
+        />
+      ) : loading ? (
+        <LoadingState />
       ) : matters.length === 0 ? (
-        <div className="card p-12 text-center text-[var(--color-muted)]">No matters found.</div>
-      ) : view === 'cards' ? (
-        /* Matter card pattern from the Entrora UI brief (§2): title, small
-           status pills for type and stage, a compact client/court metadata
-           row, and the case summary beneath.
-           NOTE ON THE SUMMARY: the brief calls for an AI-generated summary
-           "clearly marked as AI-generated". The AI Gateway capability does
-           not exist yet, so what shows here is the matter's own
-           human-written description, deliberately NOT badged as AI. Putting
-           an "AI-generated" label on text a person wrote would be a false
-           attribution, and attribution is the entire point of that spec's
-           invariant. The badge goes on when a real AIInsight backs it. */
+        emptyState
+      ) : (
+        /* The summary shown here is the matter's own human-written
+           description and is deliberately not badged as AI-generated. */
         <div className="matter-card-list">
           {matters.map(matter => {
             const health = matterHealth(matter)
@@ -185,17 +278,15 @@ export default function AdminMattersPage() {
                     </div>
                     <h3 className="matter-card-title">{matter.title}</h3>
                   </div>
-                  {health && <span className={`badge ${health.cls} text-xs flex-shrink-0`}>{health.label}</span>}
+                  {health && <StatusPill tone={health.tone} dot>{health.label}</StatusPill>}
                 </div>
 
                 <div className="matter-card-pills">
-                  <span className="badge text-xs">{MATTER_TYPES.find(m => m.value === matter.type)?.label || matter.type}</span>
-                  <span className={`badge ${getStatusColor(matter.status)} text-xs`}>
+                  <StatusPill>{MATTER_TYPES.find(m => m.value === matter.type)?.label || matter.type}</StatusPill>
+                  <StatusPill tone={stageTone(matter.status)}>
                     {STAGES.find(s => s.key === matter.status)?.label || matter.status}
-                  </span>
-                  {matter.litigation_status && (
-                    <span className="badge text-xs">{litigationStatusLabel(matter.litigation_status)}</span>
-                  )}
+                  </StatusPill>
+                  {matter.litigation_status && <StatusPill>{litigationStatusLabel(matter.litigation_status)}</StatusPill>}
                 </div>
 
                 <dl className="matter-card-meta">
@@ -210,109 +301,58 @@ export default function AdminMattersPage() {
             )
           })}
         </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--color-border)]" style={{ background: 'var(--color-surface-raised)' }}>
-                {['Matter No.', 'Title / Client', 'Type', 'Status', 'Health', 'Attorney', 'Last Activity', ''].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {matters.map(matter => (
-                <tr key={matter.id} className="hover:bg-[var(--color-surface-overlay)] transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs text-[var(--color-accent)] font-bold">{matter.matter_number}</span>
-                      {matter.is_confidential && <span title="Confidential"><Lock className="w-3 h-3 text-[var(--color-muted)]" /></span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-[var(--color-text-primary)] line-clamp-1 max-w-48">{matter.title}</div>
-                    <div className="text-xs text-[var(--color-muted)]">{matter.client_name}</div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
-                    {MATTER_TYPES.find(m => m.value === matter.type)?.label || matter.type}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`badge ${getStatusColor(matter.status)} text-xs`}>{STAGES.find(s => s.key === matter.status)?.label || matter.status}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {(() => {
-                      const health = matterHealth(matter)
-                      return health ? <span className={`badge ${health.cls} text-xs`}>{health.label}</span> : <span className="text-xs text-[var(--color-muted)]">-</span>
-                    })()}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
-                    {matter.assigned_attorney?.full_name || <span className="text-[var(--color-accent)]">Unassigned</span>}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[var(--color-muted)]">{matter.updated_at ? formatDate(matter.updated_at, 'short') : formatDate(matter.opening_date, 'short')}</td>
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/matters/${matter.id}`} className="btn btn-ghost p-1.5 !px-1.5">
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
-      {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 w-full max-w-lg shadow-[var(--shadow-xl)]" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-5">
-              <Scale className="w-5 h-5 text-[var(--color-accent)]" />
-              <h2 className="font-display font-semibold text-xl text-[var(--color-text-primary)]">Open New Matter</h2>
-            </div>
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="label">Matter Title *</label>
-                <input className="input text-sm" value={newMatter.title} onChange={e => setNewMatter(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Mwangi v. Kamau, Contract Dispute" />
-              </div>
-              <div>
-                <label className="label">Client Name *</label>
-                <input className="input text-sm" value={newMatter.client_name} onChange={e => setNewMatter(f => ({ ...f, client_name: e.target.value }))} />
-              </div>
-              <div>
-                <label className="label">Matter Type</label>
-                <select className="input text-sm" value={newMatter.type} onChange={e => setNewMatter(f => ({ ...f, type: e.target.value }))}>
-                  {MATTER_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Description</label>
-                <textarea rows={3} className="input text-sm" value={newMatter.description} onChange={e => setNewMatter(f => ({ ...f, description: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">County</label>
-                  <select className="input text-sm" value={newMatter.county} onChange={e => setNewMatter(f => ({ ...f, county: e.target.value }))}>
-                    <option value="">Not set</option>
-                    {KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Claim Value (Ksh)</label>
-                  <input type="number" className="input text-sm" placeholder="Optional" value={newMatter.claim_value} onChange={e => setNewMatter(f => ({ ...f, claim_value: e.target.value }))} />
-                </div>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={newMatter.is_confidential} onChange={e => setNewMatter(f => ({ ...f, is_confidential: e.target.checked }))} className="w-4 h-4 accent-[var(--color-accent)]" />
-                <span className="text-sm text-[var(--color-text-secondary)]">Mark as Confidential</span>
-              </label>
-              <div className="flex gap-3">
-                <button onClick={createMatter} className="btn btn-primary flex-1">Open Matter</button>
-                <button onClick={() => setShowCreate(false)} className="btn btn-ghost flex-1">Cancel</button>
-              </div>
-            </div>
+      <Modal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="Open New Matter"
+        description="Opens at the first stage of the pipeline. Conflict check comes next."
+        footer={
+          <>
+            <button onClick={createMatter} disabled={creating} className="btn btn-primary flex-1">
+              {creating ? 'Opening…' : 'Open Matter'}
+            </button>
+            <button onClick={() => setShowCreate(false)} className="btn btn-ghost flex-1">Cancel</button>
+          </>
+        }
+      >
+        <div>
+          <label className="label">Matter Title *</label>
+          <input className="input text-sm" value={newMatter.title} onChange={e => setNewMatter(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Mwangi v. Kamau, Contract Dispute" />
+        </div>
+        <div>
+          <label className="label">Client Name *</label>
+          <input className="input text-sm" value={newMatter.client_name} onChange={e => setNewMatter(f => ({ ...f, client_name: e.target.value }))} />
+        </div>
+        <div>
+          <label className="label">Matter Type</label>
+          <select className="input text-sm" value={newMatter.type} onChange={e => setNewMatter(f => ({ ...f, type: e.target.value }))}>
+            {MATTER_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Description</label>
+          <textarea rows={3} className="input text-sm" value={newMatter.description} onChange={e => setNewMatter(f => ({ ...f, description: e.target.value }))} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">County</label>
+            <select className="input text-sm" value={newMatter.county} onChange={e => setNewMatter(f => ({ ...f, county: e.target.value }))}>
+              <option value="">Not set</option>
+              {KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Claim Value (Ksh)</label>
+            <input type="number" className="input text-sm" placeholder="Optional" value={newMatter.claim_value} onChange={e => setNewMatter(f => ({ ...f, claim_value: e.target.value }))} />
           </div>
         </div>
-      )}
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={newMatter.is_confidential} onChange={e => setNewMatter(f => ({ ...f, is_confidential: e.target.checked }))} className="w-4 h-4 accent-[var(--color-accent)]" />
+          <span className="text-sm text-[var(--color-text-secondary)]">Mark as Confidential</span>
+        </label>
+      </Modal>
     </div>
   )
 }

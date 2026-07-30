@@ -1,16 +1,38 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
+import { ArrowRight, AlertCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { ADMIN_DOMAINS, type AdminDomain } from '@/lib/adminDomains'
+import { PageHeader, StatCard, StatusPill, LoadingState, type Tone } from '@/components/admin/ui'
+import type { SectionColor } from '@/lib/sectionColors'
+
+// `urgency`, not `tone`. /api/dashboard/overview has always sent urgency;
+// this component read `item.tone`, which was undefined on every row, so the
+// risk styling below never once applied and every item rendered as pending.
+type Urgency = 'overdue' | 'almost_overdue' | 'safe'
 
 interface Overview {
-  attention: { label: string; count: number; href: string; tone: 'risk' | 'warn' }[]
+  attention: { label: string; count: number; href: string; urgency: Urgency }[]
   website: { newInquiries7d: number; pendingTriage: number; subscribers: number; publishedPosts: number }
   clients: { pipeline: number; activeMatters: number; stalled: number; portalClients: number }
   staff: { staffAccounts: number; teamMembers: number; unassignedActive: number }
   finance: { unbilledTotal: number; outstanding: number; collectedThisMonth: number; overdueInvoices: number }
+}
+
+const URGENCY_TONE: Record<Urgency, Tone> = {
+  overdue: 'overdue',
+  almost_overdue: 'risk',
+  safe: 'done',
+}
+
+// Each domain borrows the section colour of what it is about, so the hub
+// reads as part of the same system as the cards inside it.
+const DOMAIN_COLOR: Record<AdminDomain['key'], SectionColor> = {
+  website: 'blue',
+  clients: 'purple',
+  staff: 'purple',
+  finance: 'gold',
 }
 
 interface Figure { label: string; value: string; alert?: boolean }
@@ -61,43 +83,47 @@ export default function DomainHub({ domainKey }: { domainKey: AdminDomain['key']
 
   const toolHrefs = new Set(domain.tools.map(t => t.href))
   const attention = (overview?.attention || []).filter(a => toolHrefs.has(a.href))
+  const color = DOMAIN_COLOR[domainKey]
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">{domain.label}</h1>
-        <p className="text-[var(--color-text-muted)] text-sm mt-1 max-w-xl">{domain.description}</p>
-      </div>
+      <PageHeader icon={domain.icon} eyebrow="Domain" title={domain.label} description={domain.description} />
 
-      {/* Live figures for this domain */}
       {loading ? (
-        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-[var(--color-accent)]" /></div>
+        <LoadingState />
       ) : overview && (
         <>
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             {figuresFor(domainKey, overview).map(f => (
-              <div key={f.label} className="card px-4 py-2.5">
-                <div className={`text-lg font-display font-semibold ${f.alert ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}>{f.value}</div>
-                <div className="text-xs text-[var(--color-muted)]">{f.label}</div>
-              </div>
+              <StatCard
+                key={f.label}
+                label={f.label}
+                value={f.value}
+                color={f.alert ? 'red' : color}
+                emphasis={f.alert}
+              />
             ))}
           </div>
 
-          {/* Decisions waiting inside this domain */}
+          {/* Decisions waiting inside this domain. Kept above the tool grid
+              because a queue with something in it outranks navigation. */}
           {attention.length > 0 && (
-            <div className="card p-5 mb-6">
+            <div className="card p-5 mb-6 border-l-[3px]" style={{ borderLeftColor: 'var(--status-danger)' }}>
               <h2 className="font-display font-semibold text-[var(--color-text-primary)] mb-3 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-[var(--color-accent)]" /> Needs attention
+                <AlertCircle className="w-4 h-4 text-[var(--status-danger)]" /> Needs attention
               </h2>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1">
                 {attention.map((item, i) => (
-                  <Link key={i} href={item.href}
-                    className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-[var(--color-surface-overlay)] hover:bg-[var(--color-surface-raised)] transition-colors group">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`badge text-xs ${item.tone === 'risk' ? 'status-rejected' : 'status-pending'}`}>{item.count}</span>
+                  <Link
+                    key={i}
+                    href={item.href}
+                    className="flex items-center justify-between gap-3 py-2 px-3 rounded-[var(--radius-md)] hover:bg-[var(--color-surface-overlay)] transition-colors group"
+                  >
+                    <span className="flex items-center gap-3 min-w-0">
+                      <StatusPill tone={URGENCY_TONE[item.urgency]}>{item.count}</StatusPill>
                       <span className="text-sm text-[var(--color-text-primary)]">{item.label}</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-[var(--color-accent)] flex-shrink-0" />
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                   </Link>
                 ))}
               </div>
@@ -106,15 +132,15 @@ export default function DomainHub({ domainKey }: { domainKey: AdminDomain['key']
         </>
       )}
 
-      {/* The tools this domain hosts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <h2 className="font-mono text-[0.66rem] tracking-[0.12em] uppercase text-[var(--color-text-muted)] mb-3">
+        Tools in {domain.label}
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {domain.tools.map(({ href, icon: Icon, label, description }) => (
-          <Link key={label} href={href} className="card p-5 hover:border-[var(--color-accent)] transition-all group">
+          <Link key={label} href={href} className="card p-5 hover:shadow-[var(--shadow-md)] transition-shadow group">
             <div className="flex items-center gap-2.5 mb-2">
-              <div className="w-9 h-9 rounded-md bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-                <Icon className="text-[var(--color-accent)]" style={{ width: 18, height: 18 }} />
-              </div>
-              <span className="font-display font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">{label}</span>
+              <Icon className="w-4 h-4 flex-shrink-0 text-[var(--color-text-muted)] group-hover:text-[var(--color-brand)] transition-colors" />
+              <span className="font-display font-semibold text-[var(--color-text-primary)]">{label}</span>
             </div>
             <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{description}</p>
           </Link>

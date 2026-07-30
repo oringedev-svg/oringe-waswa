@@ -9,6 +9,11 @@ import { Scale } from 'lucide-react'
  * All visual values (colors, fonts, sizes, margins, spacing) live in
  * src/styles/auth.css, change them there and every page using this
  * component updates automatically.
+ *
+ * Structure is a two-panel split: a fixed dark brand panel on the left and
+ * the form on the right. The brand panel is decoration only, it never holds
+ * a control, which is what makes it safe to drop entirely below the
+ * breakpoint in auth.css rather than stacking it above the form.
  */
 
 interface AuthLayoutProps {
@@ -20,24 +25,49 @@ interface AuthLayoutProps {
   children: ReactNode
   /** Optional content rendered below everything else, e.g. a "Back to sign in" link */
   footer?: ReactNode
+  /** Headline on the brand panel. Defaults to the firm's positioning line. */
+  brandTitle?: string
+  /** Supporting paragraph on the brand panel. */
+  brandText?: string
 }
 
-export default function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+const FIRM_NAME = 'Oringe Waswa & Akude Advocates LLP'
+
+export default function AuthLayout({
+  title,
+  subtitle,
+  children,
+  footer,
+  brandTitle = 'Counsel, carried end to end.',
+  brandText = 'One workspace for every matter the firm carries, from the first enquiry through to the final invoice.',
+}: AuthLayoutProps) {
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-logo">
-            <Scale />
-          </div>
-          <h1 className="auth-title">{title}</h1>
-          {subtitle && <p className="auth-subtitle">{subtitle}</p>}
+      <aside className="auth-brand" aria-hidden="true">
+        <div className="auth-brand-mark">{FIRM_NAME}</div>
+        <div className="auth-brand-body">
+          <h2 className="auth-brand-title">{brandTitle}</h2>
+          <div className="auth-brand-rule" />
+          <p className="auth-brand-text">{brandText}</p>
         </div>
+        <div className="auth-brand-foot">Nairobi, Kenya</div>
+      </aside>
 
-        {children}
+      <main className="auth-panel">
+        <div className="auth-card">
+          <div className="auth-header">
+            <div className="auth-logo">
+              <Scale />
+            </div>
+            <h1 className="auth-title">{title}</h1>
+            {subtitle && <p className="auth-subtitle">{subtitle}</p>}
+          </div>
 
-        {footer && <div className="auth-footer">{footer}</div>}
-      </div>
+          {children}
+
+          {footer && <div className="auth-footer">{footer}</div>}
+        </div>
+      </main>
     </div>
   )
 }

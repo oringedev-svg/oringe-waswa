@@ -1,7 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Loader2, Shield } from 'lucide-react'
+import { Shield, Users, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
+import {
+  PageHeader, StatusPill, EmptyState, LoadingState, SearchInput, FilterTabs, type Tone,
+} from '@/components/admin/ui'
 
 interface PermissionRecord {
   key: string
@@ -33,12 +36,26 @@ const ROLE_DEFAULTS: Record<string, string[]> = {
   public: [],
 }
 
+// Reach, not seniority. `admin` bypasses every check in the system, so it
+// is the one role the list should make impossible to miss.
+const ROLE_TONE: Record<string, Tone> = {
+  admin: 'overdue',
+  staff: 'safe',
+  moderator: 'done',
+  pupil: 'review',
+  admin_assistant: 'review',
+  client: 'neutral',
+  public: 'neutral',
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRecord[]>([])
   const [catalog, setCatalog] = useState<PermissionRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
 
   useEffect(() => {
     Promise.all([
@@ -90,79 +107,109 @@ export default function AdminUsersPage() {
   }
 
   const categories = Array.from(new Set(catalog.map((p) => p.category)))
+  const filtered = users.filter(u => {
+    if (roleFilter !== 'all' && u.role !== roleFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  })
+  const adminCount = users.filter(u => u.role === 'admin').length
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">Users</h1>
-        <p className="text-sm text-[var(--color-muted)] mt-1">
-          Roles set a baseline. Individual permissions add capability on top, nothing here removes what a role already grants.
-        </p>
-      </div>
+      <PageHeader
+        icon={Users}
+        eyebrow="Access control"
+        title="Users"
+        description="Roles set a baseline. Individual permissions add capability on top. Nothing here removes what a role already grants."
+        meta={[`${filtered.length} of ${users.length}`, adminCount > 0 ? `${adminCount} administrator${adminCount === 1 ? '' : 's'}` : null]}
+      >
+        <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" />
+        <select className="input !w-auto text-sm" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} aria-label="Filter by role">
+          <option value="all">All roles</option>
+          {ROLES.map(r => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
+        </select>
+      </PageHeader>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" />
-        </div>
+        <LoadingState />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title={search || roleFilter !== 'all' ? 'No users match those filters' : 'No users yet'}
+          description={search || roleFilter !== 'all' ? 'Clear the search or pick a different role.' : undefined}
+        />
       ) : (
         <div className="card overflow-hidden">
-          {users.map((user) => {
+          {filtered.map((user) => {
             const isAdmin = user.role === 'admin'
             const defaults = ROLE_DEFAULTS[user.role] || []
+            const isOpen = expanded === user.id
+            const extraGrants = user.grants.filter(g => !defaults.includes(g)).length
             return (
               <div key={user.id} className="border-b border-[var(--color-border)] last:border-0">
                 <div className="flex items-center justify-between px-4 py-3 gap-4">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-[var(--color-text-primary)] truncate">{user.full_name}</div>
-                    <div className="text-xs text-[var(--color-muted)] truncate">{user.email}</div>
+                  <div className="min-w-0 flex items-center gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-[var(--color-text-primary)] truncate">{user.full_name}</div>
+                      <div className="text-xs text-[var(--color-text-muted)] truncate">{user.email}</div>
+                    </div>
+                    <StatusPill tone={ROLE_TONE[user.role] || 'neutral'}>{user.role.replace(/_/g, ' ')}</StatusPill>
+                    {!isAdmin && extraGrants > 0 && (
+                      <span className="text-xs text-[var(--color-text-muted)] hidden sm:inline">+{extraGrants} extra</span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <select
                       className="input text-sm !w-auto"
                       value={user.role}
                       disabled={busy === user.id}
                       onChange={(e) => changeRole(user, e.target.value)}
+                      aria-label={`Role for ${user.full_name}`}
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
                       ))}
                     </select>
                     <button
-                      onClick={() => setExpanded(expanded === user.id ? null : user.id)}
-                      className="text-xs text-[var(--color-accent)] hover:underline"
+                      onClick={() => setExpanded(isOpen ? null : user.id)}
+                      aria-expanded={isOpen}
+                      className="btn btn-ghost !py-1.5 !px-2.5 text-xs gap-1"
                     >
-                      {expanded === user.id ? 'Hide' : 'Permissions'}
+                      Permissions
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
                 </div>
 
-                {expanded === user.id && (
-                  <div className="px-4 pb-4 bg-[var(--color-surface-raised)]">
+                {isOpen && (
+                  <div className="px-4 pb-4 bg-[var(--color-surface-overlay)]">
                     {isAdmin ? (
-                      <div className="flex items-center gap-2 text-sm text-[var(--color-muted)] py-2">
-                        <Shield className="w-4 h-4 text-[var(--color-accent)]" />
-                        Administrator, has every permission.
+                      <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] py-3">
+                        <Shield className="w-4 h-4 text-[var(--status-danger)]" />
+                        Administrator. Has every permission, and bypasses every check.
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 pt-3">
                         {categories.map((cat) => (
                           <div key={cat}>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)] mb-2">{cat}</div>
+                            <div className="font-mono text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-2">{cat}</div>
                             <div className="flex flex-col gap-1.5">
                               {catalog.filter((p) => p.category === cat).map((perm) => {
                                 const fromRole = defaults.includes(perm.key)
                                 const granted = fromRole || user.grants.includes(perm.key)
                                 return (
-                                  <label key={perm.key} className="flex items-center gap-2 text-sm">
+                                  <label key={perm.key} className="flex items-center gap-2 text-sm cursor-pointer">
                                     <input
                                       type="checkbox"
+                                      className="w-4 h-4 accent-[var(--color-accent)] flex-shrink-0"
                                       checked={granted}
                                       disabled={fromRole || busy === user.id + perm.key}
                                       onChange={() => toggleGrant(user, perm.key, user.grants.includes(perm.key))}
                                     />
-                                    <span className={fromRole ? 'text-[var(--color-muted)]' : 'text-[var(--color-text-secondary)]'}>
+                                    <span className={fromRole ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-secondary)]'}>
                                       {perm.label}
-                                      {fromRole && <span className="ml-1 text-xs">(from role)</span>}
+                                      {fromRole && <span className="ml-1 text-xs opacity-70">(from role)</span>}
                                     </span>
                                   </label>
                                 )
@@ -177,9 +224,6 @@ export default function AdminUsersPage() {
               </div>
             )
           })}
-          {users.length === 0 && (
-            <p className="text-sm text-[var(--color-muted)] px-4 py-8 text-center">No users yet.</p>
-          )}
         </div>
       )}
     </div>

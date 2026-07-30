@@ -148,6 +148,8 @@ export default function CareersPage() {
 
 function ApplyModal({ target, onClose }: { target: { job?: JobOpening; category: string }; onClose: () => void }) {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', message: '', resume_url: '' })
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [uploadingResume, setUploadingResume] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const trackLabel = TRACKS.find(t => t.key === target.category)?.label || target.category
@@ -157,10 +159,28 @@ function ApplyModal({ target, onClose }: { target: { job?: JobOpening; category:
     if (!form.full_name || !form.email) { toast.error('Name and email are required'); return }
     setSubmitting(true)
     try {
+      let resume_file_url: string | undefined
+      let resume_file_name: string | undefined
+
+      if (resumeFile) {
+        setUploadingResume(true)
+        const fd = new FormData()
+        fd.append('file', resumeFile)
+        const uploadRes = await fetch('/api/careers/resume-upload', { method: 'POST', body: fd })
+        setUploadingResume(false)
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json().catch(() => ({}))
+          toast.error(err.error || 'Could not upload the resume'); setSubmitting(false); return
+        }
+        const uploaded = await uploadRes.json()
+        resume_file_url = uploaded.url
+        resume_file_name = uploaded.file_name
+      }
+
       const res = await fetch('/api/careers/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, category: target.category, job_id: target.job?.id }),
+        body: JSON.stringify({ ...form, resume_file_url, resume_file_name, category: target.category, job_id: target.job?.id }),
       })
       if (res.ok) setDone(true)
       else toast.error('Something went wrong. Please try again.')
@@ -201,8 +221,18 @@ function ApplyModal({ target, onClose }: { target: { job?: JobOpening; category:
               <input className="input text-sm" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
             </div>
             <div>
-              <label className="label">Resume / CV Link</label>
-              <input className="input text-sm" placeholder="Google Drive, LinkedIn, or portfolio link" value={form.resume_url} onChange={e => setForm({ ...form, resume_url: e.target.value })} />
+              <label className="label">Resume / CV</label>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="input text-sm"
+                onChange={e => setResumeFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-xs text-[var(--color-text-muted)] mt-1">PDF or Word, up to 5MB. Optional, but strongly recommended.</p>
+            </div>
+            <div>
+              <label className="label">Or a link instead (Drive, LinkedIn, portfolio)</label>
+              <input className="input text-sm" placeholder="https://…" value={form.resume_url} onChange={e => setForm({ ...form, resume_url: e.target.value })} />
             </div>
             <div>
               <label className="label">Message</label>
@@ -210,7 +240,7 @@ function ApplyModal({ target, onClose }: { target: { job?: JobOpening; category:
             </div>
             <button type="submit" disabled={submitting} className="btn btn-primary mt-2 gap-2 justify-center">
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              Submit Application
+              {uploadingResume ? 'Uploading resume…' : 'Submit Application'}
             </button>
           </form>
         )}

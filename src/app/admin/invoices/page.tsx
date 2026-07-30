@@ -1,10 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2, Receipt, Eye } from 'lucide-react'
+import { Receipt, Eye } from 'lucide-react'
 import { formatDate, formatCurrency } from '@/lib/utils'
-import { INVOICE_STATUSES, INVOICE_STATUS_BADGE, invoiceStatusLabel, availableInvoiceTransitions } from '@/lib/invoiceLifecycle'
+import { INVOICE_STATUSES, invoiceStatusLabel, availableInvoiceTransitions } from '@/lib/invoiceLifecycle'
 import toast from 'react-hot-toast'
+import {
+  PageHeader, DataTable, StatusPill, EmptyState, type Column, type Tone,
+} from '@/components/admin/ui'
 
 interface InvoiceRow {
   id: string
@@ -17,6 +20,16 @@ interface InvoiceRow {
   created_at: string
   matter_id: string | null
   matter?: { matter_number: string; title: string } | null
+}
+
+// Money states, in the same vocabulary the rest of the admin uses. `sent`
+// is deliberately `risk` rather than neutral: an issued invoice nobody has
+// paid is the one row on this page that needs chasing.
+const STATUS_TONE: Record<InvoiceRow['status'], Tone> = {
+  draft: 'neutral',
+  sent: 'risk',
+  paid: 'safe',
+  void: 'neutral',
 }
 
 export default function AdminInvoicesPage() {
@@ -61,85 +74,96 @@ export default function AdminInvoicesPage() {
 
   const outstanding = invoices.filter(i => i.status === 'sent').reduce((s, i) => s + Number(i.total), 0)
 
+  const columns: Column<InvoiceRow>[] = [
+    { label: 'Invoice No.', render: i => <span className="font-mono text-xs font-semibold text-[var(--color-text-primary)]">{i.invoice_number}</span> },
+    {
+      label: 'Client / Matter',
+      render: i => (
+        <div className="min-w-0">
+          <div className="font-medium text-[var(--color-text-primary)] truncate">{i.client_name}</div>
+          <div className="text-xs text-[var(--color-text-muted)] font-mono">{i.matter?.matter_number || '-'}</div>
+        </div>
+      ),
+    },
+    { label: 'Issued', secondary: true, render: i => i.issued_at ? formatDate(i.issued_at, 'short') : <span className="opacity-50">-</span> },
+    { label: 'Due', secondary: true, render: i => i.due_date ? formatDate(i.due_date, 'short') : <span className="opacity-50">-</span> },
+    {
+      label: 'Total',
+      className: 'text-right tabular-nums',
+      render: i => <span className="font-semibold text-[var(--color-text-primary)]">{formatCurrency(Number(i.total))}</span>,
+    },
+    { label: 'Status', render: i => <StatusPill tone={STATUS_TONE[i.status]} dot>{invoiceStatusLabel(i.status)}</StatusPill> },
+    {
+      label: '',
+      className: 'text-right',
+      render: i => (
+        <div className="flex items-center gap-1.5 justify-end">
+          {canBill && availableInvoiceTransitions(i.status).map(to => (
+            <button
+              key={to}
+              onClick={() => transition(i.id, to)}
+              className={`btn !py-1 !px-2.5 text-[0.68rem] ${to === 'void' ? 'btn-ghost text-[var(--status-danger)]' : 'btn-outline'}`}
+            >
+              {to === 'sent' ? 'Mark Sent' : to === 'paid' ? 'Mark Paid' : 'Void'}
+            </button>
+          ))}
+          {i.matter_id && (
+            <Link href={`/admin/matters/${i.matter_id}`} className="btn btn-ghost p-1.5 !px-1.5" title="Open matter">
+              <Eye className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
+      ),
+    },
+  ]
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">Invoices</h1>
-          <p className="text-[var(--color-text-muted)] text-sm mt-1">
-            {total} invoices{status === 'all' && outstanding > 0 ? ` · ${formatCurrency(outstanding)} outstanding on this page` : ''}
-          </p>
-        </div>
+      <PageHeader
+        icon={Receipt}
+        eyebrow="Money"
+        title="Invoices"
+        description="Generated from unbilled time on a matter's page."
+        meta={[
+          `${total} invoice${total === 1 ? '' : 's'}`,
+          outstanding > 0 ? `${formatCurrency(outstanding)} outstanding on this page` : null,
+        ]}
+      />
+
+      {/* Status counts double as the filter. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+        {INVOICE_STATUSES.map(s => {
+          const active = status === s.key
+          const count = counts[s.key] ?? 0
+          return (
+            <button
+              key={s.key}
+              onClick={() => setStatus(active ? 'all' : s.key)}
+              aria-pressed={active}
+              className={`card px-3 py-2.5 text-left transition-all border-l-[3px] ${active ? '' : 'border-l-transparent'} ${count === 0 ? 'opacity-50' : ''}`}
+              style={active ? { borderLeftColor: 'var(--color-brand)' } : undefined}
+            >
+              <div className="font-display text-xl font-semibold text-[var(--color-text-primary)] tabular-nums leading-none">{count}</div>
+              <div className="text-xs text-[var(--color-text-muted)] mt-1">{s.label}</div>
+            </button>
+          )
+        })}
       </div>
 
-      {/* Status counts */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {INVOICE_STATUSES.map(s => (
-          <button
-            key={s.key}
-            onClick={() => setStatus(status === s.key ? 'all' : s.key)}
-            className={`card px-4 py-2.5 text-left transition-all ${status === s.key ? 'border-[var(--color-accent)]' : ''}`}
-          >
-            <div className="text-lg font-display font-semibold text-[var(--color-text-primary)]">{counts[s.key] ?? 0}</div>
-            <div className="text-xs text-[var(--color-muted)]">{s.label}</div>
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
-      ) : invoices.length === 0 ? (
-        <div className="card p-12 text-center text-[var(--color-muted)]">
-          <Receipt className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>No invoices yet. Invoices are generated from unbilled time on a matter&apos;s page.</p>
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--color-border)]" style={{ background: 'var(--color-surface-raised)' }}>
-                {['Invoice No.', 'Client / Matter', 'Issued', 'Due', 'Total', 'Status', ''].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {invoices.map(inv => (
-                <tr key={inv.id} className="hover:bg-[var(--color-surface-overlay)] transition-colors">
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-[var(--color-accent)] font-bold">{inv.invoice_number}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-[var(--color-text-primary)]">{inv.client_name}</div>
-                    <div className="text-xs text-[var(--color-muted)]">{inv.matter?.matter_number || '-'}</div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">{inv.issued_at ? formatDate(inv.issued_at, 'short') : '-'}</td>
-                  <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">{inv.due_date ? formatDate(inv.due_date, 'short') : '-'}</td>
-                  <td className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">{formatCurrency(Number(inv.total))}</td>
-                  <td className="px-4 py-3">
-                    <span className={`badge ${INVOICE_STATUS_BADGE[inv.status]} text-xs`}>{invoiceStatusLabel(inv.status)}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5 justify-end">
-                      {canBill && availableInvoiceTransitions(inv.status).map(to => (
-                        <button key={to} onClick={() => transition(inv.id, to)}
-                          className={`btn text-xs ${to === 'void' ? 'btn-ghost text-red-500' : 'btn-outline'}`}>
-                          {to === 'sent' ? 'Mark Sent' : to === 'paid' ? 'Mark Paid' : 'Void'}
-                        </button>
-                      ))}
-                      {inv.matter_id && (
-                        <Link href={`/admin/matters/${inv.matter_id}`} className="btn btn-ghost p-1.5 !px-1.5" title="Open matter">
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        caption="Invoices"
+        columns={columns}
+        rows={invoices}
+        rowKey={i => i.id}
+        loading={loading}
+        empty={
+          <EmptyState
+            icon={Receipt}
+            title={status === 'all' ? 'No invoices yet' : `No ${invoiceStatusLabel(status as InvoiceRow['status'])} invoices`}
+            description="Invoices are generated from unbilled time on a matter's page."
+          />
+        }
+      />
     </div>
   )
 }

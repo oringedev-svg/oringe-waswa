@@ -31,6 +31,7 @@ export async function GET() {
     staffProfiles,
     portalClients,
     teamCount,
+    submittedAssignments,
   ] = await Promise.all([
     supabase.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('deleted_at', null),
     supabase.from('submissions').select('id', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo).is('deleted_at', null),
@@ -43,6 +44,10 @@ export async function GET() {
     supabase.from('profiles').select('id', { count: 'exact', head: true }).in('role', ['admin', 'staff', 'moderator']),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'client').not('user_id', 'is', null),
     supabase.from('team_members').select('id', { count: 'exact', head: true }),
+    // Work an assignee has submitted, nothing surfaced this on the
+    // dashboard at all before, an assigner had no way to discover it short
+    // of already knowing to check /admin/assignments.
+    supabase.from('assignments').select('id', { count: 'exact', head: true }).eq('status', 'Submitted'),
   ])
 
   // --- Clients and Matters: pipeline shape and stalled work ---
@@ -76,13 +81,17 @@ export async function GET() {
   }
 
   // --- The attention queue: handoffs waiting on a decision ---
-  const attention: { label: string; count: number; href: string; tone: 'risk' | 'warn' }[] = []
-  if ((pendingSubs.count || 0) > 0) attention.push({ label: 'new inquiries awaiting triage', count: pendingSubs.count!, href: '/admin/submissions', tone: 'warn' })
-  if ((stageCounts['lead'] || 0) > 0) attention.push({ label: 'leads awaiting a conflict check', count: stageCounts['lead'], href: '/admin/matters', tone: 'warn' })
-  if ((pendingConflicts.count || 0) > 0) attention.push({ label: 'conflict checks awaiting a partner decision', count: pendingConflicts.count!, href: '/admin/matters', tone: 'risk' })
-  if (unassignedActive > 0) attention.push({ label: 'active matters with no attorney assigned', count: unassignedActive, href: '/admin/matters', tone: 'risk' })
-  if (stalled > 0) attention.push({ label: 'matters with no activity in 7+ days', count: stalled, href: '/admin/matters', tone: 'warn' })
-  if (overdueInvoices > 0) attention.push({ label: 'invoices past their due date', count: overdueInvoices, href: '/admin/invoices', tone: 'risk' })
+  // Urgency is a shared language for the desk. Red is reserved for work
+  // that is genuinely overdue; orange means intervention is needed soon;
+  // blue means work is safely waiting in its normal queue.
+  const attention: { label: string; count: number; href: string; urgency: 'overdue' | 'almost_overdue' | 'safe' }[] = []
+  if ((pendingSubs.count || 0) > 0) attention.push({ label: 'new inquiries awaiting triage', count: pendingSubs.count!, href: '/admin/submissions', urgency: 'safe' })
+  if ((submittedAssignments.count || 0) > 0) attention.push({ label: 'assignments submitted for your review', count: submittedAssignments.count!, href: '/admin/assignments', urgency: 'almost_overdue' })
+  if ((stageCounts['lead'] || 0) > 0) attention.push({ label: 'leads awaiting a conflict check', count: stageCounts['lead'], href: '/admin/matters', urgency: 'safe' })
+  if ((pendingConflicts.count || 0) > 0) attention.push({ label: 'conflict checks awaiting a partner decision', count: pendingConflicts.count!, href: '/admin/matters', urgency: 'almost_overdue' })
+  if (unassignedActive > 0) attention.push({ label: 'active matters with no attorney assigned', count: unassignedActive, href: '/admin/matters', urgency: 'almost_overdue' })
+  if (stalled > 0) attention.push({ label: 'matters with no activity in 7+ days', count: stalled, href: '/admin/matters', urgency: 'almost_overdue' })
+  if (overdueInvoices > 0) attention.push({ label: 'invoices past their due date', count: overdueInvoices, href: '/admin/invoices', urgency: 'overdue' })
 
   return NextResponse.json({
     attention,

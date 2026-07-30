@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runAction, isValidResource, isWriteOpAllowed, type AdminOperation } from '@/lib/adminAiTools'
+import { requireAdminApi } from '@/lib/auth'
 
 // This endpoint is the ONLY place a proposed AI action actually executes.
 // It re-validates everything server-side, the client cannot force an
 // unsupported resource/operation combo through even if the payload is tampered with.
+// The requireAdminApi() below is defense in depth: runAction forwards the
+// caller's own session cookie to the underlying /api route for the target
+// resource, so that route's own guard (e.g. matter scoping, manage_users)
+// is what actually decides whether the action is allowed.
 export async function POST(req: NextRequest) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   try {
     const body = await req.json()
     const resource = String(body?.resource || '')

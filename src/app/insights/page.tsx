@@ -134,14 +134,16 @@ function InsightCard({ item, large = false, fullWidth = false }: { item: Insight
   // Full width switches the card from a vertical stack to a side-by-side
   // split, image left, text right, so a wide lead card does not become a
   // short image with a very long line of text under it.
-  const cardClass = `card overflow-hidden group ${fullWidth ? 'insight-card-lead' : 'flex flex-col'}`
+  const cardClass = `card overflow-hidden group insight-anchor ${fullWidth ? 'insight-card-lead' : 'flex flex-col'}`
   const body = <InsightCardBody item={item} large={large} fullWidth={fullWidth} Icon={Icon} />
 
-  // Firm articles link to their permalink; everything else stays on this page.
+  // A real DOM id, not just a React key: insights have no detail route of
+  // their own, so the announcement bar deep-links to /insights#<id> and
+  // needs something on the page to actually land on.
   if (item.href) {
-    return <Link href={item.href} className={cardClass}>{body}</Link>
+    return <Link id={item.id} href={item.href} className={cardClass}>{body}</Link>
   }
-  return <div className={cardClass}>{body}</div>
+  return <div id={item.id} className={cardClass}>{body}</div>
 }
 
 function InsightCardBody({ item, large, fullWidth = false, Icon }: { item: InsightItem; large: boolean; fullWidth?: boolean; Icon: React.ElementType }) {

@@ -183,26 +183,27 @@ export default function MatterDetailPage() {
   const [tasks, setTasks] = useState<MatterTask[]>([])
   const [notes, setNotes] = useState<MatterNote[]>([])
   const [team, setTeam] = useState<{ id: string; full_name: string; professional_type?: { id: string; name: string } | null }[]>([])
+  const [stages, setStages] = useState<{ id: string; key: string; label: string }[]>([])
   const [showServicePanel, setShowServicePanel] = useState(false)
   const [showCostEstimate, setShowCostEstimate] = useState(false)
   const [showClientAccess, setShowClientAccess] = useState(false)
-  const [taskForm, setTaskForm] = useState({ title: '', assigned_to: '', due_date: '' })
+  const [taskForm, setTaskForm] = useState({ title: '', assigned_to: '', stage_id: '', due_date: '' })
   const [addingTask, setAddingTask] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [addingNote, setAddingNote] = useState(false)
 
   async function load() {
     const matterId = params.id as string
-    const [matterData, docsRes, checksRes, me, timeRes, invoicesRes, tasksRes, notesRes, teamRes] = await Promise.all([
+    const [matterData, docsRes, checksRes, me, timeRes, invoicesRes, notesRes, teamRes, stagesRes] = await Promise.all([
       fetch(`/api/files/matters/${matterId}`).then(r => r.json()),
       fetch(`/api/files/documents?matter_id=${matterId}`).then(r => r.json()),
       fetch(`/api/conflict-checks?matter_id=${matterId}`).then(r => r.json()),
       fetch('/api/me').then(r => (r.ok ? r.json() : { permissions: [] })),
       fetch(`/api/time-entries?matter_id=${matterId}`).then(r => r.json()),
       fetch(`/api/invoices?matter_id=${matterId}`).then(r => r.json()),
-      fetch(`/api/matter-tasks?matter_id=${matterId}`).then(r => r.json()),
       fetch(`/api/matter-notes?matter_id=${matterId}`).then(r => r.json()),
       fetch('/api/team?with_category=true').then(r => r.json()),
+      fetch('/api/pipeline-stages').then(r => r.json()).catch(() => []),
     ])
     setMatter(matterData || null)
     setRevisions(matterData?.revisions || [])
@@ -212,41 +213,40 @@ export default function MatterDetailPage() {
     setPermissions(me.permissions || [])
     setTimeEntries(Array.isArray(timeRes) ? timeRes : [])
     setInvoices(invoicesRes?.data || [])
-    setTasks(Array.isArray(tasksRes) ? tasksRes : [])
+    setTasks([])
     setNotes(Array.isArray(notesRes) ? notesRes : [])
     setTeam(Array.isArray(teamRes) ? teamRes : [])
+    setStages(Array.isArray(stagesRes) ? stagesRes : [])
     setLoading(false)
   }
 
   async function addTask() {
-    if (!taskForm.title.trim()) { toast.error('The step needs a description'); return }
+    if (!taskForm.title.trim()) { toast.error('Work description is required'); return }
+    if (!taskForm.assigned_to) { toast.error('Please assign to someone'); return }
+    if (!taskForm.stage_id) { toast.error('Please select a pipeline stage'); return }
     setAddingTask(true)
     try {
-      const res = await fetch('/api/matter-tasks', {
+      const res = await fetch('/api/assignments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matter_id: params.id, title: taskForm.title.trim(), assigned_to: taskForm.assigned_to || null, due_date: taskForm.due_date || null }),
+        body: JSON.stringify({
+          matter_id: params.id,
+          assigned_to: taskForm.assigned_to,
+          stage_id: taskForm.stage_id,
+          instructions: taskForm.title.trim(),
+        }),
       })
       if (res.ok) {
-        setTaskForm({ title: '', assigned_to: '', due_date: '' })
-        load()
+        setTaskForm({ title: '', assigned_to: '', stage_id: '', due_date: '' })
+        toast.success('Assignment created')
+        router.push(`/admin/assignments`)
       } else {
         const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Could not add the step')
+        toast.error(err.error || 'Could not create assignment')
       }
     } finally {
       setAddingTask(false)
     }
-  }
-
-  async function toggleTask(task: MatterTask) {
-    const res = await fetch(`/api/matter-tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: task.status === 'open' ? 'done' : 'open' }),
-    })
-    if (res.ok) load()
-    else toast.error('Could not update the step')
   }
 
   async function addNote() {
@@ -671,72 +671,36 @@ export default function MatterDetailPage() {
           <SectionCard title="Next Steps" icon={ArrowRight} color="blue" defaultOpen
             badge={<span className="text-xs text-[var(--color-muted)] ml-1">{tasks.filter(t => t.status === 'open').length} open</span>}>
 
-            {tasks.filter(t => t.status === 'open').length === 0 ? (
-              <p className="text-sm text-[var(--color-muted)] mb-3">No next step is defined. Add one below so this matter always has an owner and a direction.</p>
-            ) : (
-              <div className="flex flex-col gap-1.5 mb-3">
-                {tasks.filter(t => t.status === 'open').map(task => {
-                  const overdue = task.due_date && task.due_date < new Date().toISOString().slice(0, 10)
-                  return (
-                    <div key={task.id} className="flex items-center gap-3 py-2 px-3 rounded-lg bg-[var(--color-surface-overlay)] flex-wrap">
-                      <button onClick={() => toggleTask(task)} title="Mark done" className="flex-shrink-0 text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors">
-                        <Circle className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0">{task.title}</span>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {task.assignee ? (
-                          <span className="badge status-review text-xs">{task.assignee.full_name}</span>
-                        ) : (
-                          <span className="badge status-pending text-xs">Unassigned</span>
-                        )}
-                        {task.due_date && (
-                          <span className={`text-xs ${overdue ? 'text-red-500 font-medium' : 'text-[var(--color-muted)]'}`}>
-                            {overdue ? 'Overdue · ' : 'Due '}{formatDate(task.due_date, 'short')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            <p className="text-sm text-[var(--color-muted)] mb-3">Assign work for this matter below. It will appear in <Link href="/admin/assignments" className="text-[var(--color-accent)] hover:underline">Assignments</Link> with full workflow tracking.</p>
 
             {permissions.includes('manage_matters') && (
               <div className="flex flex-wrap gap-2 items-end">
                 <div className="flex-1 min-w-48">
-                  <input className="input text-sm" placeholder="What happens next on this matter?"
+                  <input className="input text-sm" placeholder="Work description / instructions"
                     value={taskForm.title}
                     onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && addTask()} />
                 </div>
+                <select className="input text-sm w-48" value={taskForm.stage_id} onChange={e => setTaskForm(f => ({ ...f, stage_id: e.target.value }))}>
+                  <option value="">Pipeline stage…</option>
+                  {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
                 <select className="input text-sm w-44" value={taskForm.assigned_to} onChange={e => setTaskForm(f => ({ ...f, assigned_to: e.target.value }))}>
                   <option value="">Assign to…</option>
                   {team.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
                 </select>
-                <input type="date" className="input text-sm w-36" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} />
                 <button onClick={addTask} disabled={addingTask} className="btn btn-primary gap-2 text-sm">
-                  {addingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Add Step
+                  {addingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Create Work Item
                 </button>
               </div>
             )}
 
-            {tasks.some(t => t.status === 'done') && (
-              <details className="mt-3 pt-3 border-t border-[var(--color-border)]">
-                <summary className="text-xs text-[var(--color-muted)] uppercase tracking-wider cursor-pointer hover:text-[var(--color-accent)]">
-                  Completed ({tasks.filter(t => t.status === 'done').length})
-                </summary>
-                <div className="flex flex-col gap-1.5 mt-2">
-                  {tasks.filter(t => t.status === 'done').map(task => (
-                    <div key={task.id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg text-sm text-[var(--color-muted)]">
-                      <button onClick={() => toggleTask(task)} title="Reopen" className="flex-shrink-0 text-green-600">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                      <span className="line-through flex-1 min-w-0">{task.title}</span>
-                      {task.done_at && <span className="text-xs flex-shrink-0">{formatDate(task.done_at, 'short')}</span>}
-                    </div>
-                  ))}
-                </div>
-              </details>
+            {tasks.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+                <p className="text-xs text-[var(--color-muted)]">
+                  Work is now tracked in <Link href="/admin/assignments" className="text-[var(--color-accent)] hover:underline">Assignments</Link>
+                </p>
+              </div>
             )}
           </SectionCard>
 
@@ -756,6 +720,8 @@ export default function MatterDetailPage() {
                 submissionId={matter.submission.id}
                 intakeStage={matter.submission.intake_stage}
                 onAdvance={() => {}}
+                team={team}
+                submitterName={matter.submission.submitter_name}
               />
             </div>
           )}
@@ -783,6 +749,7 @@ export default function MatterDetailPage() {
               clientInstruction={matter.submission?.data?.message || matter.submission?.data?.description || null}
               description={matter.description || null}
               team={team}
+              stages={stages}
               taskForm={taskForm}
               setTaskForm={setTaskForm}
               addingTask={addingTask}

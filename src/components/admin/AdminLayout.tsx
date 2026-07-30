@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   LayoutDashboard, LayoutGrid, ChevronRight, History, Sun, Moon, Bell, LogOut, HelpCircle, X,
-  Scale, Gavel, Folder, Lightbulb, BarChart2, Settings,
+  Scale, Gavel, Landmark, Inbox, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ADMIN_DOMAINS, domainForPath } from '@/lib/adminDomains'
@@ -35,14 +35,18 @@ const SYSTEM_ITEMS = [
 //   Workflows     - the Workflow Engine capability is not built.
 //   Work Exchange - the brief itself says not to build it without first
 //                   confirming what it is meant to be.
-const CAPABILITY_NAV = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Command Center' },
-  { href: '/admin/matters', icon: Scale, label: 'Matters' },
-  { href: '/admin/court-calendar', icon: Gavel, label: 'Court Calendar' },
-  { href: '/admin/documents', icon: Folder, label: 'Documents' },
-  { href: '/admin/knowledge', icon: Lightbulb, label: 'Knowledge Vault' },
-  { href: '/admin/analytics', icon: BarChart2, label: 'Analytics' },
-  { href: '/admin/settings', icon: Settings, label: 'Settings' },
+// requiredPermission is undefined for lanes everyone with an admin-area
+// login should see; 'admin' bypasses every check below regardless. Without
+// this, a pupil with zero grants saw the exact same firm-wide navigation
+// (Matters, Court & Deadlines, Money) as a partner, the "admin mode" the
+// sidebar visually implies even though the API underneath was correctly
+// scoped, the chrome itself was the leak.
+const WORK_LANES: { href: string; icon: typeof LayoutDashboard; label: string; requiredPermission?: string }[] = [
+  { href: '/admin', icon: LayoutDashboard, label: 'My Desk' },
+  { href: '/admin/submissions', icon: Inbox, label: 'New Work' },
+  { href: '/admin/matters', icon: Scale, label: 'Matters', requiredPermission: 'manage_matters' },
+  { href: '/admin/court-calendar', icon: Gavel, label: 'Court & Deadlines', requiredPermission: 'manage_matters' },
+  { href: '/admin/finance', icon: Landmark, label: 'Money', requiredPermission: 'manage_billing' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -50,19 +54,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [launcherOpen, setLauncherOpen] = useState(false)
+  const [showDomainTools, setShowDomainTools] = useState(false)
+  const [canTriage, setCanTriage] = useState(false)
   const [profile, setProfile] = useState<{ fullName: string; role: string } | null>(null)
+  const [permissions, setPermissions] = useState<string[]>([])
   const launcherRef = useRef<HTMLDivElement>(null)
 
+  // Via /api/me rather than reading profiles straight from the browser.
+  // A direct anon-key read is bound by row-level security, so a missing or
+  // self-referential policy on profiles silently blanks the signed-in
+  // user's name and role in the top bar. /api/me resolves it server-side
+  // where identity is already established.
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
-      const { data } = await supabase.from('profiles').select('full_name, role').eq('user_id', user.id).single()
-      if (data) setProfile({ fullName: data.full_name, role: data.role })
-    })
+    fetch('/api/me')
+      .then(r => (r.ok ? r.json() : null))
+      .then(me => {
+        if (me?.fullName || me?.role) setProfile({ fullName: me.fullName, role: me.role })
+        setPermissions(Array.isArray(me?.permissions) ? me.permissions : [])
+      })
+      .catch(() => {})
   }, [])
 
-  useEffect(() => { setLauncherOpen(false) }, [pathname])
+  useEffect(() => {
+    fetch('/api/my-desk')
+      .then(r => (r.ok ? r.json() : null))
+      .then(desk => setCanTriage(Boolean(desk?.canTriage)))
+      .catch(() => setCanTriage(false))
+  }, [])
+
+  useEffect(() => {
+    setLauncherOpen(false)
+    setShowDomainTools(false)
+  }, [pathname])
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -82,12 +105,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const domain = domainForPath(pathname)
   const currentTool = domain?.tools.find(t => pathname === t.href || pathname.startsWith(t.href + '/'))
+  // "Admin" reads as a claim about the account's access level to anyone
+  // who isn't staff, a pupil landing here off their own assignment link
+  // shouldn't see a label implying they're in an admin panel.
+  const isStaffTier = profile ? ['admin', 'staff', 'moderator'].includes(profile.role) : true
+  const brandLabel = isStaffTier ? 'OWA Admin' : 'Oringe Waswa & Akude'
+  const homeLabel = isStaffTier ? 'Admin' : 'Workspace'
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)]">
       {/* Top bar, persistent chrome. */}
       <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-md">
         <div className="flex items-center gap-4 px-4 md:px-6 h-14">
+          {/* The launcher only ever points at the dashboard, the 4 domains,
+              and system pages, none of which a pupil or admin assistant can
+              actually reach (middleware bounces them back to /desk), so the
+              button itself is dropped rather than offering dead ends. */}
+          {isStaffTier && (
           <div className="relative flex-shrink-0" ref={launcherRef}>
             <button
               onClick={() => setLauncherOpen(o => !o)}
@@ -145,8 +179,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             )}
           </div>
+          )}
 
-          <Link href="/admin" className="font-display font-semibold text-[var(--color-text-primary)] hidden sm:block flex-shrink-0">OWA Admin</Link>
+          <Link href="/admin" className="font-display font-semibold text-[var(--color-text-primary)] hidden sm:block flex-shrink-0">{brandLabel}</Link>
 
           <div className="flex-1" />
 
@@ -183,10 +218,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             launcher carries navigation instead. */}
         <aside className="admin-sidebar">
           <div className="admin-sidebar-head">
-            <span>Capabilities</span>
+            <span>Work now</span>
           </div>
           <nav className="admin-sidebar-nav">
-            {CAPABILITY_NAV.map(item => {
+            {WORK_LANES.filter(item => {
+              if (item.href === '/admin/submissions') return canTriage
+              if (item.requiredPermission) return profile?.role === 'admin' || permissions.includes(item.requiredPermission)
+              return true
+            }).map(item => {
               const active = item.href === '/admin'
                 ? pathname === '/admin'
                 : pathname === item.href || pathname.startsWith(item.href + '/')
@@ -202,22 +241,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {domain && (
             <>
-              <div className="admin-sidebar-head admin-sidebar-head-sub">
+              <button
+                type="button"
+                onClick={() => setShowDomainTools(open => !open)}
+                className="admin-sidebar-head admin-sidebar-head-sub w-full text-left flex items-center gap-2"
+                aria-expanded={showDomainTools}
+              >
                 <domain.icon className="w-4 h-4 flex-shrink-0" />
-                <span>{domain.label}</span>
-              </div>
-              <nav className="admin-sidebar-nav">
-                {domain.tools.map(tool => {
-                  const active = pathname === tool.href || pathname.startsWith(tool.href + '/')
-                  return (
-                    <Link key={tool.href} href={tool.href}
-                      className={cn('admin-sidebar-item', active && 'is-active')}>
-                      <tool.icon className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{tool.label}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
+                <span className="flex-1 truncate">More in {domain.label}</span>
+                {showDomainTools ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+              {showDomainTools && (
+                <nav className="admin-sidebar-nav">
+                  {domain.tools.map(tool => {
+                    const active = pathname === tool.href || pathname.startsWith(tool.href + '/')
+                    return (
+                      <Link key={tool.href} href={tool.href}
+                        className={cn('admin-sidebar-item', active && 'is-active')}>
+                        <tool.icon className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{tool.label}</span>
+                      </Link>
+                    )
+                  })}
+                </nav>
+              )}
             </>
           )}
         </aside>
@@ -227,7 +274,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               (the old version tucked these into the top bar and hid them on
               mobile). */}
           <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
-            <Link href="/admin">Admin</Link>
+            <Link href="/admin">{homeLabel}</Link>
             {domain && (
               <>
                 <ChevronRight className="w-3.5 h-3.5 opacity-40" />

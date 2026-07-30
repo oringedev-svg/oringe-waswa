@@ -39,7 +39,11 @@ export default function AnnouncementBar({ initialAnnouncement }: { initialAnnoun
 
   if (!item || dismissed) return null
 
-  const href = item.external_url || '/insights'
+  // Deep-link to the announced item, not the whole roundup. Insights have no
+  // detail route of their own, so an external_url wins where one is set and
+  // otherwise this anchors to that item's card on the insights page rather
+  // than dropping the reader at the top of a list to hunt for it.
+  const href = item.external_url || `/insights#${item.id}`
 
   return (
     <aside className="announcement-bar" role="region" aria-label="Announcement">

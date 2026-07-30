@@ -10,9 +10,14 @@ import { toolsForPermissions } from '@/lib/permissionTools'
 interface Task {
   id: string
   title: string
+  status?: string
   due_date: string | null
   matter?: { id: string; matter_number: string; title: string } | null
   submission?: { id: string; tracking_code: string; submitter_name: string } | null
+}
+
+interface ReviewItem extends Task {
+  assigneeName: string | null
 }
 
 interface Meeting {
@@ -38,6 +43,7 @@ interface Message {
 interface Overview {
   teamMember: { id: string; full_name: string; position: string; seniority: string } | null
   tasks: Task[]
+  reviewQueue: ReviewItem[]
   meetings: Meeting[]
   messages: Message[]
   permissions: string[]
@@ -130,24 +136,61 @@ export default function DeskPage() {
               {data.tasks.map(t => {
                 const overdue = t.due_date && t.due_date < new Date().toISOString().slice(0, 10)
                 return (
-                  <div key={t.id} className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg bg-[var(--color-surface-overlay)] flex-wrap">
+                  <Link
+                    key={t.id}
+                    href={`/admin/assignments/${t.id}`}
+                    className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg bg-[var(--color-surface-overlay)] flex-wrap hover:border-[var(--color-accent)] border border-transparent transition-colors"
+                  >
                     <div className="min-w-0">
                       <div className="text-sm text-[var(--color-text-primary)]">{t.title}</div>
                       <div className="text-xs text-[var(--color-muted)] mt-0.5">
                         {t.matter ? `Matter ${t.matter.matter_number}` : t.submission ? `Enquiry ${t.submission.tracking_code}` : 'Internal'}
                       </div>
                     </div>
-                    {t.due_date && (
-                      <span className={`text-xs flex-shrink-0 ${overdue ? 'text-red-500 font-medium' : 'text-[var(--color-muted)]'}`}>
-                        {overdue ? 'Overdue · ' : 'Due '}{formatDate(t.due_date, 'short')}
-                      </span>
-                    )}
-                  </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {t.status && <span className="badge status-review text-xs">{t.status}</span>}
+                      {t.due_date && (
+                        <span className={`text-xs ${overdue ? 'text-red-500 font-medium' : 'text-[var(--color-muted)]'}`}>
+                          {overdue ? 'Overdue · ' : 'Due '}{formatDate(t.due_date, 'short')}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
                 )
               })}
             </div>
           )}
         </div>
+
+        {/* Awaiting My Review, work I handed out that's come back and needs
+            an approve/reject decision. Previously invisible anywhere on the
+            desk, the only way to notice it was already knowing to check
+            /admin/assignments. */}
+        {data.reviewQueue.length > 0 && (
+          <div className="card p-6 mb-6">
+            <h2 className="font-display font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-[var(--color-accent)]" /> Awaiting My Review
+            </h2>
+            <div className="flex flex-col gap-2">
+              {data.reviewQueue.map(r => (
+                <Link
+                  key={r.id}
+                  href={`/admin/assignments/${r.id}`}
+                  className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg bg-[var(--color-surface-overlay)] flex-wrap hover:border-[var(--color-accent)] border border-transparent transition-colors"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm text-[var(--color-text-primary)]">{r.title}</div>
+                    <div className="text-xs text-[var(--color-muted)] mt-0.5">
+                      {r.assigneeName ? `Submitted by ${r.assigneeName}` : 'Submitted'}
+                      {r.matter ? ` · Matter ${r.matter.matter_number}` : r.submission ? ` · Enquiry ${r.submission.tracking_code}` : ''}
+                    </div>
+                  </div>
+                  <span className="badge status-pending text-xs">Pending Review</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* My Meetings */}
         <div className="card p-6 mb-6">

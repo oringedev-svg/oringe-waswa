@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orange Waswa - Next-Gen Legal Platform Design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-50: #E3F2FF;
+            --primary-600: #1565C0;
+            --primary-900: #0D47A1;
+
+            --success-50: #E8F5E9;
+            --success-600: #2E7D32;
+
+            --alert-50: #FFF3E0;
+            --alert-600: #F57C00;
+
+            --gray-50: #FAFAFA;
+            --gray-100: #F5F5F5;
+            --gray-200: #EEEEEE;
+            --gray-400: #BDBDBD;
+            --gray-600: #757575;
+            --gray-700: #424242;
+            --gray-900: #212121;
+
+            --space-4: 4px;
+            --space-8: 8px;
+            --space-16: 16px;
+            --space-24: 24px;
+            --space-32: 32px;
+        }
+
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+
+        h1 { font-size: 2.5rem; font-weight: bold; margin: var(--space-24) 0 var(--space-16); }
+        h2 { font-size: 1.75rem; font-weight: 600; margin: var(--space-24) 0 var(--space-16); }
+        h3 { font-size: 1.25rem; font-weight: 600; margin: var(--space-16) 0 var(--space-8); }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: var(--space-24);
+        }
+
+        .mockup-section {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+            padding: var(--space-24);
+            margin-bottom: var(--space-32);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dashboard Header */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--gray-200);
+            padding-bottom: var(--space-24);
+            margin-bottom: var(--space-24);
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-900);
+        }
+
+        .user-menu {
+            display: flex;
+            gap: var(--space-16);
+            align-items: center;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-16);
+            margin-bottom: var(--space-32);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-50) 0%, white 100%);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: var(--space-24);
+            text-align: center;
+            transition: all 200ms ease-out;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-600);
+            margin: var(--space-8) 0;
+        }
+
+        .stat-card-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Task Cards */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-16);
+        }
+
+        .task-card {
+            display: flex;
+            align-items: center;
+            gap: var(--space-16);
+            padding: var(--space-16);
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-600);
+            transition: all 200ms ease-out;
+        }
+
+        .task-card:hover {
+            background: var(--gray-50);
+            transform: translateX(4px);
+        }
+
+        .task-priority {
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .task-priority.high {
+            background-color: #FFEBEE;
+            color: #C62828;
+        }
+
+        .task-priority.medium {
+            background-color: var(--alert-50);
+            color: var(--alert-600);
+        }
+
+        .task-priority.low {
+            background-color: var(--success-50);
+            color: var(--success-600);
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: var(--space-4);
+        }
+
+        .task-desc {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .task-action {
+            background-color: var(--primary-600);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: var(--space-8) var(--space-16);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 200ms ease-out;
+        }
+
+        .task-action:hover {
+            background-color: var(--primary-900);
+            transform: scale(1.05);
+        }
+
+        /* Conflict Card */
+        .conflict-card {
+            background: linear-gradient(135deg, #FFEBEE 0%, white 100%);
+            border: 2px solid #EF5350;
+            border-radius: 8px;
+            padding: var(--space-24);
+            margin-bottom: var(--space-24);
+        }
+
+        .conflict-header {
+            display: flex;
+            gap: var(--space-16);
+            margin-bottom: var(--space-24);
+        }
+
+        .conflict-icon {
+            font-size: 2rem;
+            width: 60px;
+            height: 60px;
+            background-color: #FFCDD2;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .conflict-info h3 {
+            color: #C62828;
+            margin: 0 0 var(--space-8) 0;
+        }
+
+        .conflict-desc {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            line-height: 1.6;
+        }
+
+        .conflict-actions {
+            display: flex;
+            gap: var(--space-8);
+            margin-top: var(--space-24);
+        }
+
+        .btn {
+            border: none;
+            border-radius: 6px;
+            padding: var(--space-8) var(--space-16);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 200ms ease-out;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-600);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-900);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--gray-100);
+        }
+
+        .btn-danger {
+            background-color: #EF5350;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #C62828;
+        }
+
+        /* Risk Assessment */
+        .risk-score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--primary-600) 0deg 259.2deg,
+                var(--gray-200) 259.2deg 360deg
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: var(--space-24);
+        }
+
+        .risk-score-value {
+            font-size: 2rem;
+        }
+
+        .risk-score-label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        /* Matter File Card */
+        .matter-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: var(--space-16);
+            margin-bottom: var(--space-16);
+        }
+
+        .matter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: var(--space-16);
+        }
+
+        .matter-title {
+            font-weight: 600;
+            color: var(--primary-600);
+            font-size: 1.125rem;
+        }
+
+        .matter-status {
+            display: inline-block;
+            background-color: var(--success-50);
+            color: var(--success-600);
+            padding: var(--space-4) var(--space-8);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .matter-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-16);
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+
+        .matter-detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .matter-detail-label {
+            font-weight: 600;
+            color: var(--gray-600);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: var(--space-32);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: var(--space-24);
+            padding-bottom: var(--space-24);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -40px;
+            top: 0;
+            width: 16px;
+            height: 16px;
+            background-color: var(--primary-600);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 3px var(--primary-50);
+        }
+
+        .timeline-content h4 {
+            margin: 0 0 var(--space-8) 0;
+            color: var(--gray-900);
+        }
+
+        .timeline-date {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-24);
+            margin-bottom: var(--space-32);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .matter-details {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .code-block {
+            background-color: #263238;
+            color: #AED581;
+            padding: var(--space-16);
+            border-radius: 8px;
+            font-family: "Fira Code", monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin: var(--space-16) 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: var(--space-4) var(--space-8);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-blue {
+            background-color: var(--primary-50);
+            color: var(--primary-600);
+        }
+
+        .badge-green {
+            background-color: var(--success-50);
+            color: var(--success-600);
+        }
+
+        .badge-amber {
+            background-color: var(--alert-50);
+            color: var(--alert-600);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; margin-top: 0;">🏆 Orange Waswa Next-Gen Design</h1>
+        <p style="text-align: center; color: var(--gray-600); margin-bottom: var(--space-32);">Award-Winning Legal Platform UI/UX</p>
+
+        <!-- DASHBOARD MOCKUP -->
+        <div class="mockup-section">
+            <div class="dashboard-header">
+                <div class="dashboard-title">Dashboard</div>
+                <div class="user-menu">
+                    <span>👤 Jane Smith</span>
+                </div>
+            </div>
+
+            <h3>Quick Stats</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span style="font-size: 2rem;">📋</span>
+                    <div class="stat-card-value">42</div>
+                    <div class="stat-card-label">Active Matters</div>
+                </div>
+                <div class="stat-card">
+                    <span style="font-size: 2rem;">📅</span>
+                    <div class="stat-card-value">7</div>
+                    <div class="stat-card-label">This Week</div>
+                </div>
+                <div class="stat-card">
+                    <span style="font-size: 2rem;">🚨</span>
+                    <div class="stat-card-value">5</div>
+                    <div class="stat-card-label">Need Review</div>
+                </div>
+                <div class="stat-card">
+                    <span style="font-size: 2rem;">⚖️</span>
+                    <div class="stat-card-value">3</div>
+                    <div class="stat-card-label">High Risk</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: var(--space-32);">Today's Priority Tasks</h3>
+            <div class="task-list">
+                <div class="task-card">
+                    <div class="task-priority high">🔴</div>
+                    <div class="task-content">
+                        <div class="task-title">Review Conflict Detection</div>
+                        <div class="task-desc">Smith v. Jones - Related case found in appeals court</div>
+                    </div>
+                    <button class="task-action">Review Now</button>
+                </div>
+                <div class="task-card">
+                    <div class="task-priority medium">🟡</div>
+                    <div class="task-content">
+                        <div class="task-title">Confirm Deadlines</div>
+                        <div class="task-desc">3 matters awaiting deadline confirmation</div>
+                    </div>
+                    <button class="task-action">Confirm</button>
+                </div>
+                <div class="task-card">
+                    <div class="task-priority low">🟢</div>
+                    <div class="task-content">
+                        <div class="task-title">Schedule Hearing</div>
+                        <div class="task-desc">1 hearing pending judge assignment</div>
+                    </div>
+                    <button class="task-action">Schedule</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MATTER FILE MOCKUP -->
+        <div class="mockup-section">
+            <h2>Matter File: Smith v. Jones</h2>
+
+            <div style="display: flex; gap: var(--space-16); margin-bottom: var(--space-24);">
+                <div style="flex: 1;">
+                    <h3 style="margin-top: 0;">📋 Case Overview</h3>
+                    <div class="matter-details">
+                        <div class="matter-detail-item">
+                            <span class="matter-detail-label">Status</span>
+                            <span class="badge badge-green">Discovery Phase</span>
+                        </div>
+                        <div class="matter-detail-item">
+                            <span class="matter-detail-label">Judge</span>
+                            <span>Hon. Jane Smith</span>
+                        </div>
+                        <div class="matter-detail-item">
+                            <span class="matter-detail-label">Amount</span>
+                            <span>$500,000</span>
+                        </div>
+                        <div class="matter-detail-item">
+                            <span class="matter-detail-label">Next Hearing</span>
+                            <span>Nov 15, 2024</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Timeline</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Complaint Filed</h4>
+                        <div class="timeline-date">August 1, 2024</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Motion to Dismiss</h4>
+                        <div class="timeline-date">August 15, 2024</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Discovery Begins</h4>
+                        <div class="timeline-date">September 1, 2024 ← Today</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Hearing Scheduled</h4>
+                        <div class="timeline-date">November 15, 2024</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFLICT DETECTION MOCKUP -->
+        <div class="mockup-section">
+            <h2>🚨 Engine Alert: Conflict Detection</h2>
+
+            <div class="conflict-card">
+                <div class="conflict-header">
+                    <div class="conflict-icon">⚠️</div>
+                    <div class="conflict-info">
+                        <h3>Related Case Found in Appeals Court</h3>
+                        <div class="conflict-desc">
+                            <strong>Confidence: 89%</strong><br>
+                            Jones v. City (2023-04-456) shares same defendant and overlapping facts. Potential conflict of interest.
+                        </div>
+                    </div>
+                </div>
+                <div style="background-color: var(--alert-50); padding: var(--space-16); border-radius: 6px; margin-bottom: var(--space-16);">
+                    <strong style="color: var(--alert-600);">⚖️ Recommendation:</strong><br>
+                    <span style="color: var(--gray-700); font-size: 0.875rem;">Review with ethics counsel. This may require disclosure or recusal depending on case details.</span>
+                </div>
+                <div class="conflict-actions">
+                    <button class="btn btn-primary">✓ Acknowledge & Act</button>
+                    <button class="btn btn-secondary">→ Escalate</button>
+                    <button class="btn btn-secondary">✕ Not a Conflict</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RISK ASSESSMENT MOCKUP -->
+        <div class="mockup-section">
+            <h2>⚖️ Risk Assessment: Smith v. Jones</h2>
+
+            <div class="dashboard-grid">
+                <div>
+                    <div class="risk-score-circle">
+                        <div class="risk-score-value">72</div>
+                        <div class="risk-score-label">/ 100</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <span class="badge badge-amber" style="font-size: 1rem;">HIGH RISK</span><br>
+                        <span style="font-size: 0.875rem; color: var(--gray-600); display: block; margin-top: var(--space-8);">Confidence: 95%</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin-top: 0;">Key Risk Factors</h4>
+                    <div style="display: flex; flex-direction: column; gap: var(--space-16);">
+                        <div style="padding: var(--space-12); background-color: #FFEBEE; border-radius: 6px;">
+                            <strong style="color: #C62828;">🔴 Precedent Weakness (8.2/10)</strong><br>
+                            <span style="font-size: 0.875rem; color: var(--gray-700);">Related cases show 65% defendant win rate. Our arguments weaker than typical.</span>
+                        </div>
+                        <div style="padding: var(--space-12); background-color: var(--alert-50); border-radius: 6px;">
+                            <strong style="color: var(--alert-600);">🟡 Judge Assignment (6.1/10)</strong><br>
+                            <span style="font-size: 0.875rem; color: var(--gray-700);">Hon. Smith has 58% plaintiff rate (vs 64% avg). Slightly unfavorable.</span>
+                        </div>
+                        <div style="padding: var(--space-12); background-color: var(--success-50); border-radius: 6px;">
+                            <strong style="color: var(--success-600);">🟢 Client Strength (3.2/10)</strong><br>
+                            <span style="font-size: 0.875rem; color: var(--gray-700);">Client stable & credible. Strong performance in depositions.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background-color: var(--primary-50); padding: var(--space-24); border-radius: 8px; margin-top: var(--space-24);">
+                <h4 style="margin-top: 0; color: var(--primary-900);">💡 Recommended Actions</h4>
+                <ul style="margin-left: var(--space-16); color: var(--gray-700); line-height: 2;">
+                    <li>Strengthen precedent research (ASAP)</li>
+                    <li>Request discovery extension (2 weeks)</li>
+                    <li>Schedule expert consultation</li>
+                    <li>Prepare settlement range analysis</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- DESIGN PRINCIPLES -->
+        <div class="mockup-section">
+            <h2>🎨 Design Principles in Action</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-24);">
+                <div>
+                    <h4 style="color: var(--primary-600); margin-top: 0;">🧠 Cognitive Psychology</h4>
+                    <ul style="line-height: 2; color: var(--gray-700);">
+                        <li>Clear hierarchy reduces decision paralysis</li>
+                        <li>Status badges show at a glance</li>
+                        <li>Action buttons always visible</li>
+                        <li>No surprise modals or distractions</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--success-600); margin-top: 0;">💚 Health & Wellness</h4>
+                    <ul style="line-height: 2; color: var(--gray-700);">
+                        <li>1.6 line-height reduces eye strain</li>
+                        <li>Blue-based palette aids focus</li>
+                        <li>Dark mode available for evening work</li>
+                        <li>No flashing/jarring animations</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--alert-600); margin-top: 0;">⚡ Productivity</h4>
+                    <ul style="line-height: 2; color: var(--gray-700);">
+                        <li>Prioritized task list (urgent first)</li>
+                        <li>One-click actions (no sub-menus)</li>
+                        <li>Keyboard shortcuts throughout</li>
+                        <li>Flow state design (no interruptions)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--gray-700); margin-top: 0;">🌍 Global Design</h4>
+                    <ul style="line-height: 2; color: var(--gray-700);">
+                        <li>Icon + text (works across languages)</li>
+                        <li>Culturally neutral color choices</li>
+                        <li>WCAG AAA accessibility</li>
+                        <li>Works on mobile (40% of users)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMPLEMENTATION -->
+        <div class="mockup-section">
+            <h2>🚀 Implementation Roadmap</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-16);">
+                <div style="background-color: var(--primary-50); padding: var(--space-16); border-radius: 8px; border-left: 4px solid var(--primary-600);">
+                    <h4 style="margin-top: 0; color: var(--primary-900);">Phase 1: System</h4>
+                    <p style="font-size: 0.875rem; color: var(--gray-700);">Weeks 1-2<br>Design tokens, component library, Tailwind config</p>
+                </div>
+                <div style="background-color: #E3F2FF; padding: var(--space-16); border-radius: 8px; border-left: 4px solid #1976D2;">
+                    <h4 style="margin-top: 0; color: #1565C0;">Phase 2: Layouts</h4>
+                    <p style="font-size: 0.875rem; color: var(--gray-700);">Weeks 3-4<br>Dashboard, Matter File, Navigation</p>
+                </div>
+                <div style="background-color: #FFF3E0; padding: var(--space-16); border-radius: 8px; border-left: 4px solid var(--alert-600);">
+                    <h4 style="margin-top: 0; color: var(--alert-600);">Phase 3: Intelligence</h4>
+                    <p style="font-size: 0.875rem; color: var(--gray-700);">Week 5<br>Conflict, Risk, Deadline UIs</p>
+                </div>
+                <div style="background-color: #E8F5E9; padding: var(--space-16); border-radius: 8px; border-left: 4px solid var(--success-600);">
+                    <h4 style="margin-top: 0; color: var(--success-600);">Phase 4: Polish</h4>
+                    <p style="font-size: 0.875rem; color: var(--gray-700);">Week 6<br>Animations, A11y audit, Performance</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; padding: var(--space-32); color: var(--gray-600);">
+            <p style="font-size: 1.25rem;">This design is ready for implementation.</p>
+            <p>See <strong>DESIGN_SYSTEM_AND_REVAMP.md</strong> for complete specifications.</p>
+        </div>
+    </div>
+</body>
+</html>

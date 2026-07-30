@@ -44,12 +44,16 @@
      panel rather than inverting with the page. Declared once here and
      never overridden in .dark, which is what makes them fixed.
 
-     --band-slate is the section directly under the hero. Its yellow is
-     decorative only: it appears as one large, heavily blurred, very low
-     opacity field and never carries text, because yellow is the least
-     corporate colour in the system and earns the smallest area. Gold is
-     the readable warm tone for labels on that band. */
-  --band-slate: #232a35;
+     --band-slate is the deep blue-grey carried by the announcement bar and
+     the footer. It is the dark-mode value of --tint-slate promoted to a
+     fixed band token, so those two keep the Case Record strip's hue in
+     light mode as well as dark rather than inverting to a pale surface.
+     --band-slate-accent is the decorative yellow field over that band. It
+     appears as one large, heavily blurred, very low opacity field and never
+     carries text, because yellow is the least corporate colour in the
+     system and earns the smallest area. Gold is the readable warm tone for
+     labels on both fixed bands. */
+  --band-slate: #242e34;
   --band-slate-accent: #c9a227;
   --band-gold: #c99a4e;
   --on-band: rgba(255,255,255,.80);
@@ -78,7 +82,12 @@
   --status-danger: #9b2335;
   --status-danger-rgb: 155,35,53;
   --color-surface: #f5f5f5;
-  --color-surface-raised: #d7d7d7;
+  /* A warm ivory, the panel tone from the reference board. This was #d7d7d7,
+     a mid grey that read as a dull beige on every card and, being darker
+     than --color-surface, made a "raised" element sit visually below the
+     page it floats on. Ivory is both warmer and genuinely lighter than the
+     ground, so a card now reads as lifted rather than as a grey patch. */
+  --color-surface-raised: #faf7f1;
   --color-surface-overlay: #e6e6e6;
   --color-border: #c5c5c5;
   --color-muted: #9a9da1;
@@ -143,7 +152,10 @@
   --color-brand: #c9a45c;
   --color-brand-strong: #dcbb78;
   --color-brand-rgb: 201,164,92;
-  --tint-sage: #1e2823;
+  /* Neutral, not sage. The green cast (#1e2823) sat a hair off the page
+     ground (#1e2427) and read as a discoloured patch rather than a band;
+     a slightly deeper neutral recedes properly instead. */
+  --tint-sage: #181d20;
   --tint-clay: #292322;
   /* Slate is now the page ground itself, so the slate SECTION tint sits a
      step above it to stay a visible panel rather than vanishing. */
@@ -210,15 +222,154 @@ em,i{font-style:italic}
 .insight-badge{position:absolute;top:.85rem;left:.85rem;z-index:2;padding:.3rem .75rem;background:color-mix(in srgb, var(--color-ink) 80%, transparent);color:var(--color-on-ink);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--radius-sm)}
 .insight-badge-inline{display:inline-block;padding:.2rem .6rem;border:1px solid var(--color-border);color:var(--color-text-muted);font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--radius-sm)}
 
-/* SPOTLIGHT, the scroll-pinned statement band. Sits on the page surface
-   (gray in both themes) rather than the fixed ink of the CTA/footer bands.
-   The pin shell, slides, and the horizontal stat line live further down
-   with the rest of the spotlight system. */
-/* Fixed slate band, identical in light and dark mode. Everything on it
-   reads from the --on-band family rather than the theme text tokens,
-   because the surface underneath never inverts. */
-.spotlight-band{background:var(--band-slate)}
-.spotlight-statement{font-family:var(--font-display),serif;font-weight:300;line-height:1.4;letter-spacing:-.01em;font-size:clamp(1.35rem,2.9vw,2.15rem);color:var(--on-band-strong)}
+/* SPOTLIGHT, the opening statement. Was a scroll-pinned three-slide band on
+   a photo ground; it is now a single statement on the plain page surface,
+   and the proof figures it used to carry have moved onto the Case Record
+   strip so the numbers sit beside the cases that earned them. Reads from
+   the theme text tokens, not --on-band, because this surface inverts with
+   the page like any other plain section. */
+/* The same fixed dark slate as the announcement bar and footer, in both
+   themes, so the three read as one family. Because the ground is now dark
+   regardless of theme, the type reads from the --on-band family rather than
+   the theme text tokens, which would go dark-on-dark in light mode. */
+.spotlight-plain{
+  position:relative;
+  background: var(--band-slate);
+  padding: clamp(4.5rem, 11vw, 8.5rem) 0;
+  --color-text-primary: var(--color-hero-text);
+  --color-text-secondary: var(--on-band);
+  --color-brand: var(--band-gold);
+}
+
+/* GHOST PHOTO. The reference board sits its heading over a photograph faded
+   almost entirely into the ground, so you register that something is behind
+   the type without ever reading it as an image. This is that: the photo at
+   very low opacity, desaturated, with the band colour laid back over it so
+   the type never has to fight texture.
+
+   Kept as background layers behind everything (negative z-index under an
+   isolation context) so neither can intercept a click or sit over copy. */
+.section-ghost-photo{position:relative;isolation:isolate}
+.section-ghost-photo::before{
+  content:'';position:absolute;inset:0;z-index:-2;pointer-events:none;
+  /* Columns of a court building: architecture that belongs to the work,
+     abstract enough at this opacity to read as texture. */
+  background-image:url('https://images.unsplash.com/photo-1555374018-13a8994ab246?auto=format&fit=crop&w=1600&q=70');
+  background-size:cover;background-position:center;
+  filter:grayscale(1);
+  opacity:.07;
+}
+/* The band colour laid back over the photo, thinning toward the edges, so
+   the centre where the type sits is close to clean ground and only the
+   margins keep any texture. */
+.section-ghost-photo::after{
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(75% 60% at 50% 45%,
+      var(--band-slate) 0%,
+      color-mix(in srgb, var(--band-slate) 78%, transparent) 55%,
+      color-mix(in srgb, var(--band-slate) 45%, transparent) 100%);
+}
+
+/* FAINT WASH. The two sections with no ground of their own (the opening
+   statement and Awards) would otherwise read as blank page. This is the
+   reference board's treatment: a barely-there field of warm colour bled in
+   from one corner, suggesting a background without becoming one.
+
+   Deliberately weak, and pinned behind everything: it never sits over text,
+   and at this opacity it should register as warmth rather than as a shape
+   you could point at. */
+.section-wash-faint{position:relative;isolation:isolate}
+.section-wash-faint::before{
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(70% 55% at 78% 12%,
+      color-mix(in srgb, var(--color-brand) 8%, transparent) 0%,
+      transparent 70%),
+    radial-gradient(60% 50% at 12% 92%,
+      color-mix(in srgb, var(--color-line) 6%, transparent) 0%,
+      transparent 72%);
+}
+
+/* STATEMENT, the centred opening block. The rule around it is drawn by four
+   independent segments rather than a border, so each edge can grow from its
+   own corner as --thread advances and the whole thing reads as one line
+   travelling the rectangle. */
+.statement{max-width:52rem;margin:0 auto;text-align:center}
+
+.statement-eyebrow{
+  display:block;font-family:var(--font-mono);
+  font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--color-text-secondary);margin-bottom:clamp(1rem,2.5vw,1.5rem);
+}
+.statement-title{
+  font-family:var(--font-display),serif;font-weight:400;
+  font-size:clamp(2rem,5.2vw,3.9rem);line-height:1.08;letter-spacing:-.02em;
+  color:var(--color-text-primary);
+}
+.statement-text{
+  font-size:clamp(.95rem,1.4vw,1.12rem);line-height:1.75;
+  color:var(--color-text-secondary);max-width:44rem;margin:0 auto;
+  margin-top:clamp(1.75rem,4vw,2.5rem);
+}
+
+/* SCROLL THREAD, the hairline that continues out of the statement and down
+   into the capability grid, drawing as the reader scrolls and retracting as
+   they scroll back. --thread is written by ScrollThread.tsx as a 0..1
+   scroll progress; everything else here is static.
+
+   It runs in the gutter between the lead tile and the column of three
+   beside it, not down the page centre: the grid is 3 columns with the lead
+   spanning the first two, so the gutter centre sits at 2/3 of the width
+   plus a sixth of the gap. scaleY from a top origin is the draw itself, and
+   being a transform it composites without touching layout. */
+.scroll-thread-wrap{position:relative}
+/* The rail mirrors .container exactly (same max-width and responsive
+   padding) so the thread's percentage is measured against the content
+   column the grid actually occupies, not the full-bleed wrapper. Without
+   this the line lands at 2/3 of the viewport, which is nowhere near the
+   grid's gutter on a wide screen. */
+.scroll-thread-rail{
+  position:absolute;inset:0;
+  width:100%;max-width:1360px;margin:0 auto;padding:0 2.5rem;
+  pointer-events:none;
+}
+@media(min-width:1280px){.scroll-thread-rail{padding:0 4rem}}
+@media(min-width:1600px){.scroll-thread-rail{padding:0 6rem}}
+/* An absolutely positioned child resolves its percentage against the
+   containing block's PADDING box, so the thread has to hang off this inner
+   element instead: it is the rail's content box, which is exactly the width
+   the grid occupies. */
+.scroll-thread-inner{position:relative;height:100%}
+/* One unbroken line. It begins at the top of the statement and ends at the
+   CTA panel, whose offset ScrollThread measures into --thread-end, so the
+   run is a single element rather than a segment per section: continuity is
+   the point, and stitching two lines together always shows a seam. */
+.scroll-thread{
+  position:absolute;
+  top:0;
+  height:var(--thread-end,100%);
+  left:calc(66.6667% + 1.25rem / 6);
+  width:1px;
+  transform:translateX(-50%) scaleY(var(--thread,0));
+  transform-origin:top center;
+  background:var(--color-brand);
+  opacity:.5;
+  pointer-events:none;
+  z-index:0;
+}
+/* The grid tiles have to sit above the thread, or the line draws over the
+   photo cards instead of through the gutter between them. */
+.scroll-thread-wrap > section{position:relative;z-index:1}
+/* The statement is centred, so its frame must not be covered by the tiles'
+   stacking context. */
+.scroll-thread-wrap > .spotlight-plain{z-index:2}
+
+@media(max-width:768px){
+  /* Below the grid's 3-column breakpoint there is no gutter to run in, and
+     a line over a single-column layout crosses the cards themselves. */
+  .scroll-thread{display:none}
+}
 
 /* LATEST FROM, tabbed newsroom roundup. The underline sits on the active
    tab rather than a filled pill, keeping it closer to a newspaper masthead
@@ -394,7 +545,20 @@ em,i{font-style:italic}
    video reads clean there, with the gray returning at top (nav) and
    bottom (statement + CTA row) purely for legibility. */
 .hero-full-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(58,61,66,.52) 0%,rgba(58,61,66,0) 32%,rgba(58,61,66,0) 46%,rgba(58,61,66,.5) 76%,rgba(58,61,66,.78) 100%)}
-.hero-full-scrim-bottom{display:none}
+/* The hero's lower edge fades into the slate of the statement band below it,
+   so the two meet without a hard seam. Sits above the media and the main
+   scrim but below the content, and is purely a transition, it never carries
+   text. Applied on the section itself rather than as another child element,
+   so it works for the video, image and fallback branches alike. */
+.hero-full::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:38vh;z-index:1;
+  pointer-events:none;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--band-slate) 45%, transparent) 55%,
+    color-mix(in srgb, var(--band-slate) 85%, transparent) 82%,
+    var(--band-slate) 100%);
+}
 .hero-full-content{position:relative;z-index:2;width:100%;padding:0 2.5rem}
 .hero-full-content-center{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding-top:4rem}
 .hero-full-bottom-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1.5rem;padding-bottom:2rem}
@@ -452,7 +616,13 @@ em,i{font-style:italic}
    reads as a deliberate closing panel instead of a pale afterthought.
    Column headers were missing before; added so the link groups read as
    groups rather than one undifferentiated list. */
-.footer-ink{background:var(--color-ink);color:var(--color-on-ink-muted)}
+/* The deep blue-grey slate, fixed in both themes, in place of the flat ink
+   grey. It is the dark-mode value of --tint-slate promoted to a band token,
+   so the footer keeps the Case Record strip's hue without following the
+   theme: light mode gets the dark band too.
+   Because the ground stays dark, the --color-on-ink pair this block is built
+   on needs no remapping at all: on-ink is #f5f5f3 in both themes. */
+.footer-ink{background:var(--band-slate);color:var(--color-on-ink-muted)}
 /* FOOTER, rebuilt sleek: the consultation CTA and mail signup fold in at
    the top (they were their own full homepage section before), then small
    airy navigation, all separated by hairline rules that draw themselves in
@@ -500,7 +670,11 @@ em,i{font-style:italic}
 @keyframes shape-rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* COMPONENTS */
-.card{background:var(--color-surface-raised);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);transition:box-shadow .25s ease,transform .25s ease}
+/* The hairline is doing real work now the fill is ivory: against the page
+   ground a warm-white panel is only a 1.02 luminance step, so the shadow
+   alone left the card edge ambiguous. A fine rule is also how the reference
+   board defines its panels, so this reads as intent rather than patch. */
+.card{background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);transition:box-shadow .25s ease,transform .25s ease}
 .card:hover{box-shadow:var(--shadow-md)}
 .card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
 .service-card{transition:all .3s cubic-bezier(.16,1,.3,1);cursor:pointer}
@@ -654,6 +828,7 @@ body{top:0!important}
    plain identity, but sections blocked in soft colour so a long page never
    reads as one flat sheet). Muted deliberately, these sit under body text. */
 .section-tint-sage{background:var(--tint-sage)}
+
 .section-tint-clay{background:var(--tint-clay)}
 .section-tint-slate{background:var(--tint-slate)}
 
@@ -670,50 +845,20 @@ body{top:0!important}
 .capability-cta-arrow{color:var(--color-brand)}
 .capability-cta:hover .capability-cta-arrow{color:var(--color-brand-strong)}
 
-/* SPOTLIGHT PIN, the scroll-pinned shell: the outer section spans 70vh per
-   slide and the inner band stays stuck at the top of the viewport while the
-   visitor scrolls through it. */
-.spotlight-pin{position:relative}
-.spotlight-pin-inner{position:sticky;top:0;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
-
-/* SPOTLIGHT SLIDER, the crossfading slides. Stacked in one grid cell so the
-   block keeps the height of the tallest slide and nothing shifts. */
-.spotlight-slider{display:grid;align-items:center;min-height:9rem}
-.spotlight-slide{grid-area:1/1;opacity:0;transition:opacity .7s ease;pointer-events:none}
-.spotlight-slide.is-active{opacity:1;pointer-events:auto}
-.spotlight-finale{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--band-gold)}
-
-/* SPOTLIGHT LINE, the horizontal through-line under the slides, in the
-   teal line accent rather than brass, no diamond markers. The fill grows a
-   third per slide, and when it reaches a metric's position an outlined
-   SQUARE draws itself around that metric (an SVG rect whose stroke is
-   animated via dashoffset), so the final slide is the completed line
-   threading three completed squares. The boxes sit centred ON the line;
-   each takes the band's own surface as background once lit, so the line
-   visually enters and exits the square. */
-.spotlight-line{position:relative;max-width:46rem;height:5.4rem;margin:6.5rem auto 2.5rem}
-.spotlight-line-track{position:absolute;top:50%;left:0;right:0;height:1px;background:var(--on-band-line);transform:translateY(-50%)}
-.spotlight-line-fill{position:absolute;top:50%;left:0;height:3px;transform:translateY(-50%);background:var(--color-line);border-radius:2px;transition:width 1.1s cubic-bezier(.16,1,.3,1);box-shadow:0 0 14px color-mix(in srgb, var(--color-line) 45%, transparent)}
-.spotlight-line-stat{position:absolute;top:50%;transform:translate(-50%,-50%);width:9.5rem;height:5.4rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;background:transparent;transition:background .4s ease .2s}
-.spotlight-line-stat.is-on{background:var(--band-slate)}
-.spotlight-line-box{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.spotlight-line-box rect{fill:none;stroke:var(--color-line);stroke-width:2;vector-effect:non-scaling-stroke;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1) .15s}
-.spotlight-line-stat.is-on .spotlight-line-box rect{stroke-dashoffset:0}
-.spotlight-line-value,.spotlight-line-label{opacity:0;transition:opacity .5s ease .45s}
-.spotlight-line-stat.is-on .spotlight-line-value,.spotlight-line-stat.is-on .spotlight-line-label{opacity:1}
-.spotlight-line-value{position:relative;font-family:var(--font-display),serif;font-weight:300;font-size:clamp(1.4rem,3vw,2.1rem);line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--on-band-strong)}
-.spotlight-line-label{position:relative;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--on-band-muted);white-space:nowrap}
-@media(max-width:640px){
-  .spotlight-line{margin-top:4.5rem;height:4.2rem}
-  .spotlight-line-stat{width:31%;height:4.2rem}
-  .spotlight-line-value{font-size:1.05rem}
-  .spotlight-line-label{font-size:.45rem;letter-spacing:.06em}
-}
-
 /* ANNOUNCEMENT BAR, only present when a news item has been pushed to
    announcement in the admin. Brass on ink so it reads as a notice rather
    than another content band. */
-.announcement-bar{background:var(--color-ink);color:var(--color-on-ink);border-bottom:2px solid var(--color-brand)}
+/* The same fixed slate as the footer, in place of the ink grey: dark in both
+   themes, so the brass-on-dark treatment this bar was written for still
+   holds and no token remapping is needed. */
+.announcement-bar{
+  background:var(--band-slate);color:var(--color-on-ink);
+  border-bottom:2px solid var(--color-brand);
+  /* --color-brand is tuned for light surfaces and measures 3.74 on this
+     band, where it carries the tag and the link. --band-gold exists for
+     exactly this: the readable warm tone for labels on a fixed dark band. */
+  --color-brand: var(--band-gold);
+}
 .announcement-bar-inner{display:flex;align-items:center;gap:1rem;padding:.85rem 2.5rem}
 .announcement-bar-icon{width:1.1rem;height:1.1rem;color:var(--color-brand);flex-shrink:0}
 .announcement-bar-body{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;min-width:0;flex:1}
@@ -764,34 +909,124 @@ body{top:0!important}
 .staff-voice-name{display:block;font-size:.875rem;font-weight:600;color:var(--color-text-primary)}
 .staff-voice-role{display:block;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-muted);margin-top:.15rem}
 
-/* AWARD YEAR NAV + PER-YEAR DECK. A single row of year labels sitting on
-   one hairline (oldest left, most recent right), the active year marked by
-   a thicker rule under just that label, no buttons or borders. Below it,
-   that year's awards as a deck: one slide if the year holds one award,
-   arrows/dots/counter only when it holds several. Same surface and type
-   tokens as every other section, so Recognition reads as part of the site
-   rather than a separately-styled block. */
-.award-years{display:flex;flex-wrap:wrap;justify-content:center;gap:0;border-bottom:1px solid var(--color-border);margin-bottom:3rem}
-.award-year{position:relative;display:inline-flex;align-items:baseline;gap:.35rem;padding:.65rem 1.35rem;background:none;border:none;cursor:pointer;font-family:var(--font-display),serif;font-size:1.15rem;font-weight:300;color:var(--color-text-muted);font-variant-numeric:tabular-nums;transition:color .25s ease}
-.award-year:hover{color:var(--color-text-primary)}
-.award-year::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--color-brand);transform:scaleX(0);transition:transform .35s cubic-bezier(.16,1,.3,1)}
-.award-year.is-active{color:var(--color-text-primary)}
+/* AWARD YEAR NAV + PER-YEAR DECK, on a fixed dark photo band rather than
+   the solid gold tried previously: a moody, mossy classical-column shot
+   (the Yerebatan Cistern, Istanbul), the same "fixed regardless of theme"
+   treatment as the ink and slate bands, with a dark gradient scrim over it
+   so text holds contrast against whatever part of the image sits behind
+   it. Text reads from --color-on-ink (fixed, not theme-dependent) and the
+   gold accent is --band-gold, the same accent used on the slate band, so
+   the two fixed bands share one accent rather than inventing a second.
+   A single row of year labels sits on one hairline (oldest left, most
+   recent right); the active year gets a thicker rule under just that
+   label, no buttons or borders. Below it, that year's awards as a deck:
+   one slide if the year holds one award, arrows/dots/counter only when it
+   holds several. */
+/* Solid blue, no photograph. It shares the Case Record strip's ground so
+   the page's two dark bands read as one system rather than two unrelated
+   backdrops, and recognition stays a punctuation mark between the longer
+   sections either side of it. */
+/* No background of its own: it sits directly on the page surface and is
+   held apart by its own rules and spacing rather than a coloured field.
+   Everything inside therefore reads from the theme text tokens, which is
+   why the --on-band family below is remapped rather than left pointing at
+   colours meant for a dark ground. */
+.award-band{
+  position:relative;
+  padding:3.25rem 0;
+  /* Secondary, not muted: --on-band-muted carries the inactive year labels
+     and the award description, which are body text here rather than the
+     decorative captions they were on a dark ground. --color-text-muted
+     measures 3.06 on the page surface, under AA; secondary clears it. */
+  --on-band-muted: var(--color-text-secondary);
+  --on-band-line: var(--color-border);
+  --color-on-ink: var(--color-text-primary);
+  /* --band-gold is tuned for a dark ground and is far too pale on the page
+     surface; the deeper brass is the readable equivalent here. */
+  --band-gold: var(--color-brand-strong);
+}
+/* A step darker than the stock tokens for light mode: on the pale surface
+   the brass and secondary both sit within a hair of AA, and here they carry
+   the issuer, the year labels and the description. Dark mode reads against
+   #1e2427 where the stock values clear it comfortably. */
+:root:not(.dark) .award-band{
+  --band-gold: #7d5a1f;
+  --on-band-muted: #5f6367;
+}
+/* The warm field stays in dark mode, where it reads as depth on the dark
+   ground, and comes off in light mode, where over a pale surface it read as
+   a yellow cast rather than an effect. */
+:root:not(.dark) .award-band.section-wash-faint::before{display:none}
+.award-band-title{color:var(--color-on-ink)}
+.award-years{display:flex;flex-wrap:wrap;justify-content:center;gap:0;border-bottom:1px solid var(--on-band-line);margin-bottom:1.5rem}
+.award-year{position:relative;display:inline-flex;align-items:baseline;gap:.35rem;padding:.45rem 1.1rem;background:none;border:none;cursor:pointer;font-family:var(--font-display),serif;font-size:1rem;font-weight:300;color:var(--on-band-muted);font-variant-numeric:tabular-nums;transition:color .25s ease}
+.award-year:hover{color:var(--color-on-ink)}
+.award-year::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--band-gold);transform:scaleX(0);transition:transform .35s cubic-bezier(.16,1,.3,1)}
+.award-year.is-active{color:var(--color-on-ink)}
 .award-year.is-active::after{transform:scaleX(1)}
-.award-year-count{font-family:var(--font-mono);font-size:.55rem;line-height:1;padding:.2rem .35rem;border-radius:var(--radius-full);background:var(--color-surface-overlay);color:var(--color-text-muted)}
-.award-deck{position:relative;display:flex;align-items:center;justify-content:center;gap:1rem;min-height:12rem;max-width:46rem;margin:0 auto}
-.award-slide{flex:1;text-align:center;padding:0 .5rem}
-.award-slide-badge{width:3.5rem;height:3.5rem;object-fit:contain;margin:0 auto 1.25rem;display:block;filter:var(--site-photo-filter)}
-.award-slide-title{font-family:var(--font-display),serif;font-weight:400;font-size:clamp(1.15rem,2.4vw,1.6rem);line-height:1.3;color:var(--color-text-primary)}
-.award-slide-issuer{display:block;margin-top:.75rem;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--color-brand-strong)}
-.award-slide-desc{margin-top:1.15rem;font-size:.88rem;line-height:1.65;color:var(--color-text-secondary);max-width:34rem;margin-left:auto;margin-right:auto}
-.award-deck-nav{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:50%;border:1px solid var(--color-border);background:none;color:var(--color-text-muted);cursor:pointer;transition:border-color .2s ease,color .2s ease}
-.award-deck-nav:hover{border-color:var(--color-brand);color:var(--color-brand)}
-.award-deck-dots{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:2rem}
-.award-deck-dot{width:1.5rem;height:2px;border:none;padding:0;cursor:pointer;background:var(--color-border);transition:background .3s ease,width .3s ease}
-.award-deck-dot.is-active{background:var(--color-brand);width:2.4rem}
-.award-deck-counter{margin-left:.75rem;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+.award-year-count{font-family:var(--font-mono);font-size:.52rem;line-height:1;padding:.15rem .3rem;border-radius:var(--radius-full);background:var(--on-band-line);color:var(--color-on-ink)}
+/* Deck height comes from its content, not a fixed floor, which along with
+   the band's own compact padding is what keeps this section short. */
+.award-deck{position:relative;display:flex;align-items:center;justify-content:center;gap:1rem;max-width:72rem;margin:0 auto}
+/* Plate and wording side by side. Stacks below the breakpoint, where two
+   columns would leave the copy too narrow to read. */
+.award-slide{
+  flex:1;display:grid;grid-template-columns:1fr;gap:1.5rem;
+  align-items:center;text-align:center;padding:0 .5rem;
+}
+@media(min-width:860px){
+  .award-slide{grid-template-columns:1.15fr 1fr;gap:clamp(2rem,4vw,3.5rem);text-align:left}
+}
+.award-copy{min-width:0;display:flex;flex-direction:column}
+
+/* THE GLOW. The reference board sits its subject on a soft field of warm
+   colour rather than a panel or a photographic ground; this is that, built
+   from the brand brass so it belongs to this palette rather than borrowing
+   the reference's orange. It is purely decorative: heavily blurred, low
+   opacity, sitting behind the plate and never behind text, so it tints the
+   area without ever being something to read against. */
+.award-stage{position:relative;display:flex;align-items:center;justify-content:center}
+.award-stage::before{
+  content:'';position:absolute;z-index:0;pointer-events:none;
+  width:min(38rem,90%);aspect-ratio:16/10;
+  border-radius:50%;
+  background:radial-gradient(closest-side,
+    color-mix(in srgb, var(--color-brand) 55%, transparent) 0%,
+    color-mix(in srgb, var(--color-brand) 22%, transparent) 55%,
+    transparent 100%);
+  filter:blur(46px);
+  opacity:.5;
+}
+/* The plate: one large image per slide, the whole point of the redesign. */
+.award-plate{
+  position:relative;z-index:1;
+  width:100%;aspect-ratio:16/10;
+  object-fit:cover;
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-xl);
+  /* Deliberately NOT faded. The plate stands in its own column with no text
+     over it, so a fade would just look like a half-loaded image. Fading is
+     for photographs that carry type, where it buys legibility. */
+}
+/* Issuer sits above the title now that the copy is its own panel: it reads
+   as the eyebrow to the award rather than a footnote under it. */
+.award-slide-issuer{display:block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--band-gold);margin-bottom:.7rem}
+.award-slide-title{font-family:var(--font-display),serif;font-weight:400;font-size:clamp(1.4rem,3vw,2.1rem);line-height:1.2;color:var(--color-on-ink)}
+.award-slide-desc{margin-top:.9rem;font-size:.9rem;line-height:1.65;color:var(--on-band-muted);max-width:34rem}
+@media(max-width:859px){
+  .award-slide-desc{margin-left:auto;margin-right:auto}
+}
+.award-deck-nav{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:50%;border:1px solid var(--on-band-line);background:none;color:var(--on-band-muted);cursor:pointer;transition:border-color .2s ease,color .2s ease}
+.award-deck-nav:hover{border-color:var(--band-gold);color:var(--band-gold)}
+.award-deck-dots{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:1.1rem}
+.award-deck-dot{width:1.25rem;height:2px;border:none;padding:0;cursor:pointer;background:var(--on-band-line);transition:background .3s ease,width .3s ease}
+.award-deck-dot.is-active{background:var(--band-gold);width:2rem}
+.award-deck-counter{margin-left:.75rem;font-family:var(--font-mono);font-size:.56rem;letter-spacing:.1em;color:var(--on-band-muted);font-variant-numeric:tabular-nums}
+.award-viewall{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;border:1px solid var(--on-band-line);border-radius:var(--radius-full);font-size:.75rem;font-weight:500;color:var(--color-on-ink);transition:border-color .2s ease,background .2s ease}
+.award-viewall:hover{border-color:var(--band-gold);background:color-mix(in srgb, var(--band-gold) 16%, transparent)}
 @media(max-width:640px){
-  .award-year{padding:.55rem .85rem;font-size:1rem}
+  .award-band{padding:2.5rem 0}
+  .award-year{padding:.4rem .7rem;font-size:.9rem}
   .award-deck{gap:.35rem}
 }
 
@@ -814,40 +1049,84 @@ body{top:0!important}
 .video-impact-label{position:relative;z-index:2;font-family:var(--font-display),serif;font-size:clamp(1.35rem,3vw,2.4rem);font-weight:500;line-height:1.1;color:#fff;max-width:10ch}
 .video-impact-arrow{position:absolute;top:50%;left:-12%;width:40%;height:40%;color:var(--color-brand);transform:translateY(-50%);transition:left .6s cubic-bezier(.16,1,.3,1),color .3s ease}
 .video-impact-cta:hover .video-impact-arrow{left:52%;color:#fff}
-/* Extra bottom room so the overlapping case cards have something to sit on. */
-.video-band{padding-bottom:11rem}
-@media(max-width:768px){.video-band{padding-bottom:8rem}}
+/* CASE RECORD STRIP. One band carrying the film still, the proof figures,
+   and the cases won, so the numbers and the cases that produced them are
+   read together instead of sitting three sections apart. Keeps the slate
+   tint it always had (.section-tint-slate), which inverts with the theme,
+   so everything in here reads from the theme text tokens rather than the
+   --on-band family used by the fixed dark bands. */
+.video-band{padding-bottom:clamp(3.5rem,7vw,5rem)}
 
-/* CASE RESULT CARDS (ALN's services-slider pattern): full-bleed image, a
-   large index number, title pinned to the bottom, and a description that
-   is revealed on hover behind a solid ink wash with a circular arrow.
-   The row is pulled up so it straddles the video band above it, half in
-   that section and half in its own, rather than sitting in a separate
-   block of its own. */
-.case-results-section{padding-top:0;padding-bottom:var(--section-pad,6rem)}
-.case-results-grid{position:relative;z-index:4;margin-top:-9rem;display:grid;grid-template-columns:1fr;gap:1.25rem}
-@media(min-width:640px){.case-results-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1024px){.case-results-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:768px){.case-results-grid{margin-top:-6rem}}
-.case-card{position:relative;display:block;overflow:hidden;border-radius:var(--radius-lg);aspect-ratio:3/4;background:var(--color-ink);box-shadow:var(--shadow-lg)}
-.case-card-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--site-photo-filter);transition:transform .7s cubic-bezier(.16,1,.3,1)}
-.case-card:hover .case-card-media{transform:scale(1.06)}
-.case-card-wash{position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,20,23,.25) 0%,rgba(14,20,23,.85) 100%);transition:background .45s ease}
-.case-card:hover .case-card-wash{background:color-mix(in srgb, var(--color-ink) 88%, transparent)}
-.case-card-index{position:absolute;top:1.35rem;left:1.5rem;z-index:2;font-family:var(--font-display),serif;font-weight:300;font-size:2.6rem;line-height:1;color:rgba(255,255,255,.45);transition:color .35s ease}
-.case-card:hover .case-card-index{color:var(--color-brand)}
-.case-card-body{position:absolute;inset:auto 0 0 0;z-index:2;padding:1.5rem;display:flex;flex-direction:column}
-.case-card-outcome{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--color-brand);margin-bottom:.5rem}
-.case-card-title{font-family:var(--font-display),serif;font-size:1.1rem;font-weight:500;line-height:1.3;color:#fff}
-/* grid-rows 0fr -> 1fr reveals the summary without needing a fixed height. */
-.case-card-detail{display:grid;grid-template-rows:0fr;transition:grid-template-rows .5s cubic-bezier(.16,1,.3,1)}
-.case-card:hover .case-card-detail{grid-template-rows:1fr}
-.case-card-detail-inner{overflow:hidden}
-.case-card-summary{margin-top:.75rem;font-size:.82rem;line-height:1.6;color:rgba(255,255,255,.82)}
-.case-card-meta{margin-top:.75rem;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)}
-.case-card-arrow{position:absolute;right:1.5rem;bottom:1.5rem;z-index:3;display:flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;border-radius:50%;border:1px solid rgba(255,255,255,.35);color:#fff;opacity:0;transform:translateY(6px);transition:opacity .4s ease,transform .4s ease,background .3s ease}
-.case-card:hover .case-card-arrow{opacity:1;transform:translateY(0)}
-.case-card-arrow:hover{background:var(--color-brand);border-color:var(--color-brand)}
+/* --color-text-muted and --color-brand are tuned against --color-surface
+   (#f5f5f5). The slate tint is a step darker, and this band is the first
+   place either is used at small mono sizes on it: muted falls to 2.76:1 and
+   brand to 3.08:1, both well under AA. Darkened for this band in light mode
+   only; dark mode's slate is #242e34 where the stock tokens already measure
+   4.58 and 5.9, so it is deliberately left alone. */
+:root:not(.dark) .video-band{
+  --color-text-muted: #63666a;
+  --color-brand: #7d5a1f;
+}
+
+/* Figures sit directly under the still, closing the band's top half. */
+.strip-figures{
+  display:flex;flex-wrap:wrap;align-items:flex-start;gap:0;
+  margin-top:clamp(1.75rem,4vw,2.75rem);
+  padding-top:clamp(1.5rem,3vw,2rem);
+  border-top:1px solid var(--color-border);
+}
+.strip-figure{flex:1 1 8rem;padding:0 clamp(1rem,3vw,2.25rem);border-left:1px solid var(--color-border)}
+.strip-figure:first-child{padding-left:0;border-left:none}
+.strip-figure-value{font-family:var(--font-display),serif;font-weight:400;font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1;color:var(--color-text-primary);font-variant-numeric:tabular-nums}
+.strip-figure-label{margin-top:.55rem;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--color-text-muted)}
+
+/* The "MORE TOP STORIES" rule from the reference: a small mono label with a
+   hairline running to the end of the column. */
+.strip-heading{display:flex;align-items:center;gap:1.25rem;margin-top:clamp(2.5rem,5vw,3.5rem);margin-bottom:1.5rem}
+.strip-heading-label{flex-shrink:0;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--color-text-primary)}
+.strip-heading-rule{flex:1;height:1px;background:var(--color-border)}
+
+/* Small horizontal cards: thumbnail left, title and tag right. Deliberately
+   not the old 3:4 poster cards, at this size a tall card would push the
+   band to the height of a section of its own. */
+/* Columns follow how many cases there actually are, set as --case-count by
+   the component. Hardcoding three left a visibly empty third cell whenever
+   the record held two, which reads as a card that failed to load rather than
+   as a deliberate pair. Two cases now spread across the full width as two;
+   one runs as a single wide row. */
+.case-strip{display:grid;grid-template-columns:1fr;gap:1.25rem 2rem}
+@media(min-width:640px){
+  .case-strip{grid-template-columns:repeat(min(var(--case-count,3),2),1fr)}
+}
+@media(min-width:1024px){
+  .case-strip{grid-template-columns:repeat(var(--case-count,3),1fr)}
+}
+.case-mini{display:flex;align-items:flex-start;gap:1rem}
+/* Thumbnails carry the same fade-to-transparent as the larger image cards,
+   so a small picture sits into the band rather than reading as a pasted-on
+   rectangle. Masked rather than overlaid: an overlay would need a wrapper
+   element and would still show a hard edge at the image's corners. */
+.case-mini-media{
+  flex-shrink:0;width:8.5rem;height:5.25rem;object-fit:cover;
+  border-radius:var(--radius-sm);filter:var(--site-photo-filter);
+  transition:opacity .3s ease;
+  -webkit-mask-image:linear-gradient(180deg,#000 55%,rgba(0,0,0,.35) 100%);
+  mask-image:linear-gradient(180deg,#000 55%,rgba(0,0,0,.35) 100%);
+}
+.case-mini:hover .case-mini-media{opacity:.85}
+.case-mini-body{min-width:0;display:flex;flex-direction:column}
+.case-mini-title{font-family:var(--font-display),serif;font-size:1rem;font-weight:500;line-height:1.35;color:var(--color-text-primary);transition:color .25s ease;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.case-mini:hover .case-mini-title{color:var(--color-brand)}
+.case-mini-outcome{margin-top:.5rem;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--color-brand)}
+.case-mini-meta{margin-top:.3rem;font-family:var(--font-mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--color-text-muted)}
+
+.strip-viewall{display:inline-flex;align-items:center;gap:.5rem;margin-top:clamp(2rem,4vw,2.75rem);padding:.55rem 1.2rem;border:1px solid var(--color-border);border-radius:var(--radius-full);font-size:.78rem;font-weight:500;color:var(--color-text-primary);transition:border-color .2s ease,background .2s ease}
+.strip-viewall:hover{border-color:var(--color-brand);background:color-mix(in srgb, var(--color-brand) 12%, transparent)}
+
+@media(max-width:520px){
+  .case-mini-media{width:6.5rem;height:4.25rem}
+  .strip-figure{flex-basis:6rem;padding:0 .9rem}
+}
 
 /* Secondary sidebar heading, the current domain's tools listed beneath the
    fixed capability nav. Ruled off so the two groups read as distinct. */
@@ -874,17 +1153,6 @@ body{top:0!important}
 .matter-card-meta dd{margin-top:.15rem;font-size:.8rem;color:var(--color-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .matter-card-summary{margin-top:.9rem;font-size:.8rem;line-height:1.6;color:var(--color-text-secondary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
-/* The single yellow field on the slate band: one large, heavily blurred,
-   very low-opacity circle bleeding in from the top. Deliberately the
-   smallest area, the lowest opacity and no animation of any kind, because
-   yellow is the least corporate colour in this system and has to earn its
-   place quietly. It is decorative only and never sits behind text. */
-.band-accent-shape{
-  position:absolute;z-index:1;pointer-events:none;
-  width:420px;height:420px;top:-200px;left:50%;transform:translateX(-50%);
-  background:var(--band-slate-accent);border-radius:50%;
-  filter:blur(90px);opacity:.13;
-}
 
 /* COVERAGE MAP, centred on a solid ground with no sidebar list. The map
    is the whole content of the section now, so it gets the full column
@@ -954,3 +1222,28 @@ body{top:0!important}
 .impact-commitment{padding:1.75rem;background:var(--color-surface-raised);border-radius:var(--radius-lg);border-left:3px solid var(--color-line)}
 .impact-commitment h3{font-family:var(--font-display),serif;font-size:1.05rem;font-weight:500;color:var(--color-text-primary);margin-bottom:.6rem}
 .impact-commitment p{font-size:.85rem;line-height:1.7;color:var(--color-text-secondary)}
+
+/* SPOTLIGHT CONTENT, following the reference board: a small index numeral,
+   a two-line serif headline carrying exactly one italic gold word, a short
+   hairline, then the figures in a row split by thin vertical rules. Left
+   aligned with generous whitespace; the restraint is the point, so nothing
+   here animates except the crossfade between statements. */
+.spotlight-inner{position:relative;z-index:2;max-width:60rem}
+.spotlight-index{display:block;margin-bottom:1.75rem;font-family:var(--font-mono);font-size:.68rem;letter-spacing:.16em;color:var(--color-brand)}
+.spotlight-statement{
+  font-family:var(--font-display),serif;font-weight:400;
+  font-size:clamp(1.6rem,3.6vw,2.9rem);line-height:1.25;letter-spacing:-.015em;
+  color:var(--color-text-primary);max-width:20ch;
+}
+/* The one italic brass word. Brass, not the decorative yellow: this carries
+   text and therefore has to stay readable. Reads from the theme tokens now
+   that the band sits on the plain page surface rather than a dark ground. */
+.spotlight-accent{font-style:italic;color:var(--color-brand)}
+.spotlight-rule{display:block;width:3.5rem;height:1px;margin:2.5rem 0;background:color-mix(in srgb, var(--color-brand) 55%, transparent)}
+
+/* The figures that used to sit here now live on the Case Record strip as
+   .strip-figure, beside the cases they refer to. */
+
+@media(max-width:640px){
+  .spotlight-rule{margin:1.75rem 0}
+}

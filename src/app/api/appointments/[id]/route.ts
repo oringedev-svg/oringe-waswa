@@ -3,8 +3,12 @@ import { createAdminClient } from '@/lib/supabase'
 import { sendEmail, appointmentConfirmationEmail } from '@/lib/email'
 import { format } from 'date-fns'
 import { logAudit } from '@/lib/audit'
+import { requireAdminApi } from '@/lib/auth'
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('appointments')
@@ -16,6 +20,9 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const body = await req.json()
   const { restore, ...rest } = body
@@ -56,6 +63,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { error } = await supabase.from('appointments').update({ deleted_at: new Date().toISOString() }).eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

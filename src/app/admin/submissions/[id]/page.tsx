@@ -52,18 +52,14 @@ export default function SubmissionDetailPage() {
   const [showMeetingForm, setShowMeetingForm] = useState(false)
   const [meetingForm, setMeetingForm] = useState({ title: '', date: '', startTime: '', endTime: '' })
   const [schedulingMeeting, setSchedulingMeeting] = useState(false)
-  const [tasks, setTasks] = useState<{ id: string; title: string; status: string; assignee?: { full_name: string } | null }[]>([])
-  const [taskDraft, setTaskDraft] = useState('')
-  const [assigningTask, setAssigningTask] = useState(false)
+  const [assignForm, setAssignForm] = useState({ attorney_id: '', comment: '' })
+  const [assigning, setAssigning] = useState(false)
 
   function loadMeetingsAndTasks() {
-    Promise.all([
-      fetch(`/api/calendar-events?submission_id=${params.id}`).then(r => r.json()).catch(() => []),
-      fetch(`/api/matter-tasks?submission_id=${params.id}`).then(r => r.json()).catch(() => []),
-    ]).then(([m, t]) => {
-      setMeetings(Array.isArray(m) ? m : [])
-      setTasks(Array.isArray(t) ? t : [])
-    })
+    fetch(`/api/calendar-events?submission_id=${params.id}`)
+      .then(r => r.json())
+      .catch(() => [])
+      .then(m => setMeetings(Array.isArray(m) ? m : []))
   }
 
   function refetchSubmission() {
@@ -121,24 +117,6 @@ export default function SubmissionDetailPage() {
     }
   }
 
-  async function assignResearchTask() {
-    if (!sub || !taskDraft.trim()) return
-    setAssigningTask(true)
-    try {
-      const res = await fetch('/api/matter-tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ submission_id: sub.id, title: taskDraft.trim() }),
-      })
-      if (res.ok) { setTaskDraft(''); loadMeetingsAndTasks() }
-      else {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Could not assign the task')
-      }
-    } finally {
-      setAssigningTask(false)
-    }
-  }
 
   async function promoteToMatter() {
     if (!sub) return
@@ -206,13 +184,30 @@ export default function SubmissionDetailPage() {
     finally { setSaving(false) }
   }
 
-  async function assignTo(attorney_id: string) {
-    await fetch(`/api/submissions/${params.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assigned_to: attorney_id }),
-    })
-    toast.success('Assigned!')
+  async function assignTo() {
+    if (!sub || !assignForm.attorney_id) { toast.error('Choose who to assign this to'); return }
+    setAssigning(true)
+    try {
+      const res = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submission_id: sub.id,
+          assigned_to: assignForm.attorney_id,
+          message: assignForm.comment.trim() || undefined,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Assigned, they will see this on their desk')
+        setAssignForm({ attorney_id: '', comment: '' })
+        refetchSubmission()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Could not assign this')
+      }
+    } finally {
+      setAssigning(false)
+    }
   }
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
@@ -293,6 +288,8 @@ export default function SubmissionDetailPage() {
               submissionId={sub.id as string}
               intakeStage={sub.intake_stage as IntakeStage}
               onAdvance={refetchSubmission}
+              team={team}
+              submitterName={sub.submitter_name as string}
             />
           )}
 
@@ -409,10 +406,10 @@ export default function SubmissionDetailPage() {
             </div>
           )}
 
-          {/* Meetings & research, before any matter exists */}
-          <SectionCard title="Meetings & Tasks" icon={Calendar} color="blue"
-            badge={(meetings.length + tasks.length) > 0 ? <span className="text-xs text-[var(--color-muted)] ml-1">{meetings.length + tasks.length}</span> : undefined}>
-            <p className="text-xs text-[var(--color-muted)] mb-3">Book a meeting or assign research on this enquiry, no matter needs to exist yet.</p>
+          {/* Meetings, before any matter exists */}
+          <SectionCard title="Meetings" icon={Calendar} color="blue"
+            badge={meetings.length > 0 ? <span className="text-xs text-[var(--color-muted)] ml-1">{meetings.length}</span> : undefined}>
+            <p className="text-xs text-[var(--color-muted)] mb-3">Book meetings with the applicant on this enquiry before deciding to proceed.</p>
 
             {meetings.length > 0 && (
               <div className="flex flex-col gap-1.5 mb-3">
@@ -441,23 +438,9 @@ export default function SubmissionDetailPage() {
               </div>
             )}
 
-            {tasks.length > 0 && (
-              <div className="flex flex-col gap-1.5 mb-3">
-                {tasks.map(t => (
-                  <div key={t.id} className="flex items-center justify-between text-xs bg-[var(--color-surface-overlay)] rounded-md px-2.5 py-2">
-                    <span className={t.status === 'done' ? 'line-through text-[var(--color-muted)]' : 'text-[var(--color-text-primary)]'}>{t.title}</span>
-                    <span className="text-[var(--color-muted)]">{t.assignee?.full_name || 'Unassigned'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-1.5">
-              <input className="input text-sm flex-1" placeholder="e.g. Research employment claim precedent" value={taskDraft} onChange={e => setTaskDraft(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && assignResearchTask()} />
-              <button onClick={assignResearchTask} disabled={assigningTask} className="btn btn-outline text-xs gap-1.5 flex-shrink-0">
-                {assigningTask ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Assign'}
-              </button>
-            </div>
+            <p className="text-xs text-[var(--color-muted)]">
+              Research tasks can be tracked after promoting this enquiry to a matter. Once promoted, use the Assignments dashboard to assign work with full workflow tracking.
+            </p>
           </SectionCard>
 
           {/* Send Update */}
@@ -494,11 +477,32 @@ export default function SubmissionDetailPage() {
           {/* Assign Attorney */}
           <div className="card p-5 border-l-[3px]" style={{ borderLeftColor: SECTION_COLORS.purple }}>
             <h3 className="font-display font-semibold mb-3" style={{ color: SECTION_COLORS.purple }}>Assign To</h3>
-            <select onChange={e => assignTo(e.target.value)} className="input text-sm"
-              defaultValue={(sub.assigned_to as string) || ''}>
-              <option value="">Unassigned</option>
-              {team.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
-            </select>
+            {Boolean((sub.assigned_member as { full_name: string } | null)?.full_name) && (
+              <p className="text-xs text-[var(--color-muted)] mb-3">
+                Currently assigned to <span className="text-[var(--color-text-primary)] font-medium">{(sub.assigned_member as { full_name: string }).full_name}</span>
+              </p>
+            )}
+            <div className="flex flex-col gap-2">
+              <select
+                className="input text-sm"
+                value={assignForm.attorney_id}
+                onChange={e => setAssignForm(f => ({ ...f, attorney_id: e.target.value }))}
+              >
+                <option value="">Choose a team member…</option>
+                {team.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+              </select>
+              <textarea
+                rows={2}
+                className="input text-sm"
+                placeholder="Optional note for whoever picks this up…"
+                value={assignForm.comment}
+                onChange={e => setAssignForm(f => ({ ...f, comment: e.target.value }))}
+              />
+              <button onClick={assignTo} disabled={assigning || !assignForm.attorney_id} className="btn btn-primary text-sm justify-center gap-2">
+                {assigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCog className="w-3.5 h-3.5" />}
+                Assign
+              </button>
+            </div>
           </div>
 
           {/* Internal Notes */}

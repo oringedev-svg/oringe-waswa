@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import { requirePermissionApi } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
+  const guard = await requirePermissionApi('manage_settings')
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
   const table = searchParams.get('table')

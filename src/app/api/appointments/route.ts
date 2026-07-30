@@ -3,8 +3,12 @@ import { createAdminClient } from '@/lib/supabase'
 import { sendEmail, appointmentConfirmationEmail } from '@/lib/email'
 import { format } from 'date-fns'
 import { logAudit } from '@/lib/audit'
+import { requireAdminApi } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status')

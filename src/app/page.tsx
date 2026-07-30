@@ -2,8 +2,8 @@ import PublicLayout from '@/components/layout/PublicLayout'
 import AnnouncementBar from '@/components/home/AnnouncementBar'
 import HeroSection from '@/components/home/HeroSection'
 import ServiceSpotlight from '@/components/home/ServiceSpotlight'
+import ScrollThread from '@/components/home/ScrollThread'
 import VideoHighlight from '@/components/home/VideoHighlight'
-import NotableResults from '@/components/home/NotableResults'
 import ServicesSection from '@/components/home/ServicesSection'
 import LatestFromSection from '@/components/home/LatestFromSection'
 import TeamPreview from '@/components/home/TeamPreview'
@@ -27,18 +27,25 @@ export default async function HomePage() {
       <HeroSection />
       {/* Renders only when a news item is pushed to announcement. */}
       <AnnouncementBar initialAnnouncement={data.announcement} />
-      <ServiceSpotlight />
-      <ServicesSection initialGroups={data.groups} />
-      <VideoHighlight />
-      {/* A three-card taste of the case record. The full record, client
-          testimonials, and the pro bono / CSR work all live on /impact
-          now: this page is an introduction, not the whole proof. */}
-      <NotableResults initialResults={data.caseResults} />
+      {/* One hairline threads the opening statement into the capability
+          grid, drawing as the reader scrolls and retracting as they scroll
+          back, so the two sections read as one continuous passage. */}
+      <ScrollThread>
+        <ServiceSpotlight />
+        <ServicesSection initialGroups={data.groups} />
+      </ScrollThread>
+      {/* The Case Record strip: the film still, the firm's proof figures,
+          and a three-card taste of the cases won, in one band. The full
+          record, client testimonials, and the pro bono / CSR work all live
+          on /impact: this page is an introduction, not the whole proof. */}
+      <VideoHighlight caseResults={data.caseResults} />
+      {/* Recognition sits between the case record and the people, so the
+          proof runs cases, then awards, then the team who won them. Renders
+          only when the backend actually has awards. */}
+      <AwardsPreview initialAwards={data.awards} />
       <TeamPreview initialTeam={data.team} />
       <LatestFromSection initialInsights={data.insights} initialBlogPosts={data.blogPosts} initialEvents={data.events} />
       <CoverageMap initialAreas={data.coverage} />
-      {/* Renders only when the backend actually has awards. */}
-      <AwardsPreview initialAwards={data.awards} />
       {/* The consultation CTA and mail signup live at the top of the
           footer, which follows immediately. */}
     </PublicLayout>

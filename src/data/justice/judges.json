@@ -1,0 +1,71 @@
+{
+  "source": "Kenya Judiciary website - Court Station Contacts",
+  "note": "Derived from the judges arrays embedded in the courts source. Only benches supplied at source are present.",
+  "schemaVersion": "1.0",
+  "count": 7,
+  "judges": [
+    {
+      "id": "judge_court_supreme_court_supreme_court_registry_001",
+      "name": "Hon. Justice Martha Koome, EGH",
+      "courtId": "court_supreme_court_supreme_court_registry",
+      "designation": "Chief Justice and President of the Supreme Court of Kenya",
+      "division": null,
+      "appointmentDate": null,
+      "status": "Serving"
+    },
+    {
+      "id": "judge_court_supreme_court_supreme_court_registry_002",
+      "name": "Hon. Justice Philomena Mbete Mwilu, EGH",
+      "courtId": "court_supreme_court_supreme_court_registry",
+      "designation": "Deputy Chief Justice and Vice President of the Supreme Court of Kenya",
+      "division": null,
+      "appointmentDate": null,
+      "status": "Serving"
+    },
+    {
+      "id": "judge_court_supreme_court_supreme_court_registry_003",
+      "name": "Hon. Justice (Dr.) Smokin Wanjala, CBS",
+      "courtId": "court_supreme_court_supreme_court_registry",
+      "designation": "Judge of the Supreme Court of Kenya",
+      "division": null,
+      "appointmentDate": null,
+      "status": "Serving"
+    },
+    {
+      "id": "judge_court_supreme_court_supreme_court_registry_004",
+      "name": "Hon. Lady Justice Njoki Ndungu, CBS",
+      "courtId": "court_supreme_court_supreme_court_registry",
+      "designation": "Judge of the Supreme Court of Kenya",
+      "division": null,
+      "appointmentDate": null,
+      "status": "Serving"
+    },
+    {
+      "id": "judge_court_supreme_court_supreme_court_registry_005",
+      "name": "Hon. Mr. Justice Isaac Lenaola, CBS",
+      "courtId": "court_supreme_court_supreme_court_registry",
+      "designation": "Judge of the Supreme Court of Kenya",
+      "division": null,
+      "appointmentDate": null,
+      "status": "Serving"
+    },
+    {
+      "id": "judge_court_supreme_court_supreme_court_registry_006",
+      "name": "Hon. Mr. Justice William Ouko, CBS",
+      "courtId": "court_supreme_court_supreme_court_registry",
+      "designation": "Judge of the Supreme Court of Kenya",
+      "division": null,
+      "appointmentDate": null,
+      "status": "Serving"
+    },
+    {
+      "id": "judge_court_supreme_court_supreme_court_registry_007",
+      "name": "Hon. Justice Mohamed Abdulahi Warsame, EBS",
+      "courtId": "court_supreme_court_supreme_court_registry",
+      "designation": "Judge of the Supreme Court of Kenya",
+      "division": null,
+      "appointmentDate": null,
+      "status": "Serving"
+    }
+  ]
+}

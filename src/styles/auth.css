@@ -9,11 +9,23 @@
 
    Pages consume these via the shared <AuthLayout> component:
    src/components/auth/AuthLayout.tsx
+
+   LAYOUT: a two-panel split. The left panel is a fixed dark editorial band
+   carrying the firm's name and positioning; the right panel carries the
+   form. Below --auth-split-breakpoint the left panel is dropped entirely
+   and the form centres on its own, so nothing is lost on mobile: the brand
+   panel is decoration and never holds a control.
    ========================================================================== */
 
 :root {
+  /* --- Split layout ---------------------------------------------------- */
+  --auth-brand-width: 46%;            /* left panel share of the viewport */
+  --auth-brand-padding: 3.5rem;
+  --auth-brand-bg: var(--color-hero-ground);
+  --auth-brand-accent: var(--color-brand);
+
   /* --- Layout / sizing ------------------------------------------------- */
-  --auth-card-max-width: 24rem;      /* width of the centered card */
+  --auth-card-max-width: 23rem;      /* width of the form column */
   --auth-container-padding-x: 1.5rem; /* left/right screen padding on small viewports */
 
   /* --- Logo badge -------------------------------------------------------*/
@@ -24,14 +36,14 @@
   --auth-logo-icon-color: #ffffff;
 
   /* --- Header (logo + title + subtitle) ---------------------------------*/
-  --auth-header-margin-bottom: 2.5rem;
-  --auth-logo-margin-bottom: 1rem;
+  --auth-header-margin-bottom: 2rem;
+  --auth-logo-margin-bottom: 1.25rem;
   --auth-title-font: var(--font-display);
-  --auth-title-size: 1.125rem;
+  --auth-title-size: 1.375rem;
   --auth-title-color: var(--color-text-primary);
   --auth-subtitle-size: 0.875rem;
-  --auth-subtitle-color: var(--color-muted);
-  --auth-subtitle-margin-top: 0.25rem;
+  --auth-subtitle-color: var(--color-text-muted);
+  --auth-subtitle-margin-top: 0.375rem;
 
   /* --- Form ---------------------------------------------------------- */
   --auth-form-gap: 1rem;             /* vertical gap between fields */
@@ -39,9 +51,9 @@
 
   /* --- Links / helper text -------------------------------------------- */
   --auth-link-size: 0.75rem;
-  --auth-link-color: var(--color-accent);
-  --auth-error-size: 0.875rem;
-  --auth-error-color: #9b2335;
+  --auth-link-color: var(--color-text-secondary);
+  --auth-error-size: 0.8125rem;
+  --auth-error-color: var(--status-danger);
   --auth-message-size: 0.875rem;
   --auth-message-color: var(--color-text-secondary);
 
@@ -52,7 +64,7 @@
   /* --- Loading state ---------------------------------------------------*/
   --auth-loading-padding-y: 2rem;
   --auth-loading-icon-size: 1.25rem;
-  --auth-loading-icon-color: var(--color-muted);
+  --auth-loading-icon-color: var(--color-text-muted);
 }
 
 /* ==========================================================================
@@ -62,11 +74,94 @@
 .auth-page {
   min-height: 100vh;
   display: flex;
+  background: var(--color-surface);
+}
+
+/* ---- Left: brand panel -------------------------------------------------- */
+/* Dark in both themes on purpose, the same convention as the site's fixed
+   bands: it reads as a deliberate panel rather than inverting with the page. */
+.auth-brand {
+  display: none;
+  width: var(--auth-brand-width);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--auth-brand-bg);
+  padding: var(--auth-brand-padding);
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+@media (min-width: 60rem) {
+  .auth-brand { display: flex; }
+}
+
+/* One large, very low-opacity field of the brand tone. It never carries
+   text; it exists so the panel does not read as a flat black rectangle. */
+.auth-brand::after {
+  content: '';
+  position: absolute;
+  width: 42rem;
+  height: 42rem;
+  right: -16rem;
+  bottom: -18rem;
+  border-radius: 9999px;
+  background: var(--auth-brand-accent);
+  opacity: 0.14;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.auth-brand-mark {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-band-muted);
+}
+
+.auth-brand-body { position: relative; z-index: 1; }
+
+.auth-brand-title {
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--color-hero-text);
+  max-width: 16ch;
+}
+
+.auth-brand-rule {
+  width: 3rem;
+  height: 2px;
+  background: var(--auth-brand-accent);
+  margin: 1.5rem 0;
+}
+
+.auth-brand-text {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--on-band);
+  max-width: 38ch;
+}
+
+.auth-brand-foot {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  color: var(--on-band-muted);
+}
+
+/* ---- Right: form panel -------------------------------------------------- */
+.auth-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface);
-  padding-left: var(--auth-container-padding-x);
-  padding-right: var(--auth-container-padding-x);
+  padding: 3rem var(--auth-container-padding-x);
 }
 
 .auth-card {
@@ -74,11 +169,13 @@
   max-width: var(--auth-card-max-width);
 }
 
+/* Left-aligned rather than centred: the fields below are left-aligned, and
+   a centred header over left-aligned inputs reads as two layouts stacked. */
 .auth-header {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   margin-bottom: var(--auth-header-margin-bottom);
 }
 
@@ -102,7 +199,9 @@
 .auth-title {
   font-family: var(--auth-title-font), serif;
   font-size: var(--auth-title-size);
+  font-weight: 600;
   color: var(--auth-title-color);
+  line-height: 1.2;
 }
 
 .auth-subtitle {
@@ -126,17 +225,28 @@
 .auth-link {
   font-size: var(--auth-link-size);
   color: var(--auth-link-color);
+  transition: color 0.15s ease;
 }
 
+.auth-link:hover { color: var(--color-text-primary); }
+
+/* Errors get a tinted block rather than a bare red line: one line of red
+   text under a field was easy to miss on a failed sign-in. */
 .auth-error {
   font-size: var(--auth-error-size);
   color: var(--auth-error-color);
+  /* Derived from the colour above rather than hardcoded to the light-mode
+     red, so the dark-mode override at the end of this file carries the
+     tint and the rule with it. */
+  background: color-mix(in srgb, var(--auth-error-color) 12%, transparent);
+  border-left: 2px solid var(--auth-error-color);
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-sm);
 }
 
 .auth-message {
   font-size: var(--auth-message-size);
   color: var(--auth-message-color);
-  text-align: center;
 }
 
 .auth-submit {
@@ -147,7 +257,6 @@
 
 .auth-footer {
   font-size: var(--auth-footer-size);
-  text-align: center;
   margin-top: var(--auth-footer-margin-top);
 }
 
@@ -164,5 +273,15 @@
   color: var(--auth-loading-icon-color);
 }
 
-/* Dark mode automatically inherits from the --color-* variables already
-   redefined under .dark in globals.css, nothing extra needed here. */
+/* Dark mode inherits the --color-* variables already redefined under .dark
+   in globals.css. The brand panel is deliberately exempt: it stays dark in
+   both themes.
+
+   One override is required. --status-danger (#9b2335) is tuned for a light
+   surface; on the dark surface it measures 2.01:1, well under the 4.5:1
+   WCAG AA needs for body text. On a sign-in screen the error is the single
+   most important line on the page, so it gets a lighter red here that
+   measures 6.08:1 while still reading unambiguously as an error. */
+.dark {
+  --auth-error-color: #e8848e;
+}

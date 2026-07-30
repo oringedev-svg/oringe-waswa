@@ -5,11 +5,19 @@ import { getSessionProfile } from '@/lib/auth'
 import { userHasPermission } from '@/lib/permissions'
 import { saveRevision, getRevisions } from '@/lib/revisions'
 import { canTransition, stagePermission, type MatterStage } from '@/lib/matterLifecycle'
-import { emitEvent } from '@/lib/domainEvents'
+import { emitAndProcess } from '@/lib/triggerEngine'
+import { getMatterAccessScope, canAccessMatter } from '@/lib/matterScope'
 
 const REVISIONED_FIELDS = ['title', 'description', 'opposing_party', 'court', 'case_number', 'tags', 'county', 'claim_value'] as const
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+  const profile = await getSessionProfile()
+  if (!profile) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  const scope = await getMatterAccessScope(profile)
+  if (!canAccessMatter(scope, params.id)) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
+
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('legal_matters')
@@ -61,6 +69,16 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const profile = await getSessionProfile()
   if (!profile) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  const scope = await getMatterAccessScope(profile)
+  if (!canAccessMatter(scope, params.id)) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
+  // Editing matter fields (not just workflow-gated stage transitions below)
+  // is a manage_matters action, same permission that gates creating one.
+  const canEdit = profile.role === 'admin' || (await userHasPermission(profile.userId, profile.role, 'manage_matters'))
+  if (!canEdit) {
+    return NextResponse.json({ error: 'Missing permission: manage_matters' }, { status: 403 })
+  }
   const body = await req.json()
   const supabase = createAdminClient()
 
@@ -139,11 +157,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // from a separately-maintained history table (Principles 2 and 4).
     // matter_stage_history stays for now; it is the read model this event
     // will eventually be projected into rather than written alongside.
-    await emitEvent({
+    await emitAndProcess({
       aggregateType: 'Matter',
       aggregateId: params.id,
       eventType: 'MatterStageChanged.v1',
       actor: profile.id,
+      matterId: params.id,
       payload: { from_stage: fromStage, to_stage: toStage },
     })
   }
@@ -151,10 +170,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // Litigation status is a different axis from the engagement stage, so it
   // is its own event rather than being folded into the one above.
   if (body.litigation_status && body.litigation_status !== (current as Record<string, unknown>).litigation_status) {
-    await emitEvent({
+    await emitAndProcess({
       aggregateType: 'Matter',
       aggregateId: params.id,
       eventType: 'MatterLitigationStatusChanged.v1',
+      matterId: params.id,
       actor: profile.id,
       payload: {
         from: (current as Record<string, unknown>).litigation_status ?? null,
@@ -170,6 +190,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
   const profile = await getSessionProfile()
+  if (!profile) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  const canDelete = profile.role === 'admin' || (await userHasPermission(profile.userId, profile.role, 'manage_matters'))
+  if (!canDelete) {
+    return NextResponse.json({ error: 'Missing permission: manage_matters' }, { status: 403 })
+  }
   const supabase = createAdminClient()
 
   const { data: current } = await supabase

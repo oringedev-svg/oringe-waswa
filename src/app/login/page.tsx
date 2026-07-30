@@ -10,6 +10,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const explicitRedirect = searchParams.get('redirect')
   const unauthorized = searchParams.get('error') === 'unauthorized'
+  const linkExpired = searchParams.get('error') === 'link_expired'
 
   // Clients never see a password field at all, the email step alone
   // decides which form they get. Staff, pupils, and administrative
@@ -37,6 +38,11 @@ function LoginForm() {
       } else {
         setStep('password')
       }
+    } catch {
+      // Without this, a network failure threw inside res.json(), the catch-less
+      // try swallowed it via finally, and the form simply stopped responding
+      // with no message shown at all.
+      setError('Could not reach the server. Check your connection and try again.')
     } finally {
       setCheckingEmail(false)
     }
@@ -46,9 +52,15 @@ function LoginForm() {
     setLoading(true)
     setError('')
     const supabase = createClient()
+    // Points at the callback route, not the portal directly: the link
+    // Supabase sends carries a `?code=` that has to be exchanged for a
+    // session first (src/app/auth/callback/route.ts). Landing on /portal
+    // with an un-exchanged code looks signed-in-ish but isn't, and
+    // middleware bounces it straight back to login.
+    const next = explicitRedirect || '/portal'
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/portal` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
     })
     setLoading(false)
     if (otpError) {
@@ -86,16 +98,32 @@ function LoginForm() {
   }
 
   return (
-    <AuthLayout title="Oringe Waswa & Akude Advocates LLP" subtitle="Sign in">
+    <AuthLayout
+      title={step === 'password' ? 'Enter your password' : step === 'magic-sent' ? 'Check your email' : 'Sign in'}
+      subtitle={
+        step === 'password' ? 'This account signs in with a password.'
+          : step === 'magic-sent' ? undefined
+          : 'Enter your email to continue.'
+      }
+    >
       {step === 'magic-sent' ? (
-        <div className="auth-form text-center">
-          <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-2" />
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            We&apos;ve sent a sign-in link to <strong>{email}</strong>. Open it on this device to access your portal, no password needed.
-          </p>
-          <button onClick={sendMagicLink} disabled={loading} className="auth-link text-sm mt-4">
-            {loading ? 'Sending…' : "Didn't get it? Send again"}
-          </button>
+        <div className="auth-form">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--status-success)]" />
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              We&apos;ve sent a sign-in link to <strong className="text-[var(--color-text-primary)]">{email}</strong>.
+              Open it on this device to reach your portal. No password needed.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <button onClick={sendMagicLink} disabled={loading} className="auth-link">
+              {loading ? 'Sending...' : 'Send it again'}
+            </button>
+            <span className="text-[var(--color-border)]">|</span>
+            <button onClick={() => { setStep('email'); setError('') }} className="auth-link">
+              Use a different email
+            </button>
+          </div>
         </div>
       ) : step === 'password' ? (
         <form onSubmit={handlePasswordSubmit} className="auth-form">
@@ -121,8 +149,8 @@ function LoginForm() {
             />
           </div>
 
-          {(error || unauthorized) && (
-            <p className="auth-error">{error || 'Your account does not have admin access.'}</p>
+          {(error || unauthorized || linkExpired) && (
+            <p className="auth-error">{error || (linkExpired ? 'That sign-in link has expired or was already used. Enter your email for a new one.' : 'Your account does not have admin access.')}</p>
           )}
 
           <button type="submit" disabled={loading} className="btn btn-primary auth-submit">
@@ -143,16 +171,16 @@ function LoginForm() {
             />
           </div>
 
-          {(error || unauthorized) && (
-            <p className="auth-error">{error || 'Your account does not have admin access.'}</p>
+          {(error || unauthorized || linkExpired) && (
+            <p className="auth-error">{error || (linkExpired ? 'That sign-in link has expired or was already used. Enter your email for a new one.' : 'Your account does not have admin access.')}</p>
           )}
 
           <button type="submit" disabled={checkingEmail} className="btn btn-primary auth-submit gap-2">
             {checkingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
             Continue
           </button>
-          <p className="text-xs text-[var(--color-muted)] text-center mt-1">
-            Clients sign in with an emailed link, no password required.
+          <p className="text-xs text-[var(--color-text-muted)] mt-1 leading-relaxed">
+            Staff continue to a password. Clients are sent a sign-in link instead, no password required.
           </p>
         </form>
       )}

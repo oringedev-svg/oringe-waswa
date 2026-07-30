@@ -29,6 +29,8 @@
 
 DROP POLICY IF EXISTS profiles_self_or_firm ON profiles;
 DROP POLICY IF EXISTS firm_isolation ON profiles;
+DROP POLICY IF EXISTS profiles_self_read ON profiles;
+DROP POLICY IF EXISTS profiles_self_update ON profiles;
 
 -- Non-recursive: compares a column to auth.uid() and nothing else.
 CREATE POLICY profiles_self_read ON profiles

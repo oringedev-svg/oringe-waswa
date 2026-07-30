@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, uploadFile } from '@/lib/supabase'
+import { getSessionProfile } from '@/lib/auth'
+import { getMatterAccessScope, canAccessMatter } from '@/lib/matterScope'
 
 export async function GET(req: NextRequest) {
-  const supabase = createAdminClient()
+  const profile = await getSessionProfile()
+  if (!profile) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const matter_id = searchParams.get('matter_id')
   const type = searchParams.get('type')
   const search = searchParams.get('search')
 
+  const scope = await getMatterAccessScope(profile)
+
+  // A specific matter was requested, check it against scope. Without a
+  // matter_id this would list documents across the whole firm, which only
+  // scope.all callers may do.
+  if (matter_id) {
+    if (!canAccessMatter(scope, matter_id)) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    }
+  } else if (!scope.all) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
+
+  const supabase = createAdminClient()
   let query = supabase
     .from('legal_documents')
     .select('*, uploader:profiles(full_name, avatar_url), matter:legal_matters(matter_number, title, type)')
@@ -23,6 +41,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const profile = await getSessionProfile()
+  if (!profile) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+
   const supabase = createAdminClient()
   const formData = await req.formData()
   const file = formData.get('file') as File
@@ -37,6 +58,11 @@ export async function POST(req: NextRequest) {
 
   if (!file || !matter_id || !title) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+
+  const scope = await getMatterAccessScope(profile)
+  if (!canAccessMatter(scope, matter_id)) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
 
   const ext = file.name.split('.').pop()

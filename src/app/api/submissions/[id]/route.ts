@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { sendEmail, statusUpdateEmail } from '@/lib/email'
 import { logAudit } from '@/lib/audit'
-import { getSessionProfile } from '@/lib/auth'
+import { getSessionProfile, requireAdminApi } from '@/lib/auth'
 import { userHasPermission } from '@/lib/permissions'
 import { canTransitionIntake, intakeStagePermission, type IntakeStage } from '@/lib/intakeLifecycle'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   // The base submission never depends on the activity-timeline feature:
   // events/first-open tracking (migration 014) is fetched and written
@@ -65,6 +68,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const profile = await getSessionProfile()
   const body = await req.json()
@@ -174,6 +180,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const guard = await requireAdminApi()
+  if ('response' in guard) return guard.response
+
   const supabase = createAdminClient()
   const { error } = await supabase.from('submissions').update({ deleted_at: new Date().toISOString() }).eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

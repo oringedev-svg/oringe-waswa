@@ -1,14 +1,22 @@
 'use client'
 import { useState } from 'react'
-import { Search, Loader2, ShieldAlert } from 'lucide-react'
+import { Search, ShieldAlert, ShieldCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { PageHeader, StatusPill, type Tone } from '@/components/admin/ui'
 
 interface ConflictMatch { match_type: string; name: string; detail: string; risk: 'low' | 'medium' | 'high' }
+
+const RISK_TONE: Record<string, Tone> = {
+  high: 'overdue',
+  medium: 'risk',
+  low: 'review',
+}
 
 export default function ConflictCheckPage() {
   const [query, setQuery] = useState('')
   const [running, setRunning] = useState(false)
   const [hasRun, setHasRun] = useState(false)
+  const [ranFor, setRanFor] = useState('')
   const [results, setResults] = useState<ConflictMatch[]>([])
   const [highestRisk, setHighestRisk] = useState<string>('none')
 
@@ -25,6 +33,9 @@ export default function ConflictCheckPage() {
         const data = await res.json()
         setResults(data.results || [])
         setHighestRisk(data.highest_risk || 'none')
+        // Pinned at the moment of the search, so editing the box afterwards
+        // can't relabel a result set as being for a term never searched.
+        setRanFor(query.trim())
         setHasRun(true)
       } else {
         const err = await res.json().catch(() => ({}))
@@ -37,21 +48,28 @@ export default function ConflictCheckPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">Conflict Check</h1>
-        <p className="text-[var(--color-text-muted)] text-sm mt-1">
-          Quick pre-instruction search, before there's an enquiry or matter to attach it to. Searches the same firm-wide
-          records (matters, opposing parties, prior intake, people on file) as the check inside a matter's Lifecycle.
-          This is a quick look only, nothing here is saved. Once you take the instruction, run the formal check from
-          the intake or matter's Conflict Check stage so the decision is recorded on file.
+      <PageHeader
+        icon={ShieldAlert}
+        eyebrow="Matters"
+        title="Conflict Check"
+        description="A quick pre-instruction search, before there's an enquiry or matter to attach it to. It searches the same firm-wide records (matters, opposing parties, prior intake, people on file) as the check inside a matter's Lifecycle."
+      />
+
+      {/* Stated up front rather than buried in the description: this screen
+          writes nothing, so a decision made here is not on file. */}
+      <div className="card p-4 mb-6 border-l-[3px] flex items-start gap-3" style={{ borderLeftColor: 'var(--color-brand)' }}>
+        <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--color-brand)]" />
+        <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+          <strong className="text-[var(--color-text-primary)]">Nothing here is saved.</strong>{' '}
+          Once you take the instruction, run the formal check from the intake or the matter&apos;s Conflict Check stage so the decision is recorded on file.
         </p>
       </div>
 
       <div className="flex gap-2 mb-6 max-w-xl">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)] pointer-events-none" />
           <input
-            className="input pl-9 text-sm"
+            className="input !pl-9 text-sm"
             placeholder="Search a name, company, or reference…"
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -59,38 +77,36 @@ export default function ConflictCheckPage() {
           />
         </div>
         <button onClick={runCheck} disabled={running} className="btn btn-primary gap-2 text-sm flex-shrink-0">
-          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          Check Conflicts
+          {running ? 'Checking…' : 'Check Conflicts'}
         </button>
       </div>
 
       {hasRun && (
         <div className="max-w-2xl">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <span className="text-sm text-[var(--color-text-secondary)]">
-              {results.length === 0 ? 'No matches found' : `${results.length} match${results.length === 1 ? '' : 'es'} found`} for &quot;{query}&quot;
+              {results.length === 0 ? 'No matches found' : `${results.length} match${results.length === 1 ? '' : 'es'} found`} for &ldquo;{ranFor}&rdquo;
             </span>
             {highestRisk !== 'none' && (
-              <span className={`badge text-xs ${highestRisk === 'high' ? 'status-rejected' : highestRisk === 'medium' ? 'status-pending' : 'status-review'}`}>
-                {highestRisk} risk
-              </span>
+              <StatusPill tone={RISK_TONE[highestRisk] || 'neutral'} dot>{highestRisk} risk</StatusPill>
             )}
           </div>
 
           {results.length === 0 ? (
-            <div className="card p-6 flex items-center gap-3 text-sm text-[var(--color-muted)]">
-              <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+            <div className="card p-6 flex items-center gap-3 text-sm text-[var(--color-text-secondary)] border-l-[3px]" style={{ borderLeftColor: 'var(--status-success)' }}>
+              <ShieldCheck className="w-5 h-5 flex-shrink-0 text-[var(--status-success)]" />
               No existing matter, opposing party, prior intake, or person on file matches this search.
             </div>
           ) : (
-            <div className="flex flex-col gap-1.5">
+            <div className="card divide-y divide-[var(--color-border)]">
               {results.map((r, i) => (
-                <div key={i} className="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-[var(--color-surface-overlay)] gap-2">
+                <div key={i} className="flex items-center justify-between gap-3 text-sm py-3 px-4">
                   <div className="min-w-0">
                     <span className="font-medium text-[var(--color-text-primary)]">{r.match_type}</span>
-                    <span className="text-[var(--color-muted)]">, {r.name} · {r.detail}</span>
+                    <span className="text-[var(--color-text-muted)]">, {r.name}</span>
+                    <div className="text-xs text-[var(--color-text-muted)] mt-0.5">{r.detail}</div>
                   </div>
-                  <span className={`badge text-xs flex-shrink-0 ${r.risk === 'high' ? 'status-rejected' : r.risk === 'medium' ? 'status-pending' : 'status-review'}`}>{r.risk}</span>
+                  <StatusPill tone={RISK_TONE[r.risk] || 'neutral'} dot>{r.risk}</StatusPill>
                 </div>
               ))}
             </div>

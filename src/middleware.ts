@@ -158,11 +158,6 @@ export async function middleware(request: NextRequest) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
   const { data: profile } = await admin.from('profiles').select('role').eq('user_id', user.id).single()
-  // Pupils and administrative assistants can sign in the same door as full
-  // staff, but start with zero permissions (see ROLE_DEFAULT_PERMISSIONS),
-  // what they can actually DO is gated permission-by-permission at the API
-  // layer, same as it already is for staff/moderator today. This list only
-  // controls who gets past the front door, not what's behind it.
   const allowedRoles = ['admin', 'staff', 'moderator', 'pupil', 'admin_assistant']
   const authorized = !!profile && allowedRoles.includes(profile.role)
 
@@ -171,6 +166,26 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('error', 'unauthorized')
+    return NextResponse.redirect(url)
+  }
+
+  // Pupils and administrative assistants start with zero permissions, and
+  // the general /admin shell (the Menu launcher's domain list, each
+  // domain's own sub-nav, the hub pages themselves) was built assuming a
+  // signed-in admin user, not "someone with maybe zero grants." Every one
+  // of those surfaces would need its own permission check to be safe, and
+  // auditing every current and future admin page for that is exactly the
+  // whack-a-mole this replaces: these two roles get the front door to
+  // /desk and to the one thing that's genuinely theirs, an individual
+  // assignment (access to that is still enforced per-row by its own API,
+  // this is just keeping them out of pages that were never scoped for
+  // them at all). Everyone else's access is unchanged.
+  const restrictedRoles = ['pupil', 'admin_assistant']
+  const isOwnAssignmentPage = /^\/admin\/assignments(\/[^/]+)?$/.test(path)
+  if (restrictedRoles.includes(profile!.role) && path.startsWith('/admin') && !isOwnAssignmentPage) {
+    if (isApi) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    const url = request.nextUrl.clone()
+    url.pathname = '/desk'
     return NextResponse.redirect(url)
   }
 

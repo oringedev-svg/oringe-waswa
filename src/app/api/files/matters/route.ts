@@ -2,19 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { generateMatterNumber } from '@/lib/utils'
 import { logAudit } from '@/lib/audit'
-import { requirePermissionApi } from '@/lib/auth'
+import { requirePermissionApi, getSessionProfile } from '@/lib/auth'
+import { getMatterAccessScope } from '@/lib/matterScope'
 
 export async function GET(req: NextRequest) {
+  const profile = await getSessionProfile()
+  if (!profile) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+
+  const scope = await getMatterAccessScope(profile)
   const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
 
   // ?counts=stages returns per-stage counts plus the average number of days
   // matters have been sitting in each stage, the bottleneck signal.
   if (searchParams.get('counts') === 'stages') {
-    const [{ data: matters, error }, { data: history }] = await Promise.all([
-      supabase.from('legal_matters').select('id, status'),
-      supabase.from('matter_stage_history').select('matter_id, created_at').order('created_at', { ascending: false }),
-    ])
+    if (!scope.all && scope.matterIds.length === 0) {
+      return NextResponse.json({ counts: {}, avgDays: {} })
+    }
+    let mattersQuery = supabase.from('legal_matters').select('id, status')
+    let historyQuery = supabase.from('matter_stage_history').select('matter_id, created_at').order('created_at', { ascending: false })
+    if (!scope.all) {
+      mattersQuery = mattersQuery.in('id', scope.matterIds)
+      historyQuery = historyQuery.in('matter_id', scope.matterIds)
+    }
+    const [{ data: matters, error }, { data: history }] = await Promise.all([mattersQuery, historyQuery])
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     // Latest history row per matter = when it entered its current stage.
@@ -45,6 +56,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ counts, avgDays })
   }
 
+  if (!scope.all && scope.matterIds.length === 0) {
+    return NextResponse.json({ data: [], count: 0 })
+  }
+
   const type = searchParams.get('type')
   const status = searchParams.get('status')
   const attorney_id = searchParams.get('attorney_id')
@@ -59,6 +74,7 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1)
 
+  if (!scope.all) query = query.in('id', scope.matterIds)
   if (type) query = query.eq('type', type)
   if (status) query = query.eq('status', status)
   if (attorney_id) query = query.eq('assigned_attorney_id', attorney_id)
