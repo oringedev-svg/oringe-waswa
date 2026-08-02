@@ -14,6 +14,37 @@ export interface ConflictMatch {
   name: string
   detail: string
   risk: 'low' | 'medium' | 'high'
+  /** Which searched entity produced this hit, set on multi-target searches. */
+  target?: string
+  target_role?: string
+}
+
+/**
+ * The kinds of party a conflict search can be run against. A real check covers
+ * more than the prospective client: the other side, its directors, the estate
+ * or trust involved, and the advocates already on the record all have to be
+ * cleared too.
+ */
+export const CONFLICT_TARGET_ROLES = [
+  'client', 'opposing_party', 'company', 'director', 'witness', 'estate', 'trust', 'advocate',
+] as const
+
+export type ConflictTargetRole = (typeof CONFLICT_TARGET_ROLES)[number]
+
+export interface ConflictTarget {
+  name: string
+  role?: ConflictTargetRole | string
+}
+
+export const CONFLICT_ROLE_LABELS: Record<string, string> = {
+  client: 'Client',
+  opposing_party: 'Opposing party',
+  company: 'Company',
+  director: 'Director',
+  witness: 'Witness',
+  estate: 'Estate',
+  trust: 'Trust',
+  advocate: 'Advocate',
 }
 
 const RISK_RANK: Record<string, number> = { none: 0, low: 1, medium: 2, high: 3 }
@@ -90,4 +121,47 @@ export async function runConflictSearch(
 
   const highestRisk = results.reduce((acc, r) => (RISK_RANK[r.risk] > RISK_RANK[acc] ? r.risk : acc), 'none' as string)
   return { results, highestRisk }
+}
+
+/**
+ * Run one check across several parties at once, which is what a real conflict
+ * search is: the client, the other side, its directors and anyone else with an
+ * interest, cleared together and recorded as a single decision. Each hit is
+ * tagged with the party that produced it so the results stay attributable.
+ *
+ * Returns a `summary` suitable for the conflict_checks.search_query column,
+ * which predates multi-target search and stores a single human-readable string.
+ */
+export async function runMultiConflictSearch(
+  targets: ConflictTarget[],
+  opts?: { excludeMatterId?: string; excludeSubmissionId?: string },
+): Promise<{ results: ConflictMatch[]; highestRisk: string; summary: string }> {
+  const cleaned = targets
+    .map(t => ({ name: t.name.trim(), role: t.role }))
+    .filter(t => t.name.length > 0)
+
+  // De-duplicate by name+role so the same party listed twice isn't searched
+  // twice and doesn't double up in the results.
+  const seen = new Set<string>()
+  const unique = cleaned.filter(t => {
+    const key = `${t.name.toLowerCase()}::${t.role || ''}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  const perTarget = await Promise.all(
+    unique.map(async t => {
+      const { results } = await runConflictSearch(t.name, opts)
+      return results.map(r => ({ ...r, target: t.name, target_role: t.role }))
+    }),
+  )
+
+  const results = perTarget.flat()
+  const highestRisk = results.reduce((acc, r) => (RISK_RANK[r.risk] > RISK_RANK[acc] ? r.risk : acc), 'none' as string)
+  const summary = unique
+    .map(t => (t.role ? `${t.name} (${CONFLICT_ROLE_LABELS[t.role] || t.role})` : t.name))
+    .join(', ')
+
+  return { results, highestRisk, summary }
 }

@@ -315,7 +315,17 @@
       "Bash(grep -qE NEXT_BUILD_EXIT __TRACKED_VAR__/build14.log)",
       "Bash(grep -E 'NEXT_BUILD_EXIT|Failed to compile|Compiled successfully|Type error' __TRACKED_VAR__/build14.log)",
       "Bash(tee /tmp/tsc_errors.txt)",
-      "Bash(tee /tmp/tsc_errors2.txt)"
+      "Bash(tee /tmp/tsc_errors2.txt)",
+      "Bash(grep -v \"route.ts$\")",
+      "Bash(rm \"src/app/api/matters/[id]/move-stage/route.ts\")",
+      "Bash(rmdir \"src/app/api/matters/[id]/move-stage\")",
+      "Bash(rmdir \"src/app/api/matters/[id]\")",
+      "Bash(cat 'C:\\\\Users\\\\Hp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Hp-Downloads-oringe-waswa\\\\32b10408-fbb2-4ada-9661-ed258ce3e72a\\\\tasks\\\\bmonb2pom.output')",
+      "Bash(grep -qE 'Compiled successfully|Failed to compile|Type error' 'C:\\\\Users\\\\Hp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Hp-Downloads-oringe-waswa\\\\32b10408-fbb2-4ada-9661-ed258ce3e72a\\\\tasks\\\\b1nrjnog3.output')",
+      "Bash(sleep 5)",
+      "Bash(tail -50 'C:\\\\Users\\\\Hp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Hp-Downloads-oringe-waswa\\\\32b10408-fbb2-4ada-9661-ed258ce3e72a\\\\tasks\\\\b1nrjnog3.output')",
+      "Bash(wc -l 'C:\\\\Users\\\\Hp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Hp-Downloads-oringe-waswa\\\\32b10408-fbb2-4ada-9661-ed258ce3e72a\\\\tasks\\\\b1nrjnog3.output')",
+      "Bash(tail -60 'C:\\\\Users\\\\Hp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Hp-Downloads-oringe-waswa\\\\32b10408-fbb2-4ada-9661-ed258ce3e72a\\\\tasks\\\\b1nrjnog3.output')"
     ]
   }
 }

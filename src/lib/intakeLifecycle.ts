@@ -41,6 +41,13 @@ export const INTAKE_HAPPY_PATH: IntakeStage[] = [
   'received', 'conflict_check', 'problem_identification', 'client_instruction', 'legal_opinion', 'retention', 'promoted',
 ]
 
+/** The stage after `stage` on the happy path, or null at the end of it. */
+export function nextHappyIntakeStage(stage: IntakeStage): IntakeStage | null {
+  const i = INTAKE_HAPPY_PATH.indexOf(stage)
+  if (i === -1 || i === INTAKE_HAPPY_PATH.length - 1) return null
+  return INTAKE_HAPPY_PATH[i + 1]
+}
+
 const TRANSITIONS: Record<IntakeStage, IntakeStage[]> = {
   received: ['conflict_check', 'declined'],
   conflict_check: ['problem_identification', 'declined', 'received'],

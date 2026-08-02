@@ -48,17 +48,23 @@ export async function POST(
   await uploadFile('legal-docs', path, buffer, file.type)
   const { data: publicData } = supabase.storage.from('legal-docs').getPublicUrl(path)
 
+  // legal_documents, not the separate `documents` table (built for the AI
+  // extraction pipeline): Matter Documents reads only legal_documents, so a
+  // deliverable attached here needs to land in the same table to actually
+  // show up there, rather than in a second table nothing else displays.
   const { data: doc, error: createError } = await supabase
-    .from('documents')
+    .from('legal_documents')
     .insert({
       matter_id: assignment.matter_id,
       submission_id: assignment.submission_id,
       assignment_id: params.id,
+      title: file.name,
+      type: documentType,
       file_name: file.name,
-      file_path: publicData.publicUrl,
+      file_url: publicData.publicUrl,
       file_size: file.size,
       mime_type: file.type,
-      document_type: documentType,
+      access_level: 'staff',
       uploaded_by: profile.id,
     })
     .select()

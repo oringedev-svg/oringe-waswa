@@ -63,10 +63,11 @@ export async function POST(
     )
   }
 
-  // Fetch documents linked to this assignment
+  // Fetch documents linked to this assignment (legal_documents, the same
+  // table Matter Documents reads, not the separate `documents` table)
   const { data: docs } = await supabase
-    .from('documents')
-    .select('id, file_name, file_path')
+    .from('legal_documents')
+    .select('id, file_name, file_url')
     .eq('assignment_id', params.id)
 
   // Send email (placeholder - integrate with email service)
@@ -128,7 +129,7 @@ async function sendClientEmail({
   matterNumber: string
   matterTitle: string
   assignmentId: string
-  documents: Array<{ id: string; file_name: string; file_path: string }>
+  documents: Array<{ id: string; file_name: string; file_url: string }>
 }) {
   try {
     // TODO: Integrate with email service (SendGrid, Resend, etc.)

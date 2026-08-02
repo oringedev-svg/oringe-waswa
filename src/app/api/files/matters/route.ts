@@ -191,6 +191,13 @@ export async function POST(req: NextRequest) {
     try {
       await supabase.from('conflict_checks').update({ matter_id: data.id }).eq('submission_id', body.submission_id).is('matter_id', null)
     } catch {}
+    // Same for anything uploaded during intake (a conflict-search screenshot,
+    // a document an assignment produced pre-matter): link the existing rows
+    // to the new matter rather than re-uploading, so Matter Documents shows
+    // them and its count is correct immediately, with nothing duplicated.
+    try {
+      await supabase.from('legal_documents').update({ matter_id: data.id }).eq('submission_id', body.submission_id).is('matter_id', null)
+    } catch {}
   }
 
   return NextResponse.json(data, { status: 201 })

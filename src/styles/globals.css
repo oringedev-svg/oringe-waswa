@@ -61,6 +61,19 @@
   --on-band-muted: rgba(255,255,255,.46);
   --on-band-line: rgba(255,255,255,.18);
 
+  /* Admin sidebar, a fixed dark navigation panel in both themes. Uses the
+     same slate family as the announcement bar but scoped so hover/active
+     states can be tuned independently of other fixed bands. */
+  --admin-sidebar-bg: var(--band-slate);
+  --admin-sidebar-border: var(--on-band-line);
+  --admin-sidebar-fg: var(--on-band);
+  --admin-sidebar-fg-muted: var(--on-band-muted);
+  --admin-sidebar-hover: rgba(255,255,255,.07);
+  --admin-sidebar-active-bg: color-mix(in srgb, var(--band-gold) 14%, transparent);
+  --admin-sidebar-active-border: color-mix(in srgb, var(--band-gold) 42%, transparent);
+  --admin-sidebar-active-fg: var(--on-band-strong);
+  --admin-sidebar-icon-active: var(--band-gold);
+
   /* The hero's underline accent. Was hardcoded in two places before it
      was ever a token, which is exactly the drift this block exists to
      prevent. */
@@ -191,6 +204,8 @@
   --shadow-md: 0 4px 14px rgba(0,0,0,0.45);
   --shadow-lg: 0 10px 28px rgba(0,0,0,0.55);
   --shadow-xl: 0 20px 56px rgba(0,0,0,0.65);
+  /* Sidebar sits one step below the page ground in dark mode. */
+  --admin-sidebar-bg: #141a1d;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
@@ -804,15 +819,15 @@ body{top:0!important}
    a breadcrumb row on every page. Sidebar hides on mobile where the top-bar
    launcher carries navigation. */
 .admin-topbar{position:sticky;top:0;z-index:50;border-bottom:1px solid var(--color-border);background:color-mix(in srgb,var(--color-surface-raised) 92%,transparent);backdrop-filter:blur(12px)}
-.admin-sidebar{flex-shrink:0;width:15rem;border-right:1px solid var(--color-border);background:var(--color-surface-raised);min-height:calc(100vh - 3.5rem);position:sticky;top:3.5rem;align-self:flex-start;display:none;padding:1.25rem .75rem}
+.admin-sidebar{flex-shrink:0;width:15rem;border-right:1px solid var(--admin-sidebar-border);background:var(--admin-sidebar-bg);min-height:calc(100vh - 3.5rem);position:sticky;top:3.5rem;align-self:flex-start;display:none;padding:1.25rem .75rem;color:var(--admin-sidebar-fg)}
 @media(min-width:1024px){.admin-sidebar{display:block}}
-.admin-sidebar-head{display:flex;align-items:center;gap:.5rem;padding:.4rem .75rem 1rem;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-muted);font-weight:500}
+.admin-sidebar-head{display:flex;align-items:center;gap:.5rem;padding:.4rem .75rem 1rem;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--admin-sidebar-fg-muted);font-weight:500}
 .admin-sidebar-nav{display:flex;flex-direction:column;gap:.15rem}
-.admin-sidebar-item{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;border-radius:var(--radius-md);font-size:.875rem;font-family:var(--font-body);color:var(--color-text-secondary);transition:background .15s ease,color .15s ease,border-color .15s ease;border:1px solid transparent}
-.admin-sidebar-item:hover{background:var(--color-surface-overlay);color:var(--color-text-primary)}
-.admin-sidebar-item.is-active{background:color-mix(in srgb,var(--color-brand) 10%,var(--color-surface));color:var(--color-text-primary);border-color:color-mix(in srgb,var(--color-brand) 35%,transparent);font-weight:500}
-.admin-sidebar-item.is-active svg{color:var(--color-brand)}
-.admin-sidebar-item.is-active:hover{color:var(--color-text-primary)}
+.admin-sidebar-item{display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;border-radius:var(--radius-md);font-size:.875rem;font-family:var(--font-body);color:var(--admin-sidebar-fg);transition:background .15s ease,color .15s ease,border-color .15s ease;border:1px solid transparent}
+.admin-sidebar-item:hover{background:var(--admin-sidebar-hover);color:var(--admin-sidebar-active-fg)}
+.admin-sidebar-item.is-active{background:var(--admin-sidebar-active-bg);color:var(--admin-sidebar-active-fg);border-color:var(--admin-sidebar-active-border);font-weight:500}
+.admin-sidebar-item.is-active svg{color:var(--admin-sidebar-icon-active)}
+.admin-sidebar-item.is-active:hover{color:var(--admin-sidebar-active-fg)}
 .admin-main{flex:1;min-width:0;padding:1.5rem 1.5rem 3rem;background:var(--color-surface)}
 @media(min-width:768px){.admin-main{padding:2rem 2.5rem 4rem}}
 .admin-breadcrumbs{display:flex;align-items:center;gap:.4rem;font-family:var(--font-body);font-size:.8rem;color:var(--color-text-muted);margin-bottom:1.75rem}
@@ -1128,7 +1143,7 @@ body{top:0!important}
 
 /* Secondary sidebar heading, the current domain's tools listed beneath the
    fixed capability nav. Ruled off so the two groups read as distinct. */
-.admin-sidebar-head-sub{margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--color-border)}
+.admin-sidebar-head-sub{margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--admin-sidebar-border)}
 
 /* MATTER CARDS (Entrora UI brief §2): matter number and title, small
    status pills, a compact client/court metadata row, and the case summary

@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Play, Pause, Square, Volume2, VolumeX, ChevronDown, RotateCcw } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Play, Pause, Square, Volume2, VolumeX, ChevronDown } from 'lucide-react'
 
 interface ReadAloudProps {
   text: string
@@ -29,10 +29,13 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(-1)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
   const wordsRef = useRef<string[]>([])
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  // Tracks which full-text word index playback last started from, so
+  // onboundary can report a progress/word position relative to the whole
+  // text even though we may only be speaking a slice of it (see speak()).
+  const startWordIndexRef = useRef(0)
 
   // Clean text for reading
-  const cleanText = text
+  const cleanText = useMemo(() => text
     .replace(/#{1,6}\s/g, '')
     .replace(/\*\*/g, '')
     .replace(/\*/g, '')
@@ -40,7 +43,11 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/\n\n+/g, '. ')
     .replace(/\n/g, ' ')
-    .trim()
+    .trim(), [text])
+
+  useEffect(() => {
+    wordsRef.current = cleanText ? cleanText.split(' ') : []
+  }, [cleanText])
 
   useEffect(() => {
     const loadVoices = () => {
@@ -54,28 +61,39 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
     loadVoices()
     window.speechSynthesis?.addEventListener('voiceschanged', loadVoices)
     return () => window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     return () => {
       stop()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function stop() {
-    if (intervalRef.current) clearInterval(intervalRef.current)
     window.speechSynthesis?.cancel()
     setPlaying(false)
     setPaused(false)
     setProgress(0)
     setCurrentWordIndex(-1)
+    startWordIndexRef.current = 0
   }
 
-  function speak() {
-    if (!cleanText) return
+  // startWordIndex lets playback begin partway through the text — used for
+  // seeking (click on progress bar) and for resuming position after a speed
+  // change, since SpeechSynthesisUtterance.rate can't be changed mid-speech.
+  function speak(startWordIndex = 0) {
+    const words = wordsRef.current
+    if (!words.length) return
     window.speechSynthesis?.cancel()
 
-    const utterance = new SpeechSynthesisUtterance(cleanText)
+    const clampedStart = Math.max(0, Math.min(startWordIndex, words.length - 1))
+    const totalWords = words.length
+    const textToSpeak = words.slice(clampedStart).join(' ')
+    startWordIndexRef.current = clampedStart
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak)
     utterance.rate = speed
     utterance.volume = muted ? 0 : volume
 
@@ -84,15 +102,13 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
       if (voice) utterance.voice = voice
     }
 
-    wordsRef.current = cleanText.split(' ')
-    const totalWords = wordsRef.current.length
-
     utterance.onboundary = (e) => {
       if (e.name === 'word') {
         const charIndex = e.charIndex
-        const wordsBefore = cleanText.slice(0, charIndex).split(' ').length - 1
-        setCurrentWordIndex(wordsBefore)
-        setProgress((wordsBefore / totalWords) * 100)
+        const localWordsBefore = textToSpeak.slice(0, charIndex).split(' ').length - 1
+        const actualWordIndex = clampedStart + localWordsBefore
+        setCurrentWordIndex(actualWordIndex)
+        setProgress((actualWordIndex / totalWords) * 100)
       }
     }
 
@@ -115,7 +131,7 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
   }
 
   function togglePause() {
-    if (!playing) { speak(); return }
+    if (!playing) { speak(0); return }
     if (paused) {
       window.speechSynthesis?.resume()
       setPaused(false)
@@ -128,9 +144,24 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
   function changeSpeed(s: number) {
     setSpeed(s)
     if (playing) {
-      stop()
-      setTimeout(() => speak(), 100)
+      // Resume from wherever we currently are instead of restarting from
+      // the top — rate can't be changed on a live utterance, so we have to
+      // stop/restart, but there's no reason to lose the listener's place.
+      const resumeFrom = currentWordIndex >= 0 ? currentWordIndex : 0
+      window.speechSynthesis?.cancel()
+      setTimeout(() => speak(resumeFrom), 100)
     }
+  }
+
+  function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
+    const words = wordsRef.current
+    if (!words.length) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const targetWordIndex = Math.floor(pct * words.length)
+    window.speechSynthesis?.cancel()
+    setProgress(pct * 100)
+    speak(targetWordIndex)
   }
 
   return (
@@ -164,16 +195,11 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
         {title && <div className="text-xs text-[var(--color-muted)] truncate max-w-32">{title}</div>}
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar — click to seek to that point in the text */}
       <div
-        className="read-aloud-progress flex-1 min-w-0"
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect()
-          const pct = (e.clientX - rect.left) / rect.width
-          const charPos = Math.floor(pct * cleanText.length)
-          stop()
-          // seek not natively supported, just restart
-        }}
+        className="read-aloud-progress flex-1 min-w-0 cursor-pointer"
+        onClick={handleSeek}
+        title="Click to jump to this point"
       >
         <div className="read-aloud-progress-fill" style={{ width: `${progress}%` }} />
       </div>
@@ -198,8 +224,9 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
       {/* Volume */}
       <button
         onClick={() => {
-          setMuted(!muted)
-          if (utteranceRef.current) utteranceRef.current.volume = muted ? volume : 0
+          const nextMuted = !muted
+          setMuted(nextMuted)
+          if (utteranceRef.current) utteranceRef.current.volume = nextMuted ? 0 : volume
         }}
         className="flex-shrink-0 text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors"
         title={muted ? 'Unmute' : 'Mute'}
@@ -221,7 +248,15 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
               {voices.filter(v => v.lang.startsWith('en')).map(v => (
                 <button
                   key={v.name}
-                  onClick={() => { setSelectedVoice(v.name); setShowSettings(false); if (playing) { stop(); setTimeout(speak, 100) } }}
+                  onClick={() => {
+                    setSelectedVoice(v.name)
+                    setShowSettings(false)
+                    if (playing) {
+                      const resumeFrom = currentWordIndex >= 0 ? currentWordIndex : 0
+                      window.speechSynthesis?.cancel()
+                      setTimeout(() => speak(resumeFrom), 100)
+                    }
+                  }}
                   className={`w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-surface-overlay)] transition-colors ${selectedVoice === v.name ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'}`}
                 >
                   {v.name} <span className="text-[var(--color-muted)]">({v.lang})</span>

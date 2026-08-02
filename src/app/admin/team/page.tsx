@@ -104,17 +104,25 @@ export default function AdminTeamPage() {
     }
     setSaving(true)
     try {
+      // Strip `profile` — it's a joined/computed field from GET /api/team
+      // (profile:profiles(user_id)), not a real column on team_members.
+      // Sending it through to Supabase's .update() causes a silent 500.
+      const { profile: _profile, revisions: _revisions, ...rest } = editing as Partial<TeamMember> & { revisions?: unknown }
+
       const payload = {
-        ...editing,
-        specializations: typeof editing.specializations === 'string'
-          ? (editing.specializations as string).split(',').map((s: string) => s.trim()).filter(Boolean)
-          : editing.specializations || [],
+        ...rest,
+        specializations: typeof rest.specializations === 'string'
+          ? (rest.specializations as unknown as string).split(',').map((s: string) => s.trim()).filter(Boolean)
+          : rest.specializations || [],
       }
       const res = isNew
         ? await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         : await fetch(`/api/team/${editing.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       if (res.ok) { toast.success(isNew ? 'Member added!' : 'Member updated!'); setEditing(null); load() }
-      else toast.error('Save failed')
+      else {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Save failed')
+      }
     } catch { toast.error('Network error') }
     finally { setSaving(false) }
   }

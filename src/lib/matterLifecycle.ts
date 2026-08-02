@@ -39,6 +39,19 @@ export const STAGES: StageMeta[] = [
   { key: 'archived', label: 'Archived', color: 'red' },
 ]
 
+// The ordered "happy path", used to render the pipeline stepper and by the
+// workflow completion engine to know what "the next stage" means for
+// auto-advance. on_hold pauses within "open" rather than getting its own
+// position; declined/archived are off-path terminal states.
+export const MATTER_HAPPY_PATH: MatterStage[] = ['lead', 'conflict_check', 'engagement_letter', 'retainer_pending', 'open', 'closed']
+
+/** The stage after `stage` on the happy path, or null at the end of it. */
+export function nextHappyStage(stage: MatterStage): MatterStage | null {
+  const i = MATTER_HAPPY_PATH.indexOf(stage)
+  if (i === -1 || i === MATTER_HAPPY_PATH.length - 1) return null
+  return MATTER_HAPPY_PATH[i + 1]
+}
+
 // Which stages a matter can move to from its current stage.
 const TRANSITIONS: Record<MatterStage, MatterStage[]> = {
   lead: ['conflict_check', 'declined', 'archived'],

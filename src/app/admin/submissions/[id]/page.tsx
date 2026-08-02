@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, Send, Loader2, User, Mail, Phone, Calendar, MessageSquare, Sparkles, Scale, ArrowRight, Eye, UserCog, RefreshCw, History, FileText } from 'lucide-react'
 import { formatDate, getStatusColor, MATTER_TYPES } from '@/lib/utils'
 import PipelineStepper from '@/components/admin/PipelineStepper'
+import AssignmentComposer from '@/components/admin/AssignmentComposer'
 import SuggestedSolutions from '@/components/admin/SuggestedSolutions'
 import SectionCard from '@/components/admin/SectionCard'
 import { SECTION_COLORS } from '@/lib/sectionColors'
@@ -52,8 +53,7 @@ export default function SubmissionDetailPage() {
   const [showMeetingForm, setShowMeetingForm] = useState(false)
   const [meetingForm, setMeetingForm] = useState({ title: '', date: '', startTime: '', endTime: '' })
   const [schedulingMeeting, setSchedulingMeeting] = useState(false)
-  const [assignForm, setAssignForm] = useState({ attorney_id: '', comment: '' })
-  const [assigning, setAssigning] = useState(false)
+  const [showAssign, setShowAssign] = useState(false)
 
   function loadMeetingsAndTasks() {
     fetch(`/api/calendar-events?submission_id=${params.id}`)
@@ -182,32 +182,6 @@ export default function SubmissionDetailPage() {
       } else toast.error('Update failed')
     } catch { toast.error('Network error') }
     finally { setSaving(false) }
-  }
-
-  async function assignTo() {
-    if (!sub || !assignForm.attorney_id) { toast.error('Choose who to assign this to'); return }
-    setAssigning(true)
-    try {
-      const res = await fetch('/api/assignments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          submission_id: sub.id,
-          assigned_to: assignForm.attorney_id,
-          message: assignForm.comment.trim() || undefined,
-        }),
-      })
-      if (res.ok) {
-        toast.success('Assigned, they will see this on their desk')
-        setAssignForm({ attorney_id: '', comment: '' })
-        refetchSubmission()
-      } else {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Could not assign this')
-      }
-    } finally {
-      setAssigning(false)
-    }
   }
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
@@ -482,27 +456,12 @@ export default function SubmissionDetailPage() {
                 Currently assigned to <span className="text-[var(--color-text-primary)] font-medium">{(sub.assigned_member as { full_name: string }).full_name}</span>
               </p>
             )}
-            <div className="flex flex-col gap-2">
-              <select
-                className="input text-sm"
-                value={assignForm.attorney_id}
-                onChange={e => setAssignForm(f => ({ ...f, attorney_id: e.target.value }))}
-              >
-                <option value="">Choose a team member…</option>
-                {team.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
-              </select>
-              <textarea
-                rows={2}
-                className="input text-sm"
-                placeholder="Optional note for whoever picks this up…"
-                value={assignForm.comment}
-                onChange={e => setAssignForm(f => ({ ...f, comment: e.target.value }))}
-              />
-              <button onClick={assignTo} disabled={assigning || !assignForm.attorney_id} className="btn btn-primary text-sm justify-center gap-2">
-                {assigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCog className="w-3.5 h-3.5" />}
-                Assign
-              </button>
-            </div>
+            {/* Same composer as the pipeline stepper and the matter
+                lifecycle; this one covers the enquiry as a whole rather than
+                a single step, so it passes no stage. */}
+            <button onClick={() => setShowAssign(true)} className="btn btn-primary text-sm justify-center gap-2 w-full">
+              <UserCog className="w-3.5 h-3.5" /> Assign
+            </button>
           </div>
 
           {/* Internal Notes */}
@@ -525,6 +484,15 @@ export default function SubmissionDetailPage() {
           </div>
         </div>
       </div>
+
+      <AssignmentComposer
+        open={showAssign}
+        onClose={() => setShowAssign(false)}
+        context={{ submissionId: sub.id as string, clientName: sub.submitter_name as string }}
+        team={team}
+        title="Assign this enquiry"
+        onCreated={refetchSubmission}
+      />
     </div>
   )
 }

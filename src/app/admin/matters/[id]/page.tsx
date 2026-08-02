@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Upload, Download, Trash2, Lock, FileText, Plus, Loader2, Eye, Shield, ArrowRight, Search, Send, Clock, Receipt, Circle, CheckCircle2, Users, History } from 'lucide-react'
 import { formatDate, formatFileSize, formatCurrency, formatMinutes, getStatusColor, MATTER_TYPES, DOCUMENT_TYPES } from '@/lib/utils'
-import { stagePermission, stageLabel, stageMeta, type MatterStage } from '@/lib/matterLifecycle'
+import { stagePermission, stageLabel, stageMeta, stageTaskSuggestions, type MatterStage } from '@/lib/matterLifecycle'
 import { availableInvoiceTransitions, invoiceStatusLabel, INVOICE_STATUS_BADGE } from '@/lib/invoiceLifecycle'
 import type { IntakeStage } from '@/lib/intakeLifecycle'
 import PipelineStepper from '@/components/admin/PipelineStepper'
@@ -12,6 +12,8 @@ import SuggestedSolutions from '@/components/admin/SuggestedSolutions'
 import ServiceOfProcessCard from '@/components/admin/ServiceOfProcessCard'
 import CostEstimateCard from '@/components/admin/CostEstimateCard'
 import MatterPipeline from '@/components/admin/MatterPipeline'
+import AssignmentComposer from '@/components/admin/AssignmentComposer'
+import type { WorkContext } from '@/lib/workContext'
 import SectionCard from '@/components/admin/SectionCard'
 import LitigationCard from '@/components/admin/LitigationCard'
 import { KENYA_COUNTIES } from '@/lib/kenyaCounties'
@@ -99,17 +101,6 @@ interface StageHistoryEntry {
   actor?: { full_name: string } | null
 }
 
-interface MatterTask {
-  id: string
-  title: string
-  due_date: string | null
-  status: 'open' | 'done'
-  done_at: string | null
-  created_at: string
-  assignee?: { id: string; full_name: string } | null
-  creator?: { full_name: string } | null
-}
-
 interface MatterNote {
   id: string
   content: string
@@ -169,10 +160,6 @@ export default function MatterDetailPage() {
   const [permissions, setPermissions] = useState<string[]>([])
   const [stageHistory, setStageHistory] = useState<StageHistoryEntry[]>([])
   const [conflictChecks, setConflictChecks] = useState<ConflictCheck[]>([])
-  const [conflictQuery, setConflictQuery] = useState('')
-  const [runningCheck, setRunningCheck] = useState(false)
-  const [decisionDraft, setDecisionDraft] = useState<Record<string, string>>({})
-  const [decidingId, setDecidingId] = useState<string | null>(null)
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -180,21 +167,18 @@ export default function MatterDetailPage() {
   const [addingTime, setAddingTime] = useState(false)
   const [generatingInvoice, setGeneratingInvoice] = useState(false)
 
-  const [tasks, setTasks] = useState<MatterTask[]>([])
   const [notes, setNotes] = useState<MatterNote[]>([])
   const [team, setTeam] = useState<{ id: string; full_name: string; professional_type?: { id: string; name: string } | null }[]>([])
-  const [stages, setStages] = useState<{ id: string; key: string; label: string }[]>([])
   const [showServicePanel, setShowServicePanel] = useState(false)
   const [showCostEstimate, setShowCostEstimate] = useState(false)
   const [showClientAccess, setShowClientAccess] = useState(false)
-  const [taskForm, setTaskForm] = useState({ title: '', assigned_to: '', stage_id: '', due_date: '' })
-  const [addingTask, setAddingTask] = useState(false)
+  const [showAssign, setShowAssign] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [addingNote, setAddingNote] = useState(false)
 
   async function load() {
     const matterId = params.id as string
-    const [matterData, docsRes, checksRes, me, timeRes, invoicesRes, notesRes, teamRes, stagesRes] = await Promise.all([
+    const [matterData, docsRes, checksRes, me, timeRes, invoicesRes, notesRes, teamRes] = await Promise.all([
       fetch(`/api/files/matters/${matterId}`).then(r => r.json()),
       fetch(`/api/files/documents?matter_id=${matterId}`).then(r => r.json()),
       fetch(`/api/conflict-checks?matter_id=${matterId}`).then(r => r.json()),
@@ -203,7 +187,6 @@ export default function MatterDetailPage() {
       fetch(`/api/invoices?matter_id=${matterId}`).then(r => r.json()),
       fetch(`/api/matter-notes?matter_id=${matterId}`).then(r => r.json()),
       fetch('/api/team?with_category=true').then(r => r.json()),
-      fetch('/api/pipeline-stages').then(r => r.json()).catch(() => []),
     ])
     setMatter(matterData || null)
     setRevisions(matterData?.revisions || [])
@@ -213,40 +196,9 @@ export default function MatterDetailPage() {
     setPermissions(me.permissions || [])
     setTimeEntries(Array.isArray(timeRes) ? timeRes : [])
     setInvoices(invoicesRes?.data || [])
-    setTasks([])
     setNotes(Array.isArray(notesRes) ? notesRes : [])
     setTeam(Array.isArray(teamRes) ? teamRes : [])
-    setStages(Array.isArray(stagesRes) ? stagesRes : [])
     setLoading(false)
-  }
-
-  async function addTask() {
-    if (!taskForm.title.trim()) { toast.error('Work description is required'); return }
-    if (!taskForm.assigned_to) { toast.error('Please assign to someone'); return }
-    if (!taskForm.stage_id) { toast.error('Please select a pipeline stage'); return }
-    setAddingTask(true)
-    try {
-      const res = await fetch('/api/assignments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matter_id: params.id,
-          assigned_to: taskForm.assigned_to,
-          stage_id: taskForm.stage_id,
-          instructions: taskForm.title.trim(),
-        }),
-      })
-      if (res.ok) {
-        setTaskForm({ title: '', assigned_to: '', stage_id: '', due_date: '' })
-        toast.success('Assignment created')
-        router.push(`/admin/assignments`)
-      } else {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Could not create assignment')
-      }
-    } finally {
-      setAddingTask(false)
-    }
   }
 
   async function addNote() {
@@ -304,27 +256,6 @@ export default function MatterDetailPage() {
     })
     if (res.ok) load()
     else toast.error('Could not save')
-  }
-
-  async function runConflictCheck() {
-    if (!conflictQuery.trim()) { toast.error('Enter a name or reference to search'); return }
-    setRunningCheck(true)
-    try {
-      const res = await fetch('/api/conflict-checks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matter_id: params.id, query: conflictQuery.trim() }),
-      })
-      if (res.ok) {
-        setConflictQuery('')
-        load()
-      } else {
-        const data = await res.json().catch(() => ({}))
-        toast.error(data.error || 'Search failed')
-      }
-    } finally {
-      setRunningCheck(false)
-    }
   }
 
   const [invitingId, setInvitingId] = useState<string | null>(null)
@@ -419,21 +350,6 @@ export default function MatterDetailPage() {
     }
   }
 
-  async function recordDecision(checkId: string, decision: string) {
-    setDecidingId(checkId)
-    try {
-      const res = await fetch('/api/conflict-checks', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: checkId, decision, decision_notes: decisionDraft[checkId] || '' }),
-      })
-      if (res.ok) { toast.success('Decision recorded'); load() }
-      else toast.error('Could not record decision')
-    } finally {
-      setDecidingId(null)
-    }
-  }
-
   async function restoreRevision(revisionId: string) {
     if (!confirm('Restore this version? The current details will be saved as a new revision first.')) return
     setRestoring(revisionId)
@@ -493,6 +409,21 @@ export default function MatterDetailPage() {
   // documents, takes over. Section order is driven by this flag.
   const preEngagement = !!matter && ['lead', 'conflict_check', 'engagement_letter', 'retainer_pending'].includes(matter.status)
   const clientPerson = matter?.people?.find(p => p.role === 'client' && p.profile)
+
+  // Resolved once, handed to every contextual action on this page so none of
+  // them asks the user to restate the matter, stage or client they're already
+  // looking at. stageKey (not stage_id/pipeline_stages, which nothing seeds
+  // or reads for this firm) is what the workflow completion engine keys on.
+  const workContext: WorkContext = {
+    matterId: (params.id as string) || null,
+    stageKey: matter?.status || null,
+    stageLabel: matter ? stageLabel(matter.status) : null,
+    clientName: matter?.client_name || null,
+    clientProfileId: clientPerson?.profile?.id || null,
+    matterNumber: matter?.matter_number || null,
+    matterTitle: matter?.title || null,
+    matterType: matter?.type || null,
+  }
 
   // The matter's story, milestone by milestone: each stage the matter has
   // passed through collects what actually happened during it, notes,
@@ -668,39 +599,18 @@ export default function MatterDetailPage() {
 
           {/* Next Steps, a matter should always carry an owner and a
               direction; this sits above everything else on purpose. */}
-          <SectionCard title="Next Steps" icon={ArrowRight} color="blue" defaultOpen
-            badge={<span className="text-xs text-[var(--color-muted)] ml-1">{tasks.filter(t => t.status === 'open').length} open</span>}>
+          <SectionCard title="Next Steps" icon={ArrowRight} color="blue" defaultOpen>
 
-            <p className="text-sm text-[var(--color-muted)] mb-3">Assign work for this matter below. It will appear in <Link href="/admin/assignments" className="text-[var(--color-accent)] hover:underline">Assignments</Link> with full workflow tracking.</p>
+            <p className="text-sm text-[var(--color-muted)] mb-3">Assign work for this matter. It will appear in <Link href="/admin/assignments" className="text-[var(--color-accent)] hover:underline">Assignments</Link> with full workflow tracking.</p>
 
+            {/* This used to be a second, differently-shaped assignment form
+                sitting on the same page as the lifecycle's "Assign Task".
+                Both wrote the same row, so they're now one composer, opened
+                from either place with the same inherited context. */}
             {permissions.includes('manage_matters') && (
-              <div className="flex flex-wrap gap-2 items-end">
-                <div className="flex-1 min-w-48">
-                  <input className="input text-sm" placeholder="Work description / instructions"
-                    value={taskForm.title}
-                    onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))}
-                    onKeyDown={e => e.key === 'Enter' && addTask()} />
-                </div>
-                <select className="input text-sm w-48" value={taskForm.stage_id} onChange={e => setTaskForm(f => ({ ...f, stage_id: e.target.value }))}>
-                  <option value="">Pipeline stage…</option>
-                  {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                </select>
-                <select className="input text-sm w-44" value={taskForm.assigned_to} onChange={e => setTaskForm(f => ({ ...f, assigned_to: e.target.value }))}>
-                  <option value="">Assign to…</option>
-                  {team.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-                </select>
-                <button onClick={addTask} disabled={addingTask} className="btn btn-primary gap-2 text-sm">
-                  {addingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Create Work Item
-                </button>
-              </div>
-            )}
-
-            {tasks.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-                <p className="text-xs text-[var(--color-muted)]">
-                  Work is now tracked in <Link href="/admin/assignments" className="text-[var(--color-accent)] hover:underline">Assignments</Link>
-                </p>
-              </div>
+              <button onClick={() => setShowAssign(true)} className="btn btn-primary gap-2 text-sm">
+                <Plus className="w-4 h-4" /> Assign Work
+              </button>
             )}
           </SectionCard>
 
@@ -735,25 +645,15 @@ export default function MatterDetailPage() {
               stageHistory={stageHistory}
               conflictChecks={conflictChecks}
               permissions={permissions}
-              conflictQuery={conflictQuery}
-              setConflictQuery={setConflictQuery}
-              runningCheck={runningCheck}
-              onRunConflictCheck={runConflictCheck}
-              decisionDraft={decisionDraft}
-              setDecisionDraft={setDecisionDraft}
-              decidingId={decidingId}
-              onRecordDecision={recordDecision}
+              onConflictChanged={load}
               canMakeTransition={canMakeTransition}
               onTransitionClick={handleTransitionClick}
               submissionOrigin={matter.submission ? { id: matter.submission.id, tracking_code: matter.submission.tracking_code, created_at: matter.submission.created_at } : null}
               clientInstruction={matter.submission?.data?.message || matter.submission?.data?.description || null}
               description={matter.description || null}
               team={team}
-              stages={stages}
-              taskForm={taskForm}
-              setTaskForm={setTaskForm}
-              addingTask={addingTask}
-              onAddTask={addTask}
+              context={workContext}
+              onAssignmentCreated={load}
               noteDraft={noteDraft}
               setNoteDraft={setNoteDraft}
               addingNote={addingNote}
@@ -1131,6 +1031,15 @@ export default function MatterDetailPage() {
               </div>
             </div>
           )}
+          <AssignmentComposer
+            open={showAssign}
+            onClose={() => setShowAssign(false)}
+            context={workContext}
+            team={team}
+            suggestions={stageTaskSuggestions(matter.status)}
+            title={`Assign work on ${matter.matter_number}`}
+            onCreated={load}
+          />
         </>
       ) : (
         <div className="card p-12 text-center text-[var(--color-muted)]">Matter not found.</div>

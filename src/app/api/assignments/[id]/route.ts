@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { getSessionProfile, isAdminRole, type SessionProfile } from '@/lib/auth'
+import { evaluateAndAdvanceMatterStage, evaluateAndAdvanceIntakeStage } from '@/lib/workflowCompletion'
+import { userHasPermission } from '@/lib/permissions'
+import { buildAssignmentBrief } from '@/lib/assignmentBrief'
+import { stageLabel as matterStageLabelOf } from '@/lib/matterLifecycle'
+import { intakeStageMeta } from '@/lib/intakeLifecycle'
 
 // Assignments are visible to: the assigner, the assignee, or anyone in an
 // admin-tier role. requireAdminApi() alone would exclude pupils and admin
@@ -41,11 +46,11 @@ export async function GET(
       assigned_by_user:assigned_by(full_name, email),
       assignee:assigned_to(id, full_name, position),
       messages:assignment_messages(id, sender_id, message_type, content, created_at),
-      documents(id, file_name, file_path, document_type, requires_review, approved_at),
+      work_item:work_items(id, activity_type:activity_types(name, description)),
       matter:legal_matters(
         id, matter_number, title, type, status, description, client_name,
         opposing_party, court, case_number, county, claim_value, is_confidential,
-        opening_date, submission_id
+        opening_date, submission_id, assigned_attorney:team_members(full_name, position)
       )
     `)
     .eq('id', params.id)
@@ -55,10 +60,21 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const { allowed } = await resolveAccess(profile, assignment)
+  const { allowed, teamMemberId } = await resolveAccess(profile, assignment)
   if (!allowed) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
+
+  // Part D: an assignee who isn't also the assigner or an admin-tier/
+  // manage_matters user gets a curated slice of the matter, not the whole
+  // record, they see enough to do the work (summary, timeline, documents,
+  // client, brief) and nothing beyond that, per the same "one assignment
+  // shouldn't grant the whole matter" principle getMatterAccessScope()
+  // already applies to matter access at large.
+  const isAssignee = !!teamMemberId && assignment.assigned_to === teamMemberId
+  const isAssigner = assignment.assigned_by === profile.id
+  const hasManageMatters = isAdminRole(profile.role) || await userHasPermission(profile.userId, profile.role, 'manage_matters')
+  const isPrivilegedViewer = isAssigner || hasManageMatters
 
   // Fill in the rest of the file: the matter's stage history, its own
   // documents (not just ones attached to this assignment), and whichever
@@ -66,7 +82,7 @@ export async function GET(
   const matterId: string | null = assignment.matter?.id ?? null
   const submissionId: string | null = assignment.submission_id ?? assignment.matter?.submission_id ?? null
 
-  const [stageHistoryRes, matterDocsRes, conflictChecksRes, submissionRes] = await Promise.all([
+  const [stageHistoryRes, matterDocsRes, conflictChecksRes, submissionRes, teamRes] = await Promise.all([
     matterId
       ? supabase
           .from('matter_stage_history')
@@ -77,7 +93,7 @@ export async function GET(
     matterId
       ? supabase
           .from('legal_documents')
-          .select('id, title, type, file_url, file_name, created_at, uploader:profiles(full_name)')
+          .select('id, title, type, file_url, file_name, assignment_id, created_at, uploader:profiles(full_name)')
           .eq('matter_id', matterId)
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [] }),
@@ -95,15 +111,73 @@ export async function GET(
           .eq('id', submissionId)
           .single()
       : Promise.resolve({ data: null }),
+    matterId
+      ? supabase.from('matter_people').select('role, profile:profiles(full_name)').eq('matter_id', matterId)
+      : Promise.resolve({ data: [] }),
   ])
 
-  return NextResponse.json({
+  const allMatterDocs = matterDocsRes.data || []
+  const workItem = Array.isArray(assignment.work_item) ? assignment.work_item[0] : assignment.work_item
+  const activityType = workItem ? (Array.isArray(workItem.activity_type) ? workItem.activity_type[0] : workItem.activity_type) : null
+
+  const brief = buildAssignmentBrief({
+    stageKey: assignment.stage_key,
+    isMatter: !!matterId,
+    matterTitle: assignment.matter?.title,
+    matterDescription: assignment.matter?.description,
+    clientName: assignment.matter?.client_name || submissionRes.data?.submitter_name,
+    activityTypeName: activityType?.name ?? null,
+    activityTypeDescription: activityType?.description ?? null,
+    instructions: assignment.instructions,
+  })
+
+  const currentStageLabel = assignment.stage_key
+    ? (matterId ? matterStageLabelOf(assignment.stage_key) : intakeStageMeta(assignment.stage_key).label)
+    : null
+
+  // A crude but honest priority signal: there's no dedicated priority field
+  // anywhere in this schema (work_items has "urgency", assignments doesn't),
+  // so this is computed from due_date proximity using that same vocabulary
+  // rather than inventing a second, redundant stored field.
+  let priority: 'overdue' | 'due_soon' | 'normal' | 'none' = 'none'
+  if (assignment.due_date) {
+    const days = (new Date(assignment.due_date).getTime() - Date.now()) / 86400000
+    priority = days < 0 ? 'overdue' : days <= 2 ? 'due_soon' : 'normal'
+  }
+
+  const responseBody: Record<string, unknown> = {
     ...assignment,
+    currentStageLabel,
+    priority,
+    brief,
     matterStageHistory: stageHistoryRes.data || [],
-    matterDocuments: matterDocsRes.data || [],
+    matterDocuments: allMatterDocs,
+    assignmentDocuments: allMatterDocs.filter(d => d.assignment_id === params.id),
     conflictChecks: conflictChecksRes.data || [],
     submission: submissionRes.data || null,
-  })
+    assignedTeam: teamRes.data || [],
+  }
+
+  if (!isPrivilegedViewer) {
+    // Trim what an assignee-only viewer receives: no claim value, no
+    // privileged conflict-decision notes, no client contact details beyond
+    // their name, matches Part D's "read-only, limited to what's needed."
+    if (responseBody.matter) {
+      const { claim_value: _cv, is_confidential: _ic, ...restMatter } = responseBody.matter as Record<string, unknown>
+      void _cv; void _ic
+      responseBody.matter = restMatter
+    }
+    responseBody.conflictChecks = (responseBody.conflictChecks as { decision_notes?: string }[]).map(
+      c => ({ ...c, decision_notes: null }),
+    )
+    if (responseBody.submission) {
+      const { submitter_email: _e, ...restSub } = responseBody.submission as Record<string, unknown>
+      void _e
+      responseBody.submission = restSub
+    }
+  }
+
+  return NextResponse.json(responseBody)
 }
 
 // PATCH: Update assignment status (state transitions)
@@ -288,40 +362,21 @@ export async function PATCH(
 
   await supabase.from('assignment_messages').insert(messages)
 
-  // Auto-progression: if approved and stage is configured to auto-advance, move matter to next stage
-  // (submission-only assignments, pre-matter, have no stage_id, nothing to advance)
-  if (action === 'approve' && assignment.stage_id) {
-    const { data: stage } = await supabase
-      .from('pipeline_stages')
-      .select('auto_advance, next_stage_id')
-      .eq('id', assignment.stage_id)
-      .single()
-
-    if (stage?.auto_advance && stage.next_stage_id) {
-      // Move matter to next stage
-      const { error: advanceError } = await supabase
-        .from('legal_matters')
-        .update({
-          current_stage_id: stage.next_stage_id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', assignment.matter_id)
-
-      if (!advanceError) {
-        // Log the stage transition
-        await supabase
-          .from('matter_stage_history')
-          .insert({
-            matter_id: assignment.matter_id,
-            from_stage: assignment.stage_id,
-            to_stage: stage.next_stage_id,
-            changed_by: profile.id,
-          })
-
-        // Optionally create assignment for next stage
-        // This is deferred to a manual process for now to avoid complexity
-        // Can be enabled by setting auto_create_next_assignment in stage config
-      }
+  // Workflow completion engine: does approving this assignment satisfy the
+  // current stage's completion requirements, and if so, advance the matter
+  // (or the pre-matter intake pipeline) to the next stage. Nothing to
+  // evaluate for an assignment that wasn't tagged with a stage (generic
+  // work not tied to a specific lifecycle step).
+  let advanceResult: Awaited<ReturnType<typeof evaluateAndAdvanceMatterStage>> | null = null
+  if (action === 'approve' && assignment.stage_key) {
+    if (assignment.matter_id) {
+      advanceResult = await evaluateAndAdvanceMatterStage(supabase, {
+        matterId: assignment.matter_id, stageKey: assignment.stage_key, assignmentId: params.id, actorId: profile.id,
+      })
+    } else if (assignment.submission_id) {
+      advanceResult = await evaluateAndAdvanceIntakeStage(supabase, {
+        submissionId: assignment.submission_id, stageKey: assignment.stage_key, assignmentId: params.id, actorId: profile.id,
+      })
     }
   }
 
@@ -368,5 +423,9 @@ export async function PATCH(
     }
   }
 
-  return NextResponse.json(updated)
+  // _stageAdvanced is not a column, it's reported once so the assignment
+  // page can tell the approver what just happened elsewhere in the app,
+  // including when it did NOT advance because a gate is still unmet, not
+  // just when it did.
+  return NextResponse.json({ ...updated, _stageAdvanced: advanceResult })
 }

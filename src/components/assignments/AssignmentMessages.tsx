@@ -19,6 +19,19 @@ interface AssignmentMessagesProps {
   loading?: boolean
 }
 
+// Renders message text with any http(s) URL turned into a clickable link,
+// so a link shared as part of a submission (Part A #8) is actually usable,
+// not just a string sitting inside the discussion thread. Splitting on a
+// capturing group isolates each URL into its own array element, so each
+// part only needs a plain (non-stateful) prefix check, not a shared /g regex.
+function linkify(text: string) {
+  return text.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+    /^https?:\/\//.test(part)
+      ? <a key={i} href={part} target="_blank" rel="noreferrer" className="text-[var(--color-accent)] hover:underline break-all">{part}</a>
+      : <span key={i}>{part}</span>,
+  )
+}
+
 const messageTypeConfig = {
   Comment: { icon: MessageCircle, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
   Review: { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
@@ -74,7 +87,7 @@ export default function AssignmentMessages({ messages, onSendMessage, canComment
                       </span>
                     </div>
                     <p className="text-sm text-[var(--color-text-primary)] mt-2 whitespace-pre-wrap">
-                      {msg.content}
+                      {linkify(msg.content)}
                     </p>
                   </div>
                 </div>

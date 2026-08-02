@@ -1,12 +1,16 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Check, Loader2, Search, AlertTriangle, XCircle, MessageSquare, GitBranch, UserCog, ArrowUpRight } from 'lucide-react'
+import { Check, Loader2, AlertTriangle, XCircle, MessageSquare, GitBranch, ArrowUpRight } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { INTAKE_HAPPY_PATH, intakeStageMeta, intakeStagePermission, type IntakeStage } from '@/lib/intakeLifecycle'
 import SectionCard from '@/components/admin/SectionCard'
 import StatusPill, { type Tone } from '@/components/admin/ui/StatusPill'
+import AssignmentComposer from '@/components/admin/AssignmentComposer'
+import ConflictCheckPanel from '@/components/admin/ConflictCheckPanel'
+import StageActions from '@/components/admin/StageActions'
+import type { WorkContext } from '@/lib/workContext'
 
 interface AssignmentMessage {
   id: string
@@ -21,6 +25,7 @@ interface StageAssignment {
   id: string
   status: string
   instructions: string | null
+  stage_key: string | null
   assignee?: { profile?: { full_name: string } | null } | null
   messages?: AssignmentMessage[]
 }
@@ -35,9 +40,6 @@ const ASSIGNMENT_STATUS_TONE: Record<string, Tone> = {
   Revoked: 'neutral',
   Cancelled: 'neutral',
 }
-
-const RISK_TONE: Record<string, Tone> = { high: 'overdue', medium: 'risk', low: 'review' }
-const CONFLICT_DECISION_TONE: Record<string, Tone> = { declined: 'overdue', proceed: 'safe', proceed_with_conditions: 'risk' }
 
 interface ConflictMatch { match_type: string; name: string; detail: string; risk: 'low' | 'medium' | 'high' }
 interface ConflictCheck {
@@ -80,16 +82,9 @@ export default function PipelineStepper({ submissionId, intakeStage, onAdvance, 
   const [permissions, setPermissions] = useState<string[]>([])
   const [conflictChecks, setConflictChecks] = useState<ConflictCheck[]>([])
   const [notes, setNotes] = useState<SubmissionNote[]>([])
-  const [conflictQuery, setConflictQuery] = useState('')
-  const [runningCheck, setRunningCheck] = useState(false)
-  const [decidingId, setDecidingId] = useState<string | null>(null)
-  const [decisionDraft, setDecisionDraft] = useState<Record<string, string>>({})
   const [noteDraft, setNoteDraft] = useState('')
   const [advancing, setAdvancing] = useState<string | null>(null)
   const [stageAssignments, setStageAssignments] = useState<StageAssignment[]>([])
-  const [assigneeId, setAssigneeId] = useState('')
-  const [assignComment, setAssignComment] = useState('')
-  const [assigningStage, setAssigningStage] = useState(false)
   const [showAssignForm, setShowAssignForm] = useState(false)
 
   const stage: IntakeStage = intakeStage || 'received'
@@ -115,76 +110,6 @@ export default function PipelineStepper({ submissionId, intakeStage, onAdvance, 
   }
 
   useEffect(() => { load() }, [submissionId])
-
-  async function assignThisStep() {
-    if (!assigneeId) { toast.error('Choose who to assign this to'); return }
-    setAssigningStage(true)
-    try {
-      const label = intakeStageMeta(selectedStage).label
-      const res = await fetch('/api/assignments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          submission_id: submissionId,
-          assigned_to: assigneeId,
-          instructions: `Handle the "${label}" step${submitterName ? ` for ${submitterName}'s enquiry` : ''}.`,
-          message: assignComment.trim() || undefined,
-        }),
-      })
-      if (res.ok) {
-        toast.success('Assigned, they will see this on their desk')
-        setAssigneeId('')
-        setAssignComment('')
-        setShowAssignForm(false)
-        load()
-      } else {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Could not assign this step')
-      }
-    } finally {
-      setAssigningStage(false)
-    }
-  }
-
-  async function runConflictCheck() {
-    if (!conflictQuery.trim()) { toast.error('Enter a name or reference to search'); return }
-    setRunningCheck(true)
-    try {
-      const res = await fetch('/api/conflict-checks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ submission_id: submissionId, query: conflictQuery.trim() }),
-      })
-      if (res.ok) {
-        setConflictQuery('')
-        load()
-        onAdvance()
-        toast.success('Conflict check complete')
-      } else {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Could not run the check')
-      }
-    } finally { setRunningCheck(false) }
-  }
-
-  async function recordDecision(id: string, decision: string) {
-    setDecidingId(id)
-    try {
-      const res = await fetch('/api/conflict-checks', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, decision, decision_notes: decisionDraft[id] || '' }),
-      })
-      if (res.ok) {
-        load()
-        onAdvance()
-        toast.success(decision === 'declined' ? 'Enquiry declined' : 'Decision recorded, pipeline advanced')
-      } else {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Could not record the decision')
-      }
-    } finally { setDecidingId(null) }
-  }
 
   async function advanceStage(to: IntakeStage, note?: string) {
     setAdvancing(to)
@@ -214,6 +139,20 @@ export default function PipelineStepper({ submissionId, intakeStage, onAdvance, 
   const noteStep = NOTE_STAGES[selectedStage]
   const canManage = permissions.includes(intakeStagePermission(stage, NOTE_STAGES[stage]?.next || 'declined'))
   const selectedNotes = notes.filter(n => n.stage === selectedStage)
+
+  // Everything an assignment created from here should inherit. The step being
+  // viewed is the stage, not the live one, so work can be handed out for a
+  // step that's already been passed.
+  const stepContext: WorkContext = {
+    submissionId,
+    stageKey: selectedStage,
+    stageLabel: intakeStageMeta(selectedStage).label,
+    clientName: submitterName || null,
+  }
+  // Just a starting point for the instructions text box now, stepContext's
+  // stageKey is what actually links the assignment to this step.
+  const defaultStepInstructions =
+    `Handle the "${intakeStageMeta(selectedStage).label}" step${submitterName ? ` for ${submitterName}'s enquiry` : ''}.`
 
   return (
     <SectionCard
@@ -276,10 +215,14 @@ export default function PipelineStepper({ submissionId, intakeStage, onAdvance, 
           still lives in the sidebar; this is the per-stage counterpart. */}
       {!declined && !promoted && team && team.length > 0 && (
         <div className="mb-6 pb-6 border-b border-[var(--color-border)]">
-          {stageAssignments.filter(a => a.instructions?.includes(`"${intakeStageMeta(selectedStage).label}"`)).length > 0 && (
+          {/* Grouped by stage_key, the real identifier set at creation
+              (see workContext.ts's assignmentPayloadFor), not by searching
+              instructions for this step's quoted label, that broke the
+              moment the text was edited. */}
+          {stageAssignments.filter(a => a.stage_key === selectedStage).length > 0 && (
             <div className="flex flex-col gap-2 mb-3">
               {stageAssignments
-                .filter(a => a.instructions?.includes(`"${intakeStageMeta(selectedStage).label}"`))
+                .filter(a => a.stage_key === selectedStage)
                 .map(a => {
                   // The status badge alone ("Submitted") told you work had
                   // come back without showing what it was, the write-up
@@ -319,33 +262,32 @@ export default function PipelineStepper({ submissionId, intakeStage, onAdvance, 
             </div>
           )}
 
-          {!showAssignForm ? (
-            <button onClick={() => setShowAssignForm(true)} className="btn btn-outline gap-1.5 text-xs">
-              <UserCog className="w-3.5 h-3.5" /> Assign this step
-            </button>
-          ) : (
-            <div className="flex flex-col gap-2 p-3 rounded-md bg-[var(--color-surface-overlay)]">
-              <select className="input text-sm" value={assigneeId} onChange={e => setAssigneeId(e.target.value)}>
-                <option value="">Choose a team member…</option>
-                {team.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-              </select>
-              <textarea
-                rows={2}
-                className="input text-sm"
-                placeholder={`Optional note about the "${intakeStageMeta(selectedStage).label}" step…`}
-                value={assignComment}
-                onChange={e => setAssignComment(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <button onClick={assignThisStep} disabled={assigningStage || !assigneeId} className="btn btn-primary text-xs gap-1.5 flex-1 justify-center">
-                  {assigningStage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Assign'}
-                </button>
-                <button onClick={() => setShowAssignForm(false)} className="btn btn-ghost text-xs">Cancel</button>
-              </div>
-            </div>
-          )}
+          {/* Contextual actions for the step being viewed, from the same
+              registry the matter lifecycle uses. Only what this screen can
+              actually carry out is rendered. */}
+          <StageActions
+            stageKey={selectedStage}
+            context={stepContext}
+            permissions={permissions}
+            handlers={{
+              assign_task: () => setShowAssignForm(true),
+            }}
+          />
         </div>
       )}
+
+      {/* One shared composer, the same component the matter lifecycle uses.
+          It inherits the enquiry and the step being viewed, so neither is
+          asked for again. */}
+      <AssignmentComposer
+        open={showAssignForm}
+        onClose={() => setShowAssignForm(false)}
+        context={stepContext}
+        team={team}
+        title={`Assign the ${intakeStageMeta(selectedStage).label} step`}
+        defaultInstructions={defaultStepInstructions}
+        onCreated={load}
+      />
 
       {/* Detail pane for whichever step is selected, the live step opens
           with its action (search box, note form); a past step just shows
@@ -358,94 +300,18 @@ export default function PipelineStepper({ submissionId, intakeStage, onAdvance, 
           </div>
 
           {selectedIsLive && (stage === 'received' || stage === 'conflict_check') && (
-            <>
-              <p className="text-xs text-[var(--color-text-muted)] mb-3">
-                Professional obligation: search current and former clients, opposing parties, and related matters before anything else happens. A documented decision to proceed is required before this enquiry can move forward.
-              </p>
-              <div className="flex gap-2 mb-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
-                  <input
-                    className="input pl-9 text-sm"
-                    placeholder="Search a name, company, or reference…"
-                    value={conflictQuery}
-                    onChange={e => setConflictQuery(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && runConflictCheck()}
-                  />
-                </div>
-                <button onClick={runConflictCheck} disabled={runningCheck} className="btn btn-primary gap-2 text-sm flex-shrink-0">
-                  {runningCheck ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  Check Conflicts
-                </button>
-              </div>
-            </>
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">
+              Professional obligation: search current and former clients, opposing parties, and related matters before anything else happens. A documented decision to proceed is required before this enquiry can move forward.
+            </p>
           )}
 
-          {conflictChecks.length === 0 ? (
-            <p className="text-xs text-[var(--color-muted)]">No conflict checks run yet.</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {conflictChecks.map(check => (
-                <div key={check.id} className="card p-4" style={{ background: 'var(--color-surface-raised)' }}>
-                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                    <div className="text-sm font-medium text-[var(--color-text-primary)]">Results for &quot;{check.search_query}&quot;</div>
-                    <div className="flex items-center gap-2">
-                      {check.highest_risk && check.highest_risk !== 'none' && (
-                        <StatusPill tone={RISK_TONE[check.highest_risk] || 'neutral'} dot>{check.highest_risk} risk</StatusPill>
-                      )}
-                      <span className="text-xs text-[var(--color-muted)]">{formatDate(check.created_at, 'short')}</span>
-                    </div>
-                  </div>
-
-                  {check.results.length === 0 ? (
-                    <p className="text-xs text-[var(--color-muted)]">No matches found.</p>
-                  ) : (
-                    <div className="flex flex-col gap-1.5 mb-3">
-                      {check.results.map((r, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 rounded bg-[var(--color-surface)] gap-2">
-                          <div className="min-w-0">
-                            <span className="font-medium text-[var(--color-text-primary)]">{r.match_type}</span>
-                            <span className="text-[var(--color-muted)]">, {r.name} · {r.detail}</span>
-                          </div>
-                          <StatusPill tone={RISK_TONE[r.risk] || 'neutral'}>{r.risk}</StatusPill>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {check.decision === 'pending' ? (
-                    permissions.includes('approve_conflict_waiver') ? (
-                      <div className="pt-3 border-t border-[var(--color-border)]">
-                        <label className="label">Partner decision (required before proceeding)</label>
-                        <textarea
-                          rows={2}
-                          className="input text-sm mb-2"
-                          placeholder="Notes / basis for decision…"
-                          value={decisionDraft[check.id] || ''}
-                          onChange={e => setDecisionDraft(d => ({ ...d, [check.id]: e.target.value }))}
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <button onClick={() => recordDecision(check.id, 'proceed')} disabled={decidingId === check.id} className="btn btn-primary text-xs">Proceed</button>
-                          <button onClick={() => recordDecision(check.id, 'proceed_with_conditions')} disabled={decidingId === check.id} className="btn btn-outline text-xs">Proceed with Conditions</button>
-                          <button onClick={() => recordDecision(check.id, 'declined')} disabled={decidingId === check.id} className="btn btn-ghost text-xs text-red-500">Decline</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-[var(--color-muted)] italic pt-3 border-t border-[var(--color-border)]">
-                        Awaiting partner review, requires the &quot;Approve Conflict Decisions&quot; permission.
-                      </p>
-                    )
-                  ) : (
-                    <div className="pt-3 border-t border-[var(--color-border)] text-xs">
-                      <StatusPill tone={CONFLICT_DECISION_TONE[check.decision] || 'neutral'}>{check.decision.replace(/_/g, ' ')}</StatusPill>
-                      {check.decision_notes && <p className="text-[var(--color-text-secondary)] mt-1.5">{check.decision_notes}</p>}
-                      {check.decider?.full_name && <p className="text-[var(--color-muted)] mt-1">Decided by {check.decider.full_name}</p>}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <ConflictCheckPanel
+            context={stepContext}
+            checks={conflictChecks}
+            permissions={permissions}
+            canRun={selectedIsLive && (stage === 'received' || stage === 'conflict_check')}
+            onChanged={() => { load(); onAdvance() }}
+          />
         </div>
       )}
 

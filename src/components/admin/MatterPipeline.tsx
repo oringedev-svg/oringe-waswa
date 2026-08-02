@@ -1,16 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Check, Loader2, Search, ArrowRight, ListPlus, NotebookPen, ArrowUpRight, Send, Calculator } from 'lucide-react'
+import { Check, Loader2, ArrowRight, ListPlus, NotebookPen, ArrowUpRight, Send, Calculator } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate, getStatusColor } from '@/lib/utils'
-import { availableTransitions, stageLabel, stageMeta, stageTaskSuggestions, type MatterStage } from '@/lib/matterLifecycle'
+import { availableTransitions, stageLabel, stageMeta, stageTaskSuggestions, MATTER_HAPPY_PATH, type MatterStage } from '@/lib/matterLifecycle'
 import SectionCard from '@/components/admin/SectionCard'
-
-// The happy-path nodes shown as the main pipeline row. on_hold pauses
-// within "Open" rather than getting its own node; declined/archived are
-// off-path terminal states shown as a banner instead of a stepper position
-//, same convention as PipelineStepper's declined handling.
-const MATTER_HAPPY_PATH: MatterStage[] = ['lead', 'conflict_check', 'engagement_letter', 'retainer_pending', 'open', 'closed']
+import AssignmentComposer, { type ComposerTeamMember } from '@/components/admin/AssignmentComposer'
+import ConflictCheckPanel from '@/components/admin/ConflictCheckPanel'
+import StageActions from '@/components/admin/StageActions'
+import type { WorkContext } from '@/lib/workContext'
 
 interface ConflictMatch { match_type: string; name: string; detail: string; risk: 'low' | 'medium' | 'high' }
 interface ConflictCheck {
@@ -30,17 +28,11 @@ interface StageHistoryEntry {
   created_at: string
   actor?: { full_name: string } | null
 }
-interface TeamMember { id: string; full_name: string; professional_type?: { id: string; name: string } | null }
-interface PipelineStageOption { id: string; key: string; label: string }
-interface TaskForm { title: string; assigned_to: string; stage_id: string; due_date: string }
-
 export default function MatterPipeline({
-  status, stageHistory, conflictChecks, permissions,
-  conflictQuery, setConflictQuery, runningCheck, onRunConflictCheck,
-  decisionDraft, setDecisionDraft, decidingId, onRecordDecision,
+  status, stageHistory, conflictChecks, permissions, onConflictChanged,
   canMakeTransition, onTransitionClick,
   submissionOrigin, clientInstruction, description,
-  team, stages, taskForm, setTaskForm, addingTask, onAddTask,
+  team, context, onAssignmentCreated,
   noteDraft, setNoteDraft, addingNote, onAddNote,
   onInvokeService, onInvokeCostEstimate,
 }: {
@@ -48,25 +40,17 @@ export default function MatterPipeline({
   stageHistory: StageHistoryEntry[]
   conflictChecks: ConflictCheck[]
   permissions: string[]
-  conflictQuery: string
-  setConflictQuery: (v: string) => void
-  runningCheck: boolean
-  onRunConflictCheck: () => void
-  decisionDraft: Record<string, string>
-  setDecisionDraft: (updater: (d: Record<string, string>) => Record<string, string>) => void
-  decidingId: string | null
-  onRecordDecision: (checkId: string, decision: string) => void
+  /** Re-fetch after a search or a partner decision, both can move the stage. */
+  onConflictChanged: () => void
   canMakeTransition: (from: MatterStage, to: MatterStage) => boolean
   onTransitionClick: (to: MatterStage) => void
   submissionOrigin?: { id: string; tracking_code: string; created_at: string } | null
   clientInstruction?: string | null
   description?: string | null
-  team: TeamMember[]
-  stages: PipelineStageOption[]
-  taskForm: TaskForm
-  setTaskForm: (updater: (f: TaskForm) => TaskForm) => void
-  addingTask: boolean
-  onAddTask: () => void
+  team: ComposerTeamMember[]
+  /** Everything an assignment raised here should inherit, resolved by the page. */
+  context: WorkContext
+  onAssignmentCreated: () => void
   noteDraft: string
   setNoteDraft: (v: string) => void
   addingNote: boolean
@@ -84,14 +68,10 @@ export default function MatterPipeline({
   const [selectedStage, setSelectedStage] = useState<MatterStage>('lead')
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [showNoteForm, setShowNoteForm] = useState(false)
-  const [taskCategory, setTaskCategory] = useState('')
-  const [taskPreset, setTaskPreset] = useState('')
   useEffect(() => {
     setSelectedStage('lead')
     setShowTaskForm(false)
     setShowNoteForm(false)
-    setTaskCategory('')
-    setTaskPreset('')
   }, [status])
 
   const selectedIsLive = selectedStage === effectiveStatus
@@ -99,10 +79,7 @@ export default function MatterPipeline({
   const stageEntries = stageHistory.filter(h => h.to_stage === selectedStage)
   const canManage = permissions.includes('manage_matters')
 
-  const taskCategories = Array.from(new Set(team.map(t => t.professional_type?.name || 'Unclassified'))).sort()
-  const teamInCategory = team.filter(t => (t.professional_type?.name || 'Unclassified') === taskCategory)
   const taskSuggestions = stageTaskSuggestions(status)
-  const currentPipelineStage = stages.find(s => s.key === status)
 
   return (
     <SectionCard
@@ -230,91 +207,13 @@ export default function MatterPipeline({
               disconnected-tool problem, still true here. */}
           {selectedStage === 'conflict_check' && (
             <div className="mt-2 mb-3">
-              {selectedIsLive && (
-                <div className="flex gap-2 mb-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
-                    <input
-                      className="input pl-9 text-sm"
-                      placeholder="Search a name, company, or reference…"
-                      value={conflictQuery}
-                      onChange={e => setConflictQuery(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && onRunConflictCheck()}
-                    />
-                  </div>
-                  <button onClick={onRunConflictCheck} disabled={runningCheck} className="btn btn-primary gap-2 text-sm flex-shrink-0">
-                    {runningCheck ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    Check Conflicts
-                  </button>
-                </div>
-              )}
-              {conflictChecks.length === 0 ? (
-                <p className="text-xs text-[var(--color-muted)]">No conflict checks run yet.</p>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {conflictChecks.map(check => (
-                    <div key={check.id} className="card p-4" style={{ background: 'var(--color-surface-raised)' }}>
-                      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                        <div className="text-sm font-medium text-[var(--color-text-primary)]">Results for &quot;{check.search_query}&quot;</div>
-                        <div className="flex items-center gap-2">
-                          {check.highest_risk && check.highest_risk !== 'none' && (
-                            <span className={`badge text-xs ${check.highest_risk === 'high' ? 'status-rejected' : check.highest_risk === 'medium' ? 'status-pending' : 'status-review'}`}>
-                              {check.highest_risk} risk
-                            </span>
-                          )}
-                          <span className="text-xs text-[var(--color-muted)]">{formatDate(check.created_at, 'short')}</span>
-                        </div>
-                      </div>
-
-                      {check.results.length === 0 ? (
-                        <p className="text-xs text-[var(--color-muted)]">No matches found.</p>
-                      ) : (
-                        <div className="flex flex-col gap-1.5 mb-3">
-                          {check.results.map((r, i) => (
-                            <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 rounded bg-[var(--color-surface)] gap-2">
-                              <div className="min-w-0">
-                                <span className="font-medium text-[var(--color-text-primary)]">{r.match_type}</span>
-                                <span className="text-[var(--color-muted)]">, {r.name} · {r.detail}</span>
-                              </div>
-                              <span className={`badge text-xs flex-shrink-0 ${r.risk === 'high' ? 'status-rejected' : r.risk === 'medium' ? 'status-pending' : 'status-review'}`}>{r.risk}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {check.decision === 'pending' ? (
-                        permissions.includes('approve_conflict_waiver') ? (
-                          <div className="pt-3 border-t border-[var(--color-border)]">
-                            <label className="label">Partner decision (required before proceeding)</label>
-                            <textarea
-                              rows={2}
-                              className="input text-sm mb-2"
-                              placeholder="Notes / basis for decision…"
-                              value={decisionDraft[check.id] || ''}
-                              onChange={e => setDecisionDraft(d => ({ ...d, [check.id]: e.target.value }))}
-                            />
-                            <div className="flex flex-wrap gap-2">
-                              <button onClick={() => onRecordDecision(check.id, 'proceed')} disabled={decidingId === check.id} className="btn btn-primary text-xs">Proceed</button>
-                              <button onClick={() => onRecordDecision(check.id, 'proceed_with_conditions')} disabled={decidingId === check.id} className="btn btn-outline text-xs">Proceed with Conditions</button>
-                              <button onClick={() => onRecordDecision(check.id, 'declined')} disabled={decidingId === check.id} className="btn btn-ghost text-xs text-red-500">Decline</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-[var(--color-muted)] italic pt-3 border-t border-[var(--color-border)]">
-                            Awaiting partner review, requires the &quot;Approve Conflict Decisions&quot; permission.
-                          </p>
-                        )
-                      ) : (
-                        <div className="pt-3 border-t border-[var(--color-border)] text-xs">
-                          <span className={`badge text-xs ${check.decision === 'declined' ? 'status-rejected' : 'status-active'}`}>{check.decision.replace(/_/g, ' ')}</span>
-                          {check.decision_notes && <p className="text-[var(--color-text-secondary)] mt-1.5">{check.decision_notes}</p>}
-                          {check.decider?.full_name && <p className="text-[var(--color-muted)] mt-1">Decided by {check.decider.full_name}</p>}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              <ConflictCheckPanel
+                context={context}
+                checks={conflictChecks}
+                permissions={permissions}
+                canRun={selectedIsLive}
+                onChanged={onConflictChanged}
+              />
             </div>
           )}
 
@@ -330,77 +229,21 @@ export default function MatterPipeline({
                       <ArrowRight className="w-4 h-4" /> {stageLabel(to)}
                     </button>
                   ))}
-                {canManage && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setShowTaskForm(v => !v)
-                        if (currentPipelineStage) setTaskForm(f => ({ ...f, stage_id: currentPipelineStage.id }))
-                      }}
-                      className="btn btn-ghost gap-1.5 text-sm"
-                    >
-                      <ListPlus className="w-4 h-4" /> Assign Task
-                    </button>
-                    <button onClick={() => setShowNoteForm(v => !v)} className="btn btn-ghost gap-1.5 text-sm">
-                      <NotebookPen className="w-4 h-4" /> Attendance Note
-                    </button>
-                    <button onClick={onInvokeService} className="btn btn-ghost gap-1.5 text-sm">
-                      <Send className="w-4 h-4" /> Log Service
-                    </button>
-                    <button onClick={onInvokeCostEstimate} className="btn btn-ghost gap-1.5 text-sm">
-                      <Calculator className="w-4 h-4" /> Estimate Costs
-                    </button>
-                  </>
-                )}
+                {/* Stage-appropriate actions come from the registry rather
+                    than a fixed list here, so what's offered at "retainer
+                    pending" differs from "open" without a branch in this file. */}
+                <StageActions
+                  stageKey={status}
+                  context={context}
+                  permissions={permissions}
+                  handlers={{
+                    assign_task: () => setShowTaskForm(true),
+                    record_note: () => setShowNoteForm(v => !v),
+                    log_service: onInvokeService,
+                    estimate_costs: onInvokeCostEstimate,
+                  }}
+                />
               </div>
-
-              {showTaskForm && (
-                <div className="flex flex-col gap-2 p-3 rounded-md bg-[var(--color-surface-overlay)] mb-2">
-                  {!currentPipelineStage && (
-                    <p className="text-xs text-amber-600">
-                      No pipeline stage is configured for &quot;{stageLabel(status)}&quot; yet, this work item can&apos;t be created until one is.
-                    </p>
-                  )}
-                  {taskSuggestions.length > 0 && (
-                    <select
-                      className="input text-sm"
-                      value={taskPreset}
-                      onChange={e => {
-                        const v = e.target.value
-                        setTaskPreset(v)
-                        if (v && v !== '__other__') setTaskForm(f => ({ ...f, title: v }))
-                        if (v === '__other__') setTaskForm(f => ({ ...f, title: '' }))
-                      }}
-                    >
-                      <option value="">Milestone task at {stageLabel(status).toLowerCase()}…</option>
-                      {taskSuggestions.map(t => <option key={t} value={t}>{t}</option>)}
-                      <option value="__other__">Other (type your own)…</option>
-                    </select>
-                  )}
-                  {(taskPreset === '__other__' || taskSuggestions.length === 0) && (
-                    <input className="input text-sm" placeholder={`What needs to happen at ${stageLabel(status).toLowerCase()}?`}
-                      value={taskForm.title}
-                      onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))}
-                      onKeyDown={e => e.key === 'Enter' && onAddTask()} />
-                  )}
-                  <div className="flex flex-wrap gap-2 items-end">
-                    <select className="input text-sm w-40" value={taskCategory} onChange={e => { setTaskCategory(e.target.value); setTaskForm(f => ({ ...f, assigned_to: '' })) }}>
-                      <option value="">Assign to category…</option>
-                      {taskCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    {taskCategory && (
-                      <select className="input text-sm w-44" value={taskForm.assigned_to} onChange={e => setTaskForm(f => ({ ...f, assigned_to: e.target.value }))}>
-                        <option value="">Select person…</option>
-                        {teamInCategory.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-                      </select>
-                    )}
-                    <input type="date" className="input text-sm w-36" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} />
-                    <button onClick={onAddTask} disabled={addingTask || !currentPipelineStage} className="btn btn-primary text-sm">
-                      {addingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {showNoteForm && (
                 <div className="flex gap-2 p-3 rounded-md bg-[var(--color-surface-overlay)]">
@@ -416,6 +259,19 @@ export default function MatterPipeline({
             </div>
           )}
         </div>
+
+      {/* The same composer the intake pipeline uses. It inherits the matter,
+          the live stage and the client from the context the page resolved,
+          so none of that is re-entered here. */}
+      <AssignmentComposer
+        open={showTaskForm}
+        onClose={() => setShowTaskForm(false)}
+        context={context}
+        team={team}
+        suggestions={taskSuggestions}
+        title={`Assign work at ${stageLabel(status).toLowerCase()}`}
+        onCreated={onAssignmentCreated}
+      />
     </SectionCard>
   )
 }

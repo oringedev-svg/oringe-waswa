@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { requirePermissionApi } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
-import { runConflictSearch } from '@/lib/conflictSearch'
+import { runMultiConflictSearch, type ConflictTarget } from '@/lib/conflictSearch'
 
 export async function GET(req: NextRequest) {
   const supabase = createAdminClient()
@@ -30,9 +30,22 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const matterId = body.matter_id as string | undefined
   const submissionId = body.submission_id as string | undefined
+  // A check now covers every party at once (client, opposing party, directors,
+  // and so on). The single `query` form is still accepted so older callers and
+  // saved links keep working; it's just a one-target search.
+  const rawTargets = Array.isArray(body.targets) ? (body.targets as ConflictTarget[]) : null
   const query = (body.query as string || '').trim()
-  if ((!matterId && !submissionId) || !query) {
-    return NextResponse.json({ error: 'query and either matter_id or submission_id are required' }, { status: 400 })
+  const targets: ConflictTarget[] = rawTargets?.length
+    ? rawTargets.filter(t => typeof t?.name === 'string' && t.name.trim().length > 0)
+    : query
+      ? [{ name: query, role: 'client' }]
+      : []
+
+  if ((!matterId && !submissionId) || targets.length === 0) {
+    return NextResponse.json(
+      { error: 'At least one search target, and either matter_id or submission_id, are required' },
+      { status: 400 },
+    )
   }
 
   // Running a check pre-matter (from a submission) or on a matter is the
@@ -50,7 +63,7 @@ export async function POST(req: NextRequest) {
     submission = data
   }
 
-  const { results, highestRisk } = await runConflictSearch(query, {
+  const { results, highestRisk, summary } = await runMultiConflictSearch(targets, {
     excludeMatterId: matterId,
     excludeSubmissionId: submissionId,
   })
@@ -60,7 +73,7 @@ export async function POST(req: NextRequest) {
     .insert({
       matter_id: matterId || null,
       submission_id: submissionId || null,
-      search_query: query,
+      search_query: summary,
       results,
       highest_risk: highestRisk,
       checked_by: guard.profile.id,
@@ -69,7 +82,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  await logAudit({ table_name: 'conflict_checks', record_id: data.id, action: 'INSERT', new_data: { matter_id: matterId, submission_id: submissionId, query, highest_risk: highestRisk } })
+  await logAudit({ table_name: 'conflict_checks', record_id: data.id, action: 'INSERT', new_data: { matter_id: matterId, submission_id: submissionId, targets, search_query: summary, highest_risk: highestRisk } })
 
   // Running a check IS entering the conflict-check step, the pipeline
   // should reflect what actually happened, not wait for a second manual

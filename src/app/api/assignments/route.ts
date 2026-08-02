@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const profile = await getSessionProfile()
   if (!profile) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
-  const { matter_id, submission_id, work_item_id, activity_type_id, assigned_to, stage_id, instructions, message, due_date } = await req.json()
+  const { matter_id, submission_id, work_item_id, activity_type_id, assigned_to, stage_id, stage_key, instructions, message, due_date } = await req.json()
 
   if (!assigned_to || (!matter_id && !submission_id && !work_item_id)) {
     return NextResponse.json(
@@ -185,6 +185,10 @@ export async function POST(req: NextRequest) {
       assigned_by: profile.id,
       assigned_to,
       stage_id: stage_id || null,
+      // The real, string-keyed identifier the completion engine and the
+      // intake stepper's grouping both use (legal_matters.status /
+      // submissions.intake_stage), not the never-populated pipeline_stages FK.
+      stage_key: stage_key || null,
       instructions: resolvedInstructions,
       due_date: due_date || null,
       status: 'Assigned',

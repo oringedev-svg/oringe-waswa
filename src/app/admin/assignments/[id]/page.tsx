@@ -1,10 +1,19 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, X, Play, Send, MessageCircle, AlertCircle, FileUp, Loader2, Paperclip } from 'lucide-react'
+import { CheckCircle2, X, Play, Send, MessageCircle, AlertCircle, FileUp, Loader2, Paperclip, Link2 } from 'lucide-react'
 import SectionCard from '@/components/admin/SectionCard'
 import AssignmentMessages from '@/components/assignments/AssignmentMessages'
+import MatterTimelineStrip from '@/components/assignments/MatterTimelineStrip'
 import toast from 'react-hot-toast'
+
+interface AssignmentBrief {
+  objective: string
+  background: string
+  currentStage: string
+  expectedDeliverable: string
+  instructions: string | null
+}
 
 interface Assignment {
   id: string
@@ -14,6 +23,11 @@ interface Assignment {
   assigned_by: string
   assigned_to: string | null
   instructions: string
+  stage_key: string | null
+  due_date?: string | null
+  currentStageLabel?: string | null
+  priority?: 'overdue' | 'due_soon' | 'normal' | 'none'
+  brief?: AssignmentBrief
   assigned_at: string
   accepted_at?: string
   started_at?: string
@@ -24,6 +38,7 @@ interface Assignment {
     description?: string | null; client_name?: string; opposing_party?: string | null
     court?: string | null; case_number?: string | null; county?: string | null
     claim_value?: number | null; is_confidential?: boolean; opening_date?: string
+    assigned_attorney?: { full_name: string; position?: string } | null
   }
   assignee?: { id: string; full_name: string; position?: string }
   assigned_by_user?: { full_name: string }
@@ -34,15 +49,32 @@ interface Assignment {
     content: string
     created_at: string
   }>
-  documents?: Array<{ id: string; file_name: string; file_path: string }>
   matterStageHistory?: Array<{ from_stage: string | null; to_stage: string; created_at: string; actor?: { full_name: string } | null }>
-  matterDocuments?: Array<{ id: string; title: string; type: string; file_url: string; file_name: string; created_at: string; uploader?: { full_name: string } | null }>
+  /** Every document on the matter, the "Related Documents" section. */
+  matterDocuments?: Array<{ id: string; title: string; type: string; file_url: string; file_name: string; assignment_id?: string | null; created_at: string; uploader?: { full_name: string } | null }>
+  /** The subset of matterDocuments (or, pre-matter, submission-linked docs) uploaded specifically via this assignment. */
+  assignmentDocuments?: Array<{ id: string; title: string; type: string; file_url: string; file_name: string; created_at: string; uploader?: { full_name: string } | null }>
+  assignedTeam?: Array<{ role: string; profile?: { full_name: string } | null }>
   conflictChecks?: Array<{ id: string; search_query: string; highest_risk: string | null; decision: string; decision_notes: string | null; created_at: string }>
   submission?: {
-    id: string; tracking_code: string; type: string; submitter_name: string; submitter_email: string
+    id: string; tracking_code: string; type: string; submitter_name: string; submitter_email?: string
     data: Record<string, string>; intake_stage: string | null; created_at: string
     updates?: Array<{ status: string; message: string; is_public: boolean; created_at: string }>
   } | null
+  _stageAdvanced?: {
+    advanced: boolean
+    from?: string
+    to?: string
+    reason?: 'stale' | 'gates_unmet' | 'end_of_path'
+    unmetGates?: string[]
+  } | null
+}
+
+const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
+  overdue: { label: 'Overdue', color: 'bg-red-100 text-red-800' },
+  due_soon: { label: 'Due soon', color: 'bg-amber-100 text-amber-800' },
+  normal: { label: 'Normal', color: 'bg-slate-100 text-slate-700' },
+  none: { label: 'No due date', color: 'bg-slate-100 text-slate-500' },
 }
 
 export default function AssignmentDetailPage({ params }: { params: { id: string } }) {
@@ -65,6 +97,7 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
   const [currentTeamMemberId, setCurrentTeamMemberId] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [responseText, setResponseText] = useState('')
+  const [responseLink, setResponseLink] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -116,7 +149,7 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
     loadAssignment()
   }, [params.id])
 
-  const handleAction = async (action: string) => {
+  const handleAction = async (action: string, messageOverride?: string) => {
     setActing(true)
     try {
       const res = await fetch(`/api/assignments/${params.id}`, {
@@ -124,17 +157,28 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          message: message || undefined,
+          message: (messageOverride ?? message) || undefined,
           rejection_reason: rejectionReason || undefined,
         }),
       })
 
       if (res.ok) {
-        const updated = await res.json()
+        const updated: Assignment = await res.json()
         setAssignment(updated)
         setMessage('')
         setRejectionReason('')
         setShowRejectionForm(false)
+        // The workflow completion engine may have just advanced the matter
+        // (or the intake pipeline) as a result of this approval, say so
+        // rather than leaving it to be noticed on the matter page later. If
+        // it didn't advance because a gate is still unmet, say that too,
+        // approving looking like it silently did nothing is worse.
+        const advance = updated._stageAdvanced
+        if (advance?.advanced) {
+          toast.success(`Stage requirements met, moved from "${advance.from}" to "${advance.to}"`)
+        } else if (advance?.reason === 'gates_unmet' && advance.unmetGates?.length) {
+          toast(`Approved, but the stage can't advance yet: ${advance.unmetGates.join(', ')}`, { icon: '⏳' })
+        }
       }
     } catch (error) {
       console.error('Action failed:', error)
@@ -151,15 +195,17 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
     if (!responseText.trim()) return
     setActing(true)
     try {
+      const content = responseText.trim() + (responseLink.trim() ? `\n\n${responseLink.trim()}` : '')
       const res = await fetch(`/api/assignments/${params.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'submit', message: responseText.trim() }),
+        body: JSON.stringify({ action: 'submit', message: content }),
       })
       if (res.ok) {
-        const updated = await res.json()
+        const updated: Assignment = await res.json()
         setAssignment(updated)
         setResponseText('')
+        setResponseLink('')
       }
     } catch (error) {
       console.error('Submit failed:', error)
@@ -301,15 +347,22 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
               {assignment.matter?.matter_number}
             </p>
           </div>
-          <span className={`badge ${config.color} text-sm`}>{config.label}</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {assignment.priority && assignment.priority !== 'none' && (
+              <span className={`badge text-sm ${PRIORITY_CONFIG[assignment.priority].color}`}>
+                {PRIORITY_CONFIG[assignment.priority].label}
+              </span>
+            )}
+            <span className={`badge ${config.color} text-sm`}>{config.label}</span>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Details */}
-          <SectionCard title="Details" color="blue" defaultOpen={true}>
+          {/* Assignment Summary */}
+          <SectionCard title="Assignment Summary" color="blue" defaultOpen={true}>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Assigned to</p>
@@ -324,25 +377,26 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Created</p>
+                <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Assigned date</p>
                 <p className="font-medium text-[var(--color-text-primary)] mt-1 text-sm">
                   {new Date(assignment.assigned_at).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Due date</p>
+                <p className="font-medium text-[var(--color-text-primary)] mt-1 text-sm">
+                  {assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : 'Not set'}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Status</p>
                 <p className="font-medium text-[var(--color-text-primary)] mt-1">{assignment.status}</p>
               </div>
-            </div>
-
-            {assignment.instructions && (
-              <div className="mt-6 pt-6 border-t border-[var(--color-border)]">
-                <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-2">Instructions</p>
-                <p className="text-sm text-[var(--color-text-primary)] whitespace-pre-wrap">
-                  {assignment.instructions}
-                </p>
+              <div>
+                <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Current stage</p>
+                <p className="font-medium text-[var(--color-text-primary)] mt-1">{assignment.currentStageLabel || '—'}</p>
               </div>
-            )}
+            </div>
 
             {assignment.rejection_reason && (
               <div className="mt-6 pt-6 border-t border-[var(--color-border)] bg-red-50 p-4 rounded border border-red-200">
@@ -352,12 +406,49 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
             )}
           </SectionCard>
 
+          {/* Assignment Brief: objective/background/deliverable are always
+              derived from the matter, stage, and (if this executes a work
+              item) the activity type, the assigner only ever wrote the
+              instructions line at the bottom. */}
+          {assignment.brief && (
+            <SectionCard title="Assignment Brief" color="gold" defaultOpen={true}>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-1">Objective</p>
+                  <p className="text-sm text-[var(--color-text-primary)]">{assignment.brief.objective}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-1">Background</p>
+                  <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap">{assignment.brief.background}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-1">Expected deliverable</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">{assignment.brief.expectedDeliverable}</p>
+                </div>
+                {assignment.brief.instructions && (
+                  <div className="pt-4 border-t border-[var(--color-border)]">
+                    <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-1">Instructions from {assignment.assigned_by_user?.full_name || 'the assigner'}</p>
+                    <p className="text-sm text-[var(--color-text-primary)] whitespace-pre-wrap">{assignment.brief.instructions}</p>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+          )}
+
+          {/* Matter Timeline: read-only position within the lifecycle, not
+              the interactive stepper the matter/enquiry's own page renders. */}
+          {assignment.stage_key && (
+            <SectionCard title="Matter Timeline" color="slate" defaultOpen={false}>
+              <MatterTimelineStrip stageKey={assignment.stage_key} isMatter={!!assignment.matter_id} />
+            </SectionCard>
+          )}
+
           {/* Case File, handing over the whole context, not just the task:
               matter background if there is one, the client's own request,
               and everything that's happened on it so far, so whoever picks
               this up isn't working blind. */}
           {assignment.matter && (
-            <SectionCard title="Matter File" color="purple" defaultOpen={true}>
+            <SectionCard title="Matter Context" color="purple" defaultOpen={true}>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Client</p>
@@ -367,6 +458,18 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
                   <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Matter status</p>
                   <p className="font-medium text-[var(--color-text-primary)] mt-1 capitalize">{assignment.matter.status?.replace(/_/g, ' ')}</p>
                 </div>
+                {assignment.matter.type && (
+                  <div>
+                    <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Matter type</p>
+                    <p className="font-medium text-[var(--color-text-primary)] mt-1 capitalize">{assignment.matter.type.replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+                {assignment.matter.assigned_attorney && (
+                  <div>
+                    <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Assigned advocate</p>
+                    <p className="font-medium text-[var(--color-text-primary)] mt-1">{assignment.matter.assigned_attorney.full_name}</p>
+                  </div>
+                )}
                 {assignment.matter.opposing_party && (
                   <div>
                     <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Opposing party</p>
@@ -414,9 +517,26 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
                 </div>
               )}
 
+              {assignment.assignedTeam && assignment.assignedTeam.length > 0 && (
+                <div className="pt-4 mt-4 border-t border-[var(--color-border)]">
+                  <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-2">Assigned team</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {assignment.assignedTeam.filter(p => p.profile?.full_name).map((p, i) => (
+                      <span key={i} className="text-xs px-2 py-1 rounded-full bg-[var(--color-surface-overlay)] text-[var(--color-text-secondary)] capitalize">
+                        {p.profile!.full_name} · {p.role}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Related Documents: every document already on the matter,
+                  automatically shown, not something the assigner has to
+                  attach by hand. Assignment-specific deliverables are their
+                  own section below so the two don't get confused. */}
               {assignment.matterDocuments && assignment.matterDocuments.length > 0 && (
                 <div className="pt-4 mt-4 border-t border-[var(--color-border)]">
-                  <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-2">Matter documents</p>
+                  <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide mb-2">Related documents</p>
                   <div className="space-y-1.5">
                     {assignment.matterDocuments.map(doc => (
                       <a key={doc.id} href={doc.file_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-[var(--color-text-primary)] hover:text-[var(--color-accent)]">
@@ -467,19 +587,25 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
             </SectionCard>
           )}
 
-          {/* Documents */}
-          {assignment.documents && assignment.documents.length > 0 && (
-            <SectionCard title="Attachments" color="slate" defaultOpen={true}>
+          {/* Assignment Documents: specifically what's been attached to
+              this piece of work (legal_documents rows tagged assignment_id),
+              separate from Related Documents above so "what did this
+              assignment produce" stays distinguishable from "what does the
+              matter already have". */}
+          {assignment.assignmentDocuments && assignment.assignmentDocuments.length > 0 && (
+            <SectionCard title="Assignment Documents" color="slate" defaultOpen={true}>
               <div className="space-y-2">
-                {assignment.documents.map(doc => (
+                {assignment.assignmentDocuments.map(doc => (
                   <a
                     key={doc.id}
-                    href={doc.file_path}
+                    href={doc.file_url}
+                    target="_blank"
+                    rel="noreferrer"
                     className="flex items-center gap-3 p-3 bg-[var(--color-surface-overlay)] hover:bg-[var(--color-surface-raised)] rounded-lg transition-colors group"
                   >
                     <FileUp className="w-4 h-4 text-[var(--color-muted)] flex-shrink-0" />
                     <span className="text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] truncate">
-                      {doc.file_name}
+                      {doc.title || doc.file_name}
                     </span>
                   </a>
                 ))}
@@ -547,6 +673,16 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
                     className="input text-sm resize-none w-full"
                     rows={4}
                   />
+                  <div className="relative">
+                    <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-muted)]" />
+                    <input
+                      type="url"
+                      value={responseLink}
+                      onChange={e => setResponseLink(e.target.value)}
+                      placeholder="Add a link (optional)"
+                      className="input text-sm w-full pl-8"
+                    />
+                  </div>
                   <button
                     onClick={() => submitStepResponse()}
                     disabled={acting || !responseText.trim()}
@@ -569,8 +705,21 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
                     Attach a document
                   </button>
+                  <div className="relative">
+                    <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-muted)]" />
+                    <input
+                      type="url"
+                      value={responseLink}
+                      onChange={e => setResponseLink(e.target.value)}
+                      placeholder="Add a link (optional)"
+                      className="input text-sm w-full pl-8"
+                    />
+                  </div>
                   <button
-                    onClick={() => handleAction('submit')}
+                    onClick={() => {
+                      handleAction('submit', responseLink.trim())
+                      setResponseLink('')
+                    }}
                     disabled={acting}
                     className="btn btn-primary w-full gap-2"
                   >
