@@ -16,12 +16,11 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    let established = false
+    let active = true
 
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
-        established = true
-        setReady(true)
+        if (active) { setReady(true); setInvalid(false) }
       }
     })
 
@@ -29,18 +28,18 @@ export default function ResetPasswordPage() {
     // (link processed) before this listener was attached.
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        established = true
-        setReady(true)
+        if (active) { setReady(true); setInvalid(false) }
+      } else if (active) {
+        // The callback route has already exchanged a valid PKCE recovery
+        // code by this point. A missing session is therefore a real invalid
+        // or expired link, not a race hidden behind an arbitrary timeout.
+        setInvalid(true)
       }
     })
 
-    const timeout = setTimeout(() => {
-      if (!established) setInvalid(true)
-    }, 4000)
-
     return () => {
+      active = false
       listener.subscription.unsubscribe()
-      clearTimeout(timeout)
     }
   }, [])
 
@@ -70,7 +69,7 @@ export default function ResetPasswordPage() {
     // role lands where it belongs, not always the admin panel.
     const me = await fetch('/api/me').then(r => (r.ok ? r.json() : null)).catch(() => null)
     const dest = me?.role === 'client' ? '/portal' : ['pupil', 'admin_assistant'].includes(me?.role) ? '/desk' : '/admin'
-    router.push(dest)
+    router.replace(dest)
     router.refresh()
   }
 

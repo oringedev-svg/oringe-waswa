@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Edit, Trash2, MessageSquare, Loader2, Send, X, UserPlus, ExternalLink, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, Edit, Trash2, MessageSquare, Loader2, Send, X, UserPlus, ExternalLink, Archive, ArchiveRestore, ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ImagePicker from '@/components/ui/ImagePicker'
 import { formatDate } from '@/lib/utils'
@@ -19,6 +19,8 @@ interface TeamMember {
   avatar_url?: string
   bar_number?: string
   years_experience?: number
+  linkedin_url?: string
+  portfolio_url?: string
   display_order: number
   is_visible: boolean
   is_active: boolean
@@ -60,6 +62,8 @@ export default function AdminTeamPage() {
   const [revisions, setRevisions] = useState<{ id: string; data: { full_name?: string; position?: string; bio?: string }; note: string | null; created_at: string; author?: { full_name: string } | null }[]>([])
   const [restoring, setRestoring] = useState<string | null>(null)
   const [creatingAccountFor, setCreatingAccountFor] = useState<string | null>(null)
+  const [draggedMemberId, setDraggedMemberId] = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
   // Department options are firm-configurable via org_categories (migration
   // 020) once it's run; falls back to the original hardcoded list so this
   // page keeps working unchanged on an older schema.
@@ -142,6 +146,44 @@ export default function AdminTeamPage() {
     else toast.error('Failed')
   }
 
+  async function saveOrder(orderedMembers: TeamMember[]) {
+    setReordering(true)
+    const orderById = new Map(orderedMembers.map((member, index) => [member.id, index]))
+    setTeam(current => current.map(member => orderById.has(member.id) ? { ...member, display_order: orderById.get(member.id)! } : member))
+    try {
+      const results = await Promise.all(orderedMembers.map((member, index) => fetch(`/api/team/${member.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ display_order: index }),
+      })))
+      if (results.some(result => !result.ok)) throw new Error('Unable to save the new order')
+      toast.success('Team order updated')
+    } catch {
+      toast.error('Could not save the new order')
+      load()
+    } finally {
+      setReordering(false)
+    }
+  }
+
+  function moveMember(memberId: string, direction: -1 | 1) {
+    const active = team.filter(member => member.is_active).sort((a, b) => a.display_order - b.display_order)
+    const index = active.findIndex(member => member.id === memberId)
+    const target = index + direction
+    if (index < 0 || target < 0 || target >= active.length) return
+    ;[active[index], active[target]] = [active[target], active[index]]
+    saveOrder(active)
+  }
+
+  function dropMember(targetId: string) {
+    if (!draggedMemberId || draggedMemberId === targetId) return
+    const active = team.filter(member => member.is_active).sort((a, b) => a.display_order - b.display_order)
+    const sourceIndex = active.findIndex(member => member.id === draggedMemberId)
+    const targetIndex = active.findIndex(member => member.id === targetId)
+    if (sourceIndex < 0 || targetIndex < 0) return
+    const [moved] = active.splice(sourceIndex, 1)
+    active.splice(targetIndex, 0, moved)
+    saveOrder(active)
+  }
+
   async function restoreRevision(revisionId: string) {
     if (!editing?.id) return
     if (!confirm('Restore this version? The current details will be saved as a new revision first.')) return
@@ -200,7 +242,7 @@ export default function AdminTeamPage() {
             <Archive className="w-4 h-4" /> {showInactive ? 'Viewing Inactive' : 'Inactive'}
           </button>
           {!showInactive && (
-            <button onClick={() => { setEditing({ department: 'Legal', seniority: 'associate', display_order: 0, is_visible: true, specializations: [] }); setIsNew(true); setRevisions([]) }}
+            <button onClick={() => { setEditing({ department: 'Legal', seniority: 'associate', display_order: team.filter(member => member.is_active).length, is_visible: true, specializations: [] }); setIsNew(true); setRevisions([]) }}
               className="btn btn-primary gap-2 text-sm">
               <Plus className="w-4 h-4" /> Add Member
             </button>
@@ -224,13 +266,14 @@ export default function AdminTeamPage() {
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
       ) : tab === 'members' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {!showInactive && <p className="md:col-span-2 lg:col-span-3 text-xs text-[var(--color-text-muted)] -mb-1">Drag a card to reorder the public team, or use the arrows for precise keyboard-friendly movement.</p>}
           {team.filter(m => showInactive ? !m.is_active : m.is_active).length === 0 && (
             <div className="card p-12 text-center text-[var(--color-muted)] md:col-span-2 lg:col-span-3">
               {showInactive ? 'No inactive members.' : 'No active members found.'}
             </div>
           )}
-          {team.filter(m => showInactive ? !m.is_active : m.is_active).map(member => (
-            <div key={member.id} className="card p-5 flex gap-4">
+          {team.filter(m => showInactive ? !m.is_active : m.is_active).sort((a, b) => a.display_order - b.display_order).map((member, index, visibleMembers) => (
+            <div key={member.id} draggable={!showInactive && !reordering} onDragStart={() => setDraggedMemberId(member.id)} onDragOver={event => { if (!showInactive) event.preventDefault() }} onDrop={() => { dropMember(member.id); setDraggedMemberId(null) }} onDragEnd={() => setDraggedMemberId(null)} className={`card p-5 flex gap-4 ${draggedMemberId === member.id ? 'opacity-50' : ''}`}>
               {/* Avatar */}
               <div className="w-14 h-14 rounded-full bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {member.avatar_url
@@ -252,6 +295,11 @@ export default function AdminTeamPage() {
                       </button>
                     ) : (
                       <>
+                        <div className="flex flex-col border-r border-[var(--color-border)] pr-1 mr-1">
+                          <button onClick={() => moveMember(member.id, -1)} disabled={index === 0 || reordering} className="btn btn-ghost p-1 !px-1 text-[var(--color-muted)]" title="Move up"><ChevronUp className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => moveMember(member.id, 1)} disabled={index === visibleMembers.length - 1 || reordering} className="btn btn-ghost p-1 !px-1 text-[var(--color-muted)]" title="Move down"><ChevronDown className="w-3.5 h-3.5" /></button>
+                        </div>
+                        <GripVertical className="w-4 h-4 mt-1 text-[var(--color-muted)] cursor-grab" aria-label="Drag to reorder" />
                         <Link href={`/admin/team/${member.id}`} className="btn btn-ghost p-1.5 !px-1.5" title="Full profile">
                           <ExternalLink className="w-3.5 h-3.5" />
                         </Link>
@@ -416,9 +464,14 @@ export default function AdminTeamPage() {
                 <input className="input text-sm" value={editing.bar_number || ''} onChange={e => setEditing(f => ({ ...f!, bar_number: e.target.value }))} />
               </div>
               <div>
-                <label className="label">Display Order</label>
-                <input type="number" className="input text-sm" value={editing.display_order || 0} onChange={e => setEditing(f => ({ ...f!, display_order: parseInt(e.target.value) }))} />
+                <label className="label">LinkedIn URL</label>
+                <input type="url" className="input text-sm" value={editing.linkedin_url || ''} onChange={e => setEditing(f => ({ ...f!, linkedin_url: e.target.value }))} placeholder="https://linkedin.com/in/..." />
               </div>
+              <div>
+                <label className="label">Portfolio URL</label>
+                <input type="url" className="input text-sm" value={editing.portfolio_url || ''} onChange={e => setEditing(f => ({ ...f!, portfolio_url: e.target.value }))} placeholder="https://..." />
+              </div>
+              <p className="sm:col-span-2 text-xs text-[var(--color-text-muted)]">Profile order is managed directly from the team cards using drag and drop or the arrow controls.</p>
               <div className="sm:col-span-2">
                 <label className="label">Specializations (comma-separated)</label>
                 <input className="input text-sm" value={Array.isArray(editing.specializations) ? editing.specializations.join(', ') : (editing.specializations as unknown as string) || ''}
@@ -438,8 +491,9 @@ export default function AdminTeamPage() {
               <div className="flex flex-col gap-2 justify-end">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={editing.is_visible !== false} onChange={e => setEditing(f => ({ ...f!, is_visible: e.target.checked }))} className="w-4 h-4 accent-[var(--color-accent)]" />
-                  <span className="text-sm">Visible on website</span>
+                  <span className="text-sm">Show publicly</span>
                 </label>
+                {editing.seniority === 'pupil' && <p className="text-xs text-[var(--color-muted)]">Published pupils appear in the separate Pupils carousel, not the main team list.</p>}
               </div>
             </div>
 

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   LayoutDashboard, LayoutGrid, ChevronRight, History, Sun, Moon, Bell, LogOut, HelpCircle, X,
-  Scale, Gavel, Landmark, Inbox, ChevronDown, ChevronUp,
+  Scale, Gavel, Landmark, Inbox, ChevronDown, ChevronUp, BookOpen, Cpu,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ADMIN_DOMAINS, domainForPath } from '@/lib/adminDomains'
@@ -47,6 +47,11 @@ const WORK_LANES: { href: string; icon: typeof LayoutDashboard; label: string; r
   { href: '/admin/matters', icon: Scale, label: 'Matters', requiredPermission: 'manage_matters' },
   { href: '/admin/court-calendar', icon: Gavel, label: 'Court & Deadlines', requiredPermission: 'manage_matters' },
   { href: '/admin/finance', icon: Landmark, label: 'Money', requiredPermission: 'manage_billing' },
+]
+
+const SECONDARY_LINKS = [
+  { href: '/admin/hubs', icon: BookOpen, label: 'Hubs' },
+  { href: '/admin/engines', icon: Cpu, label: 'Engines' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -114,6 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)]">
+      <a href="#admin-main-content" className="skip-link">Skip to workspace content</a>
       {/* Top bar, persistent chrome. */}
       <header className="admin-topbar">
         <div className="flex items-center gap-4 px-4 md:px-6 h-14">
@@ -126,10 +132,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <button
               onClick={() => setLauncherOpen(o => !o)}
               className={cn(
-                'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors border border-transparent',
                 launcherOpen
-                  ? 'bg-[color-mix(in_srgb,var(--color-brand)_12%,var(--color-surface))] text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)]'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]'
+                  ? 'bg-[color-mix(in_srgb,var(--band-accent)_15%,transparent)] text-[var(--on-band-strong)] border-[color-mix(in_srgb,var(--band-accent)_35%,transparent)]'
+                  : 'text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)]'
               )}
               title="Open navigation"
             >
@@ -189,26 +195,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           )}
 
-          <Link href="/admin" className="font-display text-[var(--color-text-primary)] hidden sm:block flex-shrink-0 tracking-tight">{brandLabel}</Link>
+          <Link href="/admin" className="font-display text-[var(--on-band-strong)] hidden sm:block flex-shrink-0 tracking-tight">{brandLabel}</Link>
 
           <div className="flex-1" />
 
           <GlobalSearch />
 
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="btn btn-ghost p-2 !px-2" title="Toggle theme">
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors" title="Toggle theme">
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button className="btn btn-ghost p-2 !px-2 relative" title="Notifications">
+            <button className="p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors relative" title="Notifications">
               <Bell className="w-4 h-4" />
             </button>
             {profile && (
-              <div className="flex items-center gap-2 pl-2 ml-1 border-l border-[var(--color-border)]">
+              <div className="flex items-center gap-2 pl-2 ml-1 border-l border-[color-mix(in_srgb,var(--on-band)_15%,transparent)]">
                 <div className="text-right hidden lg:block">
-                  <div className="text-sm font-medium text-[var(--color-text-primary)] leading-tight">{profile.fullName}</div>
-                  <div className="text-xs text-[var(--color-text-muted)] leading-tight capitalize">{profile.role}</div>
+                  <div className="text-sm font-medium text-[var(--on-band)] leading-tight">{profile.fullName}</div>
+                  <div className="text-xs text-[var(--on-band-muted)] leading-tight capitalize">{profile.role}</div>
                 </div>
-                <button onClick={handleSignOut} className="btn btn-ghost p-2 !px-2" title="Sign out">
+                <button onClick={handleSignOut} className="p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors" title="Sign out">
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
@@ -275,9 +281,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               )}
             </>
           )}
+
+          <div className="admin-sidebar-secondary">
+            {SECONDARY_LINKS.map(item => {
+              const active = pathname === item.href || pathname.startsWith(item.href + '/')
+              return <Link key={item.href} href={item.href} className={cn('admin-sidebar-link', active && 'is-active')}><item.icon className="w-3.5 h-3.5" />{item.label}</Link>
+            })}
+          </div>
         </aside>
 
-        <main className="admin-main">
+        <main id="admin-main-content" tabIndex={-1} className="admin-main">
           {/* Breadcrumbs, on every page, so wayfinding is always visible
               (the old version tucked these into the top bar and hid them on
               mobile). */}

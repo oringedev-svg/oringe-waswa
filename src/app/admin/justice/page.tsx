@@ -9,16 +9,17 @@ import JusticeSearch from './JusticeSearch'
 export default function JusticeHubPage() {
   const counts = JusticeDataService.getCounts()
   const issues = JusticeDataService.getIssues()
-  const types = Object.keys(INSTITUTION_LABELS) as InstitutionType[]
+  const types = (Object.keys(INSTITUTION_LABELS) as InstitutionType[]).filter(type => type !== 'court')
 
   return (
     <div>
       <PageHeader
         icon={Building2}
-        eyebrow="Reference data"
-        title="Justice Directory"
-        description="Kenyan courts, police stations and prisons, loaded from versioned datasets. Search across all of them at once, or open one register."
-        meta={[`${counts.court + counts['police-station'] + counts.prison} institutions on file`]}
+        eyebrow="Hubs · Reference data"
+        title="Police Stations & Prisons"
+        description="Shared national reference datasets. Courts are maintained in the editable Courts Hub so matters always use one controlled register."
+        meta={[`${counts['police-station'] + counts.prison} institutions on file`]}
+        actions={<Link href="/admin/hubs" className="btn btn-ghost text-sm">All Hubs</Link>}
       />
 
       <JusticeSearch />

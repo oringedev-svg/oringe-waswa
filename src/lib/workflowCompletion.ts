@@ -66,11 +66,22 @@ async function computeGateFacts(
   // 'live' gates: computed fresh from conflict_checks every time, the same
   // table the conflict-check panel itself reads.
   if (gates.some(g => g.source === 'live')) {
-    let query = supabase.from('conflict_checks').select('decision')
+    let query = supabase.from('conflict_checks').select('decision, practice_area_ids')
     query = args.matterId ? query.eq('matter_id', args.matterId) : query.eq('submission_id', args.submissionId!)
     const { data: checks } = await query
     facts.conflict_search_run = (checks?.length ?? 0) > 0
-    facts.conflict_decision_recorded = (checks || []).some(c => c.decision !== 'pending')
+    if (args.matterId) {
+      const { data: links } = await supabase.from('matter_practice_areas').select('practice_area_id').eq('matter_id', args.matterId)
+      const requiredAreas = new Set((links || []).map(link => link.practice_area_id))
+      // A later-added area invalidates the earlier clearance until a check
+      // explicitly covering the complete current set is decided.
+      facts.conflict_decision_recorded = requiredAreas.size > 0 && (checks || []).some(check => {
+        const covered = new Set(check.practice_area_ids || [])
+        return check.decision !== 'pending' && [...requiredAreas].every(id => covered.has(id))
+      })
+    } else {
+      facts.conflict_decision_recorded = (checks || []).some(c => c.decision !== 'pending')
+    }
   }
 
   // 'assignment_completion' gates: read back whatever's been recorded.

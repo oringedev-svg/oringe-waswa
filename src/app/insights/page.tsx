@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import PublicLayout from '@/components/layout/PublicLayout'
-import { Play, Headphones, Newspaper, BookOpen, PenLine, Loader2, ExternalLink } from 'lucide-react'
+import { Play, Headphones, Newspaper, BookOpen, PenLine, Loader2, ExternalLink, ArrowRight } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import Image from 'next/image'
 import ReadAloud from '@/components/blog/ReadAloud'
@@ -73,28 +73,65 @@ export default function InsightsPage() {
 
   return (
     <PublicLayout>
-      <div className="py-20 reveal" style={{ background: 'var(--color-surface-raised))' }}>
-        <div className="container">
-          <span className="eyebrow mb-4 block">Knowledge Hub</span>
-          <h1 className="font-display font-light mb-4" style={{ fontSize: 'var(--heading-page-size)' }}>Insights</h1>
-          <p className="text-[var(--color-text-muted)] max-w-xl">Videos, podcasts, news, and articles from our legal experts.</p>
+      {featured.length > 0 ? (
+        <div className="bg-[var(--band-slate)] text-[var(--on-band)] border-b border-[var(--color-border)]">
+          <div className="container py-16 lg:py-24">
+            <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-center">
+              <div className="flex-1 lg:max-w-xl space-y-6">
+                <span className="text-xs uppercase tracking-[0.2em] text-[var(--on-band-muted)] font-semibold">Featured Insight</span>
+                <h1 className="font-display text-4xl lg:text-5xl font-light leading-tight">
+                  {featured[0].title}
+                </h1>
+                {featured[0].description && (
+                  <p className="text-lg text-[var(--on-band-muted)] leading-relaxed line-clamp-3">
+                    {featured[0].description}
+                  </p>
+                )}
+                <div className="pt-4 flex items-center gap-6">
+                  <Link href={featured[0].href || '#'} className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.15em] font-semibold hover:opacity-80 transition-opacity">
+                    Read More <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  {(featured[0].type === 'article' || featured[0].type === 'news') && featured[0].description && (
+                    <ReadAloud text={featured[0].description} title={featured[0].title} compact />
+                  )}
+                </div>
+              </div>
+              <div className="flex-1 w-full relative h-[300px] lg:h-[400px]">
+                {featured[0].thumbnail_url ? (
+                  <Image src={featured[0].thumbnail_url} alt={featured[0].title} fill className="object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-black/20">
+                    <BookOpen className="w-12 h-12 text-[var(--on-band-muted)]" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="py-20 reveal bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+          <div className="container">
+            <span className="eyebrow mb-4 block">Knowledge Hub</span>
+            <h1 className="font-display font-light mb-4" style={{ fontSize: 'var(--heading-page-size)' }}>Insights</h1>
+            <p className="text-[var(--color-text-muted)] max-w-xl">Videos, podcasts, news, and articles from our legal experts.</p>
+          </div>
+        </div>
+      )}
 
-      <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] sticky top-16 z-40">
-        <div className="container flex gap-0 overflow-x-auto">
+      <section aria-label="Filter insights" className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="container flex gap-8 py-0 overflow-x-auto">
           {FILTERS.map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-5 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              className={`py-4 text-xs tracking-[0.1em] uppercase font-semibold whitespace-nowrap transition-colors border-b-2 ${
                 filter === f
-                  ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                  ? 'border-[var(--color-brand)] text-[var(--color-brand)]'
                   : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
               }`}>
               {f}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
       <div className="section">
         <div className="container">
@@ -104,20 +141,14 @@ export default function InsightsPage() {
             <div className="text-center py-20 text-[var(--color-text-muted)]">No content available yet.</div>
           ) : (
             <>
-              {/* Featured, the lead story running the full width of the
-                  column rather than sharing a row. Only one is featured at
-                  a time now: two side by side made neither read as the
-                  lead, which is the whole point of featuring one. Any
-                  others flagged featured fall through into the grid below. */}
               {featured.length > 0 && (
                 <div className="mb-12">
                   <InsightCard item={featured[0]} large fullWidth />
                 </div>
               )}
 
-              {/* All */}
               {rest.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
                   {rest.map(item => <InsightCard key={item.id} item={item} />)}
                 </div>
               )}
@@ -131,15 +162,9 @@ export default function InsightsPage() {
 
 function InsightCard({ item, large = false, fullWidth = false }: { item: InsightItem; large?: boolean; fullWidth?: boolean }) {
   const Icon = TYPE_ICONS[item.type] || BookOpen
-  // Full width switches the card from a vertical stack to a side-by-side
-  // split, image left, text right, so a wide lead card does not become a
-  // short image with a very long line of text under it.
-  const cardClass = `card overflow-hidden group insight-anchor ${fullWidth ? 'insight-card-lead' : 'flex flex-col'}`
+  const cardClass = `group insight-anchor overflow-hidden ${fullWidth ? 'insight-card-lead' : 'flex flex-col h-full'}`
   const body = <InsightCardBody item={item} large={large} fullWidth={fullWidth} Icon={Icon} />
 
-  // A real DOM id, not just a React key: insights have no detail route of
-  // their own, so the announcement bar deep-links to /insights#<id> and
-  // needs something on the page to actually land on.
   if (item.href) {
     return <Link id={item.id} href={item.href} className={cardClass}>{body}</Link>
   }
@@ -149,66 +174,61 @@ function InsightCard({ item, large = false, fullWidth = false }: { item: Insight
 function InsightCardBody({ item, large, fullWidth = false, Icon }: { item: InsightItem; large: boolean; fullWidth?: boolean; Icon: React.ElementType }) {
   return (
     <>
-      {/* Thumbnail / Media */}
-      <div className={`relative bg-[var(--color-surface-overlay)] overflow-hidden ${fullWidth ? 'insight-card-lead-media' : large ? 'h-56' : 'h-44'}`}>
+      <div className={`relative bg-[var(--color-surface-overlay)] overflow-hidden ${fullWidth ? 'insight-card-lead-media' : large ? 'h-64' : 'h-52'}`}>
         {item.thumbnail_url ? (
-          <Image src={item.thumbnail_url} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+          <Image src={item.thumbnail_url} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="font-display text-sm uppercase tracking-widest text-[var(--color-accent)]/40">{TYPE_LABELS[item.type]}</span>
+          <div className="w-full h-full flex items-center justify-center bg-[var(--color-surface-overlay)]">
+            <Icon className="w-8 h-8 text-[var(--color-border)]" />
           </div>
         )}
 
-        {/* Video overlay */}
         {item.type === 'video' && item.media_url && (
           <a href={item.media_url} target="_blank" rel="noopener noreferrer"
-            className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors">
-            <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-              <Play className="w-6 h-6 text-[var(--color-accent)] ml-1" />
+            className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors z-10">
+            <div className="w-12 h-12 bg-white flex items-center justify-center shadow-lg rounded-sm">
+              <Play className="w-5 h-5 text-[var(--color-brand)] ml-1" />
             </div>
           </a>
         )}
 
-        {/* Type badge */}
-        <span className="absolute top-3 left-3 badge status-active text-xs">
-          <Icon className="w-3 h-3" />
-          {TYPE_LABELS[item.type]}
-        </span>
+        {/* Compact Read Aloud Icon */}
+        {(item.type === 'article' || item.type === 'news') && item.description && (
+          <div className="absolute top-3 right-3 z-20">
+            <ReadAloud text={item.description} title={item.title} compact />
+          </div>
+        )}
       </div>
 
-      <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-display font-semibold text-[var(--color-text-primary)] mb-2 group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
+      <div className={`flex flex-col flex-1 ${fullWidth ? '' : 'pt-5'}`}>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--color-brand)]">{TYPE_LABELS[item.type]}</span>
+          <div className="flex-1 h-[1px] bg-[var(--color-border)] opacity-60"></div>
+          <span className="text-[10px] uppercase tracking-wider text-[var(--color-muted)]">{formatDate(item.published_at, 'short')}</span>
+        </div>
+        
+        <h3 className="font-display text-xl sm:text-2xl font-medium text-[var(--color-text-primary)] mb-3 group-hover:text-[var(--color-brand)] transition-colors line-clamp-3 leading-snug">
           {item.title}
         </h3>
+        
         {item.description && (
-          <p className="text-sm text-[var(--color-text-muted)] leading-relaxed line-clamp-2 flex-1 mb-3">{item.description}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed line-clamp-2 flex-1 mb-4">{item.description}</p>
         )}
 
-        {/* Audio player */}
         {item.type === 'audio' && item.media_url && (
-          <audio controls className="w-full h-8 mb-3" style={{ accentColor: 'var(--color-accent)' }}>
+          <audio controls className="w-full h-8 mb-4" style={{ accentColor: 'var(--color-brand)' }}>
             <source src={item.media_url} />
           </audio>
         )}
 
-        {/* Read Aloud for curated articles and news (not firm articles,             those already have a full reading page at their permalink) */}
-        {(item.type === 'article' || item.type === 'news') && item.description && (
-          <div className="px-5 pb-3">
-            <ReadAloud text={item.description} title={item.title} />
-          </div>
-        )}
-
-        <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--color-border)]">
-          <span className="text-xs text-[var(--color-muted)]">{item.source || item.category}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-muted)]">{formatDate(item.published_at, 'short')}</span>
-            {item.external_url && (
-              <a href={item.external_url} target="_blank" rel="noopener noreferrer"
-                className="text-[var(--color-accent)] hover:underline">
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-          </div>
+        <div className="mt-auto pt-2 flex items-center justify-between">
+          <span className="text-xs text-[var(--color-muted)]">{item.source || ''}</span>
+          {item.external_url && (
+            <a href={item.external_url} target="_blank" rel="noopener noreferrer"
+              className="text-[var(--color-brand)] hover:underline inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold">
+              Read <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
         </div>
       </div>
     </>

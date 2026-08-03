@@ -16,6 +16,7 @@ import AssignmentComposer from '@/components/admin/AssignmentComposer'
 import type { WorkContext } from '@/lib/workContext'
 import SectionCard from '@/components/admin/SectionCard'
 import LitigationCard from '@/components/admin/LitigationCard'
+import DocumentTemplateLauncher from '@/components/admin/DocumentTemplateLauncher'
 import { KENYA_COUNTIES } from '@/lib/kenyaCounties'
 import toast from 'react-hot-toast'
 
@@ -813,9 +814,12 @@ export default function MatterDetailPage() {
           {/* Documents */}
           <SectionCard title={`Documents (${docs.length})`} icon={FileText} color="slate" defaultOpen style={{ order: 3 }}
             headerExtra={
-              <button onClick={() => setShowUpload(true)} className="btn btn-primary gap-2 text-sm">
-                <Upload className="w-4 h-4" /> Upload Document
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <DocumentTemplateLauncher matterId={matter.id} matterType={matter.type} onCreated={load} />
+                <button onClick={() => setShowUpload(true)} className="btn btn-primary gap-2 text-sm">
+                  <Upload className="w-4 h-4" /> Upload Document
+                </button>
+              </div>
             }
           >
             {docs.length === 0 ? (

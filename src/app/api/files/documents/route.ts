@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient, uploadFile } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase'
+import { getDocumentProvider } from '@/lib/documentProvider'
 import { getSessionProfile } from '@/lib/auth'
 import { getMatterAccessScope, canAccessMatter } from '@/lib/matterScope'
 
@@ -70,9 +71,7 @@ export async function POST(req: NextRequest) {
 
   // Upload to Supabase Storage
   const buffer = Buffer.from(await file.arrayBuffer())
-  await uploadFile('legal-docs', path, buffer, file.type)
-
-  const { data: publicData } = supabase.storage.from('legal-docs').getPublicUrl(path)
+  const stored = await getDocumentProvider().createDocument({ path, content: buffer, contentType: file.type })
 
   const { data: doc, error } = await supabase
     .from('legal_documents')
@@ -81,7 +80,7 @@ export async function POST(req: NextRequest) {
       title,
       type: type || 'other',
       description,
-      file_url: publicData.publicUrl,
+      file_url: stored.publicUrl,
       file_name: file.name,
       file_size: file.size,
       mime_type: file.type,
@@ -89,6 +88,8 @@ export async function POST(req: NextRequest) {
       is_privileged,
       uploaded_by: uploaded_by || null,
       tags,
+      provider_key: stored.providerKey,
+      provider_path: stored.path,
     })
     .select()
     .single()

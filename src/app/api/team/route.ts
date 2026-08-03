@@ -8,10 +8,16 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const visible_only = searchParams.get('visible') === 'true'
   const withCategory = searchParams.get('with_category') === 'true'
+  const audience = searchParams.get('audience')
 
   function baseQuery(select: string) {
     let q = supabase.from('team_members').select(select).order('display_order', { ascending: true })
     if (visible_only) q = q.eq('is_visible', true).eq('is_active', true)
+    // The public people directory has two distinct presentations. Pupils
+    // are intentionally kept out of the main team listing and can only be
+    // requested for the public pupil carousel.
+    if (visible_only && audience === 'pupils') q = q.eq('seniority', 'pupil')
+    if (visible_only && audience === 'team') q = q.neq('seniority', 'pupil')
     return q
   }
 

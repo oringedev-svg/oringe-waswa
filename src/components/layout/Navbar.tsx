@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes'
 import { Menu, X, Sun, Moon, ChevronDown, Search, Twitter, Instagram, Linkedin, Youtube, Facebook, ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import TranslateWidget from '@/components/ui/TranslateWidget'
+import InstallAppButton from '@/components/layout/InstallAppButton'
 import { useSetting } from '@/components/providers/SiteSettingsProvider'
 import type { NavMenuItem } from '@/lib/settingsSchema'
 
@@ -176,7 +177,7 @@ export default function Navbar() {
                       // crossing the gap between the trigger and the panel
                       // below it doesn't close the menu before you get there.
                       <div onMouseEnter={() => openDropdown(link.label)} onMouseLeave={scheduleCloseDropdown}>
-                        <button className={cn('flex items-center gap-1 py-2 text-[13px] font-medium tracking-tight transition-colors', activeDropdown === link.label ? activeColor : linkColor)}>
+                        <button aria-expanded={activeDropdown === link.label} aria-haspopup="true" className={cn('flex items-center gap-1 py-2 text-[13px] font-medium tracking-tight transition-colors', activeDropdown === link.label ? activeColor : linkColor)}>
                           {link.label}
                           <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', activeDropdown === link.label && 'rotate-180')} />
                         </button>
@@ -246,28 +247,30 @@ export default function Navbar() {
                       onDarkHero ? 'border-[#f5f5f3]/40 text-[#f5f5f3] placeholder:text-[#f5f5f3]/40' : 'border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-muted)]')} />
                 </form>
               ) : (
-                <button onClick={() => setSearchOpen(true)} title="Search"
+                <button onClick={() => setSearchOpen(true)} title="Search" aria-label="Search insights"
                   className={cn('transition-colors', onDarkHero ? 'text-[#f5f5f3]/85 hover:text-[#f5f5f3]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-accent)]')}>
                   <Search className="w-4 h-4" />
                 </button>
               )}
               <TranslateWidget />
-              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle colour theme"
                 className={cn('transition-colors', onDarkHero ? 'text-[#f5f5f3]/85 hover:text-[#f5f5f3]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-accent)]')} title="Toggle theme">
                 {themeReady && theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
             </div>
 
-            <Link href="/appointments" className={cn('btn text-xs', onDarkHero ? 'border border-[#f5f5f3]/40 text-[#f5f5f3] hover:border-[var(--color-accent-light)]' : 'btn-primary')}>Book Appointment</Link>
+            <InstallAppButton />
+
+            <Link href="/appointments" className={cn('nav-appointment-cta', onDarkHero ? 'border border-[#f5f5f3]/40 text-[#f5f5f3] hover:border-[var(--color-accent-light)]' : 'btn-primary')}>Book Appointment</Link>
           </div>
 
           {/* Mobile controls */}
           <div className="flex items-center gap-1 lg:hidden">
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle colour theme"
               className={cn('btn btn-ghost p-2 !px-2', onDarkHero && 'text-[#f5f5f3]/80 hover:text-[#f5f5f3] hover:bg-white/10')} title="Toggle theme">
               {themeReady && theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button className={cn('btn btn-ghost p-2 !px-2', onDarkHero && 'text-[#f5f5f3]/80 hover:text-[#f5f5f3] hover:bg-white/10')} onClick={() => setOpen(!open)}>
+            <button aria-expanded={open} aria-controls="mobile-navigation" aria-label={open ? 'Close navigation menu' : 'Open navigation menu'} className={cn('btn btn-ghost p-2 !px-2', onDarkHero && 'text-[#f5f5f3]/80 hover:text-[#f5f5f3] hover:bg-white/10')} onClick={() => setOpen(!open)}>
               {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -275,7 +278,7 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="lg:hidden bg-[var(--color-surface)]/95 backdrop-blur-md border-t border-[var(--color-border)] animate-slide-down">
+        <div id="mobile-navigation" className="lg:hidden bg-[var(--color-surface)]/95 backdrop-blur-md border-t border-[var(--color-border)] animate-slide-down">
           <div className="container py-4 flex flex-col gap-1">
             {navLinks.map((link) => (
               <div key={link.label}>
@@ -304,6 +307,7 @@ export default function Navbar() {
                 className="flex-1 bg-transparent border-b border-[var(--color-border)] text-sm py-1 outline-none" />
             </form>
             <Link href="/appointments" className="btn btn-primary mt-2 text-center">Book Appointment</Link>
+            <InstallAppButton className="justify-center mt-1" />
             {socials.length > 0 && (
               <div className="flex items-center gap-4 px-4 mt-3">
                 {socials.map(({ icon: Icon, url, label }) => (

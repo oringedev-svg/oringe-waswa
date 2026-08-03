@@ -115,7 +115,7 @@
   right: -20rem;
   bottom: -22rem;
   border-radius: 9999px;
-  background: radial-gradient(ellipse at center, var(--band-gold) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, var(--band-accent) 0%, transparent 70%);
   opacity: 0.1;
   filter: blur(60px);
   pointer-events: none;
@@ -153,7 +153,7 @@
   display: block;
   width: 0.4em;
   height: 0.4em;
-  background: var(--band-gold);
+  background: var(--band-accent);
   flex-shrink: 0;
 }
 
@@ -164,8 +164,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.75rem;
-  background: color-mix(in srgb, var(--band-gold) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--band-gold) 30%, transparent);
+  background: color-mix(in srgb, var(--band-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--band-accent) 30%, transparent);
   border-radius: var(--radius-full);
   margin-bottom: 1.75rem;
   backdrop-filter: blur(4px);
@@ -175,14 +175,14 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--band-gold);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--band-gold) 60%, transparent);
+  background: var(--band-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--band-accent) 60%, transparent);
   animation: auth-pulse 2.5s ease-in-out infinite;
 }
 
 @keyframes auth-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 6px color-mix(in srgb, var(--band-gold) 60%, transparent); }
-  50% { opacity: 0.6; box-shadow: 0 0 12px color-mix(in srgb, var(--band-gold) 80%, transparent); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px color-mix(in srgb, var(--band-accent) 60%, transparent); }
+  50% { opacity: 0.6; box-shadow: 0 0 12px color-mix(in srgb, var(--band-accent) 80%, transparent); }
 }
 
 .auth-brand-badge-label {
@@ -206,13 +206,13 @@
 
 .auth-brand-title em {
   font-style: italic;
-  color: var(--band-gold);
+  color: var(--band-accent);
 }
 
 .auth-brand-rule {
   width: 2.5rem;
   height: 1px;
-  background: linear-gradient(90deg, var(--band-gold), transparent);
+  background: linear-gradient(90deg, var(--band-accent), transparent);
   margin: 1.75rem 0;
   opacity: 0.7;
 }
@@ -243,8 +243,8 @@
   width: 1.5rem;
   height: 1.5rem;
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--band-gold) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--band-gold) 22%, transparent);
+  background: color-mix(in srgb, var(--band-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--band-accent) 22%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -254,7 +254,7 @@
 .auth-brand-proof-icon svg {
   width: 0.75rem;
   height: 0.75rem;
-  color: var(--band-gold);
+  color: var(--band-accent);
 }
 
 .auth-brand-proof-text {
@@ -437,3 +437,4 @@
 .dark {
   --auth-error-color: #e8848e;
 }
+

@@ -70,8 +70,6 @@ export const ADMIN_DOMAINS: AdminDomain[] = [
       { href: '/admin/clients', icon: Users, label: 'Client Directory', description: 'Pre-accounts to decide on, then every client account' },
       { href: '/admin/matters', icon: Scale, label: 'Matters', description: 'Case files through their lifecycle' },
       { href: '/admin/court-calendar', icon: Gavel, label: 'Court Calendar', description: 'Every upcoming court appearance across all matters' },
-      { href: '/admin/courts', icon: Landmark, label: 'Courts Register', description: 'The controlled list of courts matters are filed in' },
-      { href: '/admin/justice', icon: Building2, label: 'Justice Directory', description: 'Kenyan courts, police stations and prisons, as reference data' },
       { href: '/admin/submissions', icon: FileText, label: 'Submissions', description: 'The raw enquiry inbox behind pre-accounts' },
       { href: '/admin/conflict-check', icon: Search, label: 'Conflict Check', description: 'Quick pre-instruction search, before there’s an enquiry or matter to attach it to' },
       { href: '/admin/appointments', icon: Calendar, label: 'Appointments', description: 'Consultation bookings' },

@@ -1,8 +1,10 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import PublicLayout from '@/components/layout/PublicLayout'
-import { Linkedin, Mail, Loader2, Eye } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Globe2, Linkedin, Mail, Loader2, Eye } from 'lucide-react'
+import MissionCallout from '@/components/layout/MissionCallout'
+import Link from 'next/link'
 
 interface TeamMember {
   id: string
@@ -15,28 +17,38 @@ interface TeamMember {
   bar_number?: string
   years_experience?: number
   linkedin_url?: string
+  portfolio_url?: string
   education?: { degree: string; institution: string; year: number }[]
+  seniority?: string
 }
 
 export default function TeamPage() {
   const [team, setTeam] = useState<TeamMember[]>([])
+  const [pupils, setPupils] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<TeamMember | null>(null)
   const [department, setDepartment] = useState('All')
+  const pupilTrackRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch('/api/team?visible=true')
-      .then(r => r.json())
-      .then(d => setTeam(Array.isArray(d) ? d : []))
+    Promise.all([
+      fetch('/api/team?visible=true&audience=team').then(r => r.json()),
+      fetch('/api/team?visible=true&audience=pupils').then(r => r.json()),
+    ])
+      .then(([teamData, pupilData]) => {
+        setTeam(Array.isArray(teamData) ? teamData : [])
+        setPupils(Array.isArray(pupilData) ? pupilData : [])
+      })
       .finally(() => setLoading(false))
   }, [])
 
   const departments = ['All', ...Array.from(new Set(team.map(m => m.department)))]
   const filtered = department === 'All' ? team : team.filter(m => m.department === department)
+  const scrollPupils = (direction: 'back' | 'forward') => pupilTrackRef.current?.scrollBy({ left: direction === 'forward' ? 360 : -360, behavior: 'smooth' })
 
   return (
     <PublicLayout>
-      <div className="py-20" style={{ background: 'var(--color-surface-raised)' }}>
+      <div className="team-editorial-intro py-20" style={{ background: 'var(--color-surface-raised)' }}>
         <div className="container">
           <span className="eyebrow mb-4 block">Our People</span>
           <h1 className="font-display font-light mb-4" style={{ fontSize: 'var(--heading-page-size)' }}>Meet the Team</h1>
@@ -66,7 +78,7 @@ export default function TeamPage() {
                         <button
                           key={dep}
                           onClick={() => setDepartment(dep)}
-                          className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-left whitespace-nowrap rounded-sm border transition-colors flex-shrink-0"
+                          className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-left whitespace-nowrap md:whitespace-normal rounded-sm border transition-colors flex-shrink-0"
                           style={{
                             background: active ? 'var(--color-text-primary)' : 'transparent',
                             color: active ? 'var(--color-surface)' : 'var(--color-text-secondary)',
@@ -74,8 +86,8 @@ export default function TeamPage() {
                             fontWeight: active ? 600 : 500,
                           }}
                         >
-                          <span>{dep}</span>
-                          {dep !== 'All' && <span className="opacity-70 text-xs">({count})</span>}
+                          <span className="flex-1">{dep}</span>
+                          {dep !== 'All' && <span className="opacity-70 text-xs flex-shrink-0">({count})</span>}
                         </button>
                       )
                     })}
@@ -102,25 +114,12 @@ export default function TeamPage() {
                         {/* Opening the bio is the card's main action here, so
                             the whole surface triggers it rather than a small
                             "Read Bio" link buried under the fold. */}
-                        {member.bio && (
-                          <button
-                            onClick={() => setSelected(member)}
-                            className="photo-card-hit"
-                            aria-label={`Read bio for ${member.full_name}`}
-                          />
-                        )}
+                        <Link href={`/team/${member.id}`} className="photo-card-hit" aria-label={`View profile for ${member.full_name}`} />
 
-                        {member.linkedin_url && (
-                          <a
-                            href={member.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="photo-card-action"
-                            aria-label={`${member.full_name} on LinkedIn`}
-                          >
-                            <Linkedin className="w-3.5 h-3.5" />
-                          </a>
-                        )}
+                        {(member.linkedin_url || member.portfolio_url) && <div className="photo-card-actions">
+                          {member.linkedin_url && <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="photo-card-action" aria-label={`${member.full_name} on LinkedIn`}><Linkedin className="w-3.5 h-3.5" /></a>}
+                          {member.portfolio_url && <a href={member.portfolio_url} target="_blank" rel="noopener noreferrer" className="photo-card-action" aria-label={`View ${member.full_name}'s portfolio`}><Globe2 className="w-3.5 h-3.5" /></a>}
+                        </div>}
 
                         <div className="photo-card-body">
                           <span className="photo-card-title">{member.full_name}</span>
@@ -139,7 +138,7 @@ export default function TeamPage() {
                               )}
                               {member.bio && (
                                 <span className="photo-card-note inline-flex items-center gap-1.5">
-                                  <Eye className="w-3.5 h-3.5" /> Read bio
+                                  <Eye className="w-3.5 h-3.5" /> View profile
                                 </span>
                               )}
                             </div>
@@ -154,6 +153,54 @@ export default function TeamPage() {
           )}
         </div>
       </div>
+
+      {!loading && pupils.length > 0 && (
+        <section className="pupils-showcase section">
+          <div className="container">
+            <div className="flex flex-wrap items-end justify-between gap-5 mb-8">
+              <div>
+                <span className="eyebrow mb-4 block">The next generation</span>
+                <h2 className="font-display text-3xl sm:text-4xl font-light text-[var(--color-text-primary)]">Legal Trainees</h2>
+                <p className="mt-3 max-w-xl text-[var(--color-text-muted)]">Meet the legal trainees gaining practical experience under the guidance of our team.</p>
+              </div>
+              {pupils.length > 1 && <div className="flex gap-2" aria-label="Pupil carousel controls">
+                <button type="button" onClick={() => scrollPupils('back')} className="pupil-slider-control" aria-label="Previous pupils"><ChevronLeft className="w-5 h-5" /></button>
+                <button type="button" onClick={() => scrollPupils('forward')} className="pupil-slider-control" aria-label="Next pupils"><ChevronRight className="w-5 h-5" /></button>
+              </div>}
+            </div>
+            <div ref={pupilTrackRef} className="pupil-slider-track" aria-label="Legal trainees">
+              {pupils.map(member => <article key={member.id} className="photo-card pupil-slide">
+                {member.avatar_url ? <Image src={member.avatar_url} alt={member.full_name} fill sizes="(max-width: 640px) 85vw, 22rem" className="object-cover" /> : <div className="photo-card-fallback"><span>{member.full_name.charAt(0)}</span></div>}
+                <div className="photo-card-scrim" />
+                <Link href={`/team/${member.id}`} className="photo-card-hit" aria-label={`View profile for ${member.full_name}`} />
+                {(member.linkedin_url || member.portfolio_url) && <div className="photo-card-actions">
+                  {member.linkedin_url && <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="photo-card-action" aria-label={`${member.full_name} on LinkedIn`}><Linkedin className="w-3.5 h-3.5" /></a>}
+                  {member.portfolio_url && <a href={member.portfolio_url} target="_blank" rel="noopener noreferrer" className="photo-card-action" aria-label={`View ${member.full_name}'s portfolio`}><Globe2 className="w-3.5 h-3.5" /></a>}
+                </div>}
+                <div className="photo-card-body">
+                  <span className="photo-card-title">{member.full_name}</span>
+                  <span className="photo-card-eyebrow">{member.position || 'Legal Trainee'}</span>
+                  <div className="photo-card-detail"><div className="photo-card-detail-inner">
+                    <span className="photo-card-note">Legal Trainee</span>
+                    {member.specializations?.length > 0 && <div className="photo-card-tags">{member.specializations.slice(0, 3).map(s => <span key={s} className="photo-card-tag">{s}</span>)}</div>}
+                    <span className="photo-card-note inline-flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> View profile</span>
+                  </div></div>
+                </div>
+              </article>)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <MissionCallout
+        eyebrow="Work with our people"
+        title="The right team changes the outcome."
+        description="Meet the advocates and professionals behind our work, then tell us where you need clear, dependable advice."
+        primaryHref="/appointments"
+        primaryLabel="Book a consultation"
+        secondaryHref="/careers"
+        secondaryLabel="Join the team"
+      />
 
       {/* Member detail modal */}
       {selected && (

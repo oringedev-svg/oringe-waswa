@@ -13,33 +13,55 @@ declare global {
   }
 }
 
-// Kenya's own languages first (Swahili and English are the two official
-// languages; Somali and Oromo cover North Eastern Kenya's own communities),
-// then the languages of Kenya's actual resident and business communities
-// (Gujarati, Punjabi, Hindi, Urdu for the long-established South Asian
-// community; Amharic and Tigrinya for the Ethiopian/Eritrean community;
-// Chinese for the scale of Chinese investment and trading presence), then
-// the wider set Google Translate supports.
+// Ordered by realistic visitor volume for a Nairobi law firm, not
+// alphabetically or by global speaker count:
+//   1. Kenya's two official languages — the overwhelming majority of
+//      traffic.
+//   2. Kenya's largest resident/business immigrant communities, who
+//      realistically visit a Nairobi law firm's site in meaningful
+//      numbers: the Chinese business/investor community, and the
+//      long-established South Asian community (Gujarati, Hindi, Punjabi,
+//      Urdu — often now more comfortable in English/Hindi than a South
+//      Asian language, but offered for the segment that prefers it).
+//   3. Cross-border business languages: French (Francophone Africa/DRC/EAC
+//      trade), Arabic (Gulf business ties).
+//   4. Kenya's own Google-Translate-supported indigenous language plus the
+//      Horn of Africa communities with a strong, active Nairobi presence
+//      (Somali — notably Eastleigh's business district; Ethiopian/Eritrean
+//      community — Amharic, Tigrinya; North Eastern Kenya — Oromo).
+//   5. East African Community neighbors doing regular cross-border
+//      business with Kenya: Kinyarwanda, Luganda.
+//   6. Wider international business languages, roughly by global economic
+//      weight: Portuguese, Spanish, German, Italian, Russian, Japanese,
+//      Korean.
+//   7. Other African languages — included for completeness/reach, but
+//      realistically lower volume for this specific market than the
+//      groups above.
+//   8. Everything else Google Translate supports.
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
   { code: 'sw', name: 'Kiswahili', flag: '🇰🇪' },
-  { code: 'so', name: 'Soomaali', flag: '🇸🇴' },
-  { code: 'om', name: 'Afaan Oromoo', flag: '🇪🇹' },
-  { code: 'am', name: 'አማርኛ', flag: '🇪🇹' },
-  { code: 'ti', name: 'ትግርኛ', flag: '🇪🇷' },
-  { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳' },
-  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
-  { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
-  { code: 'ur', name: 'اردو', flag: '🇵🇰' },
   { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'luo', name: 'Dholuo', flag: '🇰🇪' },
+  { code: 'so', name: 'Soomaali', flag: '🇸🇴' },
+
   { code: 'zh-CN', name: '中文 (简体)', flag: '🇨🇳' },
   { code: 'zh-TW', name: '中文 (繁體)', flag: '🇹🇼' },
+  { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
+  { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳' },
+  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
+  { code: 'ur', name: 'اردو', flag: '🇵🇰' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'am', name: 'አማርኛ', flag: '🇪🇹' },
+  { code: 'ti', name: 'ትግርኛ', flag: '🇪🇷' },
+  { code: 'om', name: 'Afaan Oromoo', flag: '🇪🇹' },
+  { code: 'rw', name: 'Kinyarwanda', flag: '🇷🇼' },
+  { code: 'lg', name: 'Luganda', flag: '🇺🇬' },
   { code: 'pt', name: 'Português', flag: '🇧🇷' },
   { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
   { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   { code: 'ja', name: '日本語', flag: '🇯🇵' },
   { code: 'ko', name: '한국어', flag: '🇰🇷' },
   { code: 'ha', name: 'Hausa', flag: '🇳🇬' },
@@ -47,8 +69,6 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'ig', name: 'Igbo', flag: '🇳🇬' },
   { code: 'zu', name: 'isiZulu', flag: '🇿🇦' },
   { code: 'af', name: 'Afrikaans', flag: '🇿🇦' },
-  { code: 'rw', name: 'Kinyarwanda', flag: '🇷🇼' },
-  { code: 'lg', name: 'Luganda', flag: '🇺🇬' },
   { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
   { code: 'pl', name: 'Polski', flag: '🇵🇱' },
   { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },

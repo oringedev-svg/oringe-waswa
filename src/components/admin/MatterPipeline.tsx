@@ -36,7 +36,7 @@ export default function MatterPipeline({
   noteDraft, setNoteDraft, addingNote, onAddNote,
   onInvokeService, onInvokeCostEstimate,
 }: {
-  status: string
+  status?: string | null
   stageHistory: StageHistoryEntry[]
   conflictChecks: ConflictCheck[]
   permissions: string[]
@@ -58,8 +58,12 @@ export default function MatterPipeline({
   onInvokeService: () => void
   onInvokeCostEstimate: () => void
 }) {
-  const offPath = status === 'declined' || status === 'archived'
-  const effectiveStatus: MatterStage = status === 'on_hold' ? 'open' : (status as MatterStage)
+  // Older/imported matter rows can briefly arrive without a status while
+  // the detail page is loading. Treat that safely as the lifecycle entry
+  // state rather than passing undefined into label/transition helpers.
+  const currentStatus = status || 'lead'
+  const offPath = currentStatus === 'declined' || currentStatus === 'archived'
+  const effectiveStatus: MatterStage = currentStatus === 'on_hold' ? 'open' : (currentStatus as MatterStage)
   const currentIdx = offPath ? -1 : MATTER_HAPPY_PATH.indexOf(effectiveStatus)
 
   // Lead is the entry point, opens on the facts and full history, not
@@ -72,14 +76,14 @@ export default function MatterPipeline({
     setSelectedStage('lead')
     setShowTaskForm(false)
     setShowNoteForm(false)
-  }, [status])
+  }, [currentStatus])
 
   const selectedIsLive = selectedStage === effectiveStatus
   const isLead = selectedStage === 'lead'
   const stageEntries = stageHistory.filter(h => h.to_stage === selectedStage)
   const canManage = permissions.includes('manage_matters')
 
-  const taskSuggestions = stageTaskSuggestions(status)
+  const taskSuggestions = stageTaskSuggestions(currentStatus)
 
   return (
     <SectionCard
@@ -87,7 +91,7 @@ export default function MatterPipeline({
       icon={ArrowRight}
       color="blue"
       defaultOpen
-      badge={<span className={`badge ${getStatusColor(status)} ml-1`}>{stageMeta(status).label}</span>}
+      badge={<span className={`badge ${getStatusColor(currentStatus)} ml-1`}>{stageMeta(currentStatus).label}</span>}
     >
       {/* Stepper track spans the matter's whole life. Any reached step is
           clickable, the pane below shows only whatever is selected. Lead
@@ -127,10 +131,10 @@ export default function MatterPipeline({
 
       {offPath && (
         <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-sm text-red-700 dark:text-red-400 mb-3">
-          This matter is {stageMeta(status).label.toLowerCase()}.
+          This matter is {stageMeta(currentStatus).label.toLowerCase()}.
         </div>
       )}
-      {status === 'on_hold' && selectedStage === 'open' && (
+      {currentStatus === 'on_hold' && selectedStage === 'open' && (
         <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 text-sm text-amber-700 dark:text-amber-400 mb-3">
           Currently on hold.
         </div>
@@ -222,8 +226,8 @@ export default function MatterPipeline({
           {selectedIsLive && !offPath && (
             <div className="pt-2 border-t border-[var(--color-border)]">
               <div className="flex flex-wrap gap-2 mb-2">
-                {availableTransitions(status as MatterStage)
-                  .filter((to) => canMakeTransition(status as MatterStage, to))
+                {availableTransitions(currentStatus as MatterStage)
+                  .filter((to) => canMakeTransition(currentStatus as MatterStage, to))
                   .map((to) => (
                     <button key={to} onClick={() => onTransitionClick(to)} className="btn btn-outline gap-2 text-sm">
                       <ArrowRight className="w-4 h-4" /> {stageLabel(to)}
@@ -233,7 +237,7 @@ export default function MatterPipeline({
                     than a fixed list here, so what's offered at "retainer
                     pending" differs from "open" without a branch in this file. */}
                 <StageActions
-                  stageKey={status}
+                  stageKey={currentStatus}
                   context={context}
                   permissions={permissions}
                   handlers={{
@@ -269,7 +273,7 @@ export default function MatterPipeline({
         context={context}
         team={team}
         suggestions={taskSuggestions}
-        title={`Assign work at ${stageLabel(status).toLowerCase()}`}
+        title={`Assign work at ${stageLabel(currentStatus).toLowerCase()}`}
         onCreated={onAssignmentCreated}
       />
     </SectionCard>

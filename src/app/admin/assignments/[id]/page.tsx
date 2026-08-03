@@ -41,6 +41,7 @@ interface Assignment {
     assigned_attorney?: { full_name: string; position?: string } | null
   }
   assignee?: { id: string; full_name: string; position?: string }
+  work_item?: { id: string; title: string; instructions?: string | null; activity_type?: { name: string } | null } | null
   assigned_by_user?: { full_name: string }
   messages?: Array<{
     id: string
@@ -341,10 +342,10 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">
-              {assignment.matter?.title || 'Assignment'}
+              {assignment.work_item?.title || assignment.matter?.title || assignment.instructions || 'Assignment'}
             </h1>
             <p className="text-[var(--color-text-muted)] text-sm mt-1">
-              {assignment.matter?.matter_number}
+              {assignment.matter?.matter_number || (assignment.submission ? `Enquiry ${assignment.submission.tracking_code}` : 'Standalone work')}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">

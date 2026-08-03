@@ -6,6 +6,7 @@ import { userHasPermission } from '@/lib/permissions'
 import { buildAssignmentBrief } from '@/lib/assignmentBrief'
 import { stageLabel as matterStageLabelOf } from '@/lib/matterLifecycle'
 import { intakeStageMeta } from '@/lib/intakeLifecycle'
+import { checkAssignmentCompletion } from '@/lib/assignmentCompletion'
 
 // Assignments are visible to: the assigner, the assignee, or anyone in an
 // admin-tier role. requireAdminApi() alone would exclude pupils and admin
@@ -46,7 +47,7 @@ export async function GET(
       assigned_by_user:assigned_by(full_name, email),
       assignee:assigned_to(id, full_name, position),
       messages:assignment_messages(id, sender_id, message_type, content, created_at),
-      work_item:work_items(id, activity_type:activity_types(name, description)),
+      work_item:work_items(id, title, instructions, activity_type:activity_types(name, description)),
       matter:legal_matters(
         id, matter_number, title, type, status, description, client_name,
         opposing_party, court, case_number, county, claim_value, is_confidential,
@@ -245,6 +246,10 @@ export async function PATCH(
           { status: 403 }
         )
       }
+      {
+        const { data: missingInputs } = await supabase.from('assignment_inputs').select('id').eq('assignment_id', params.id).eq('required', true).neq('status', 'PROVIDED')
+        if (missingInputs?.length) return NextResponse.json({ error: 'inputs_missing', missingInputs: missingInputs.map(i => i.id) }, { status: 422 })
+      }
       newStatus = 'In Progress'
       updates.started_at = new Date().toISOString()
       systemMessage = `${profile.fullName} started work on this assignment`
@@ -262,6 +267,10 @@ export async function PATCH(
           { error: 'Only the assignee can submit work' },
           { status: 403 }
         )
+      }
+      {
+        const completion = await checkAssignmentCompletion(supabase, assignment)
+        if (!completion.ok) return NextResponse.json(completion, { status: 422 })
       }
       newStatus = 'Submitted'
       updates.submitted_at = new Date().toISOString()

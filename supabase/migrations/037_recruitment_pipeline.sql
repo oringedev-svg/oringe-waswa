@@ -79,11 +79,9 @@ CREATE TABLE job_application_events (
 );
 CREATE INDEX idx_job_application_events_application ON job_application_events(application_id);
 
--- Interview scheduling reuses the firm's shared calendar rather than a
--- parallel "interviews" table, the same way a submission's client meeting
--- already does (calendar_events.submission_id, 015_calendar.sql).
-ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS job_application_id UUID REFERENCES job_applications(id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_calendar_events_job_application ON calendar_events(job_application_id);
+-- The calendar link deliberately lives in 043_calendar_job_application_link.sql.
+-- Keeping its cross-table lock separate prevents this broad recruitment
+-- migration from deadlocking with normal calendar traffic.
 
 ALTER TABLE job_application_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE job_application_events ENABLE ROW LEVEL SECURITY;

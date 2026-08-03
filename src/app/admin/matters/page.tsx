@@ -29,6 +29,9 @@ interface LegalMatter {
   assigned_attorney?: { full_name: string }
 }
 
+interface PracticeArea { id: string; title: string; top_level_category?: string }
+interface MatterTypeReference { id: string; practice_area_id: string; name: string; decided_default: boolean }
+
 const ACTIVE_STAGES = ['lead', 'conflict_check', 'engagement_letter', 'retainer_pending', 'open', 'on_hold']
 
 // Health is derived from real activity, not asserted: an active matter
@@ -48,7 +51,7 @@ function stageTone(stage: string): Tone {
   return 'safe'
 }
 
-const EMPTY_MATTER = { title: '', type: 'civil_litigation', client_name: '', description: '', is_confidential: false, county: '', claim_value: '' }
+const EMPTY_MATTER = { title: '', type: 'civil_litigation', client_name: '', description: '', is_confidential: false, county: '', claim_value: '', practice_area_id: '', practice_area_ids: [] as string[], matter_type_id: '', engagement_objective: '' }
 
 // Stage funnel chip — click to filter
 function StageChip({
@@ -101,19 +104,28 @@ export default function AdminMattersPage() {
   const [newMatter, setNewMatter] = useState(EMPTY_MATTER)
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({})
   const [stageAvgDays, setStageAvgDays] = useState<Record<string, number>>({})
+  const [practiceAreas, setPracticeAreas] = useState<PracticeArea[]>([])
+  const [referenceTypes, setReferenceTypes] = useState<MatterTypeReference[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   function load() {
     setLoading(true)
+    setLoadError(null)
     const params = new URLSearchParams({ limit: '30' })
     if (type !== 'all') params.set('type', type)
     if (status !== 'all') params.set('status', status)
     if (search) params.set('search', search)
-    fetch(`/api/files/matters?${params}`)
-      .then(r => r.json())
-      .then(data => {
+    fetch(`/api/files/matters?${params}`, { cache: 'no-store' })
+      .then(async r => ({ ok: r.ok, body: await r.json() }))
+      .then(({ ok, body: data }) => {
+        if (!ok) {
+          setLoadError(data?.error || 'Unable to load matters. Please try again.')
+          return
+        }
         setMatters(data.data || [])
         setTotal(data.count || 0)
       })
+      .catch(() => setLoadError('Unable to reach the matter register. Please try again.'))
       .finally(() => setLoading(false))
   }
 
@@ -132,9 +144,17 @@ export default function AdminMattersPage() {
     return () => clearTimeout(t)
   }, [search])
   useEffect(() => { loadStageCounts() }, [])
+  useEffect(() => {
+    fetch('/api/matter-reference').then(r => r.ok ? r.json() : null).then(data => {
+      if (data) { setPracticeAreas(data.areas || []); setReferenceTypes(data.types || []) }
+    })
+  }, [])
 
   async function createMatter() {
-    if (!newMatter.title || !newMatter.client_name) { toast.error('Title and client name required'); return }
+    if (!newMatter.title || !newMatter.client_name || (practiceAreas.length > 0 && !newMatter.practice_area_id)) {
+      toast.error(practiceAreas.length > 0 ? 'Title, client name and a primary practice area are required' : 'Title and client name are required')
+      return
+    }
     setCreating(true)
     try {
       const { county, claim_value, ...rest } = newMatter
@@ -323,6 +343,13 @@ export default function AdminMattersPage() {
         ))}
       </div>
 
+      {loadError && (
+        <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button onClick={load} className="btn btn-ghost text-sm">Try again</button>
+        </div>
+      )}
+
       {view === 'table' ? (
         <DataTable
           caption="Legal matters"
@@ -398,10 +425,41 @@ export default function AdminMattersPage() {
           <input className="input text-sm" value={newMatter.client_name} onChange={e => setNewMatter(f => ({ ...f, client_name: e.target.value }))} />
         </div>
         <div>
-          <label className="label">Matter Type</label>
-          <select className="input text-sm" value={newMatter.type} onChange={e => setNewMatter(f => ({ ...f, type: e.target.value }))}>
-            {MATTER_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          <label className="label">Primary Practice Area {practiceAreas.length > 0 && '*'}</label>
+          <select className="input text-sm" value={newMatter.practice_area_id} disabled={practiceAreas.length === 0} onChange={e => setNewMatter(f => ({ ...f, practice_area_id: e.target.value, practice_area_ids: Array.from(new Set([e.target.value, ...f.practice_area_ids])).filter(Boolean), matter_type_id: '' }))}>
+            <option value="">Select a practice area</option>
+            {practiceAreas.map(area => <option key={area.id} value={area.id}>{area.title}</option>)}
           </select>
+        </div>
+        {practiceAreas.length > 0 && <div>
+          <label className="label">Additional Practice Areas <span className="text-[var(--color-text-muted)]">(select every area the matter touches)</span></label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto rounded-lg border border-[var(--color-border)] p-3">
+            {practiceAreas.filter(area => area.id !== newMatter.practice_area_id).map(area => (
+              <label key={area.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={newMatter.practice_area_ids.includes(area.id)} onChange={e => setNewMatter(f => ({ ...f, practice_area_ids: e.target.checked ? [...f.practice_area_ids, area.id] : f.practice_area_ids.filter(id => id !== area.id) }))} />
+                {area.title}
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">Conflict checks must clear every selected practice area.</p>
+        </div>}
+        <div>
+          <label className="label">Matter Type</label>
+          {practiceAreas.length > 0 ? (
+            <select className="input text-sm" value={newMatter.matter_type_id} disabled={!newMatter.practice_area_id} onChange={e => setNewMatter(f => ({ ...f, matter_type_id: e.target.value }))}>
+              <option value="">Select a matter type</option>
+              {referenceTypes.filter(t => t.practice_area_id === newMatter.practice_area_id).map(t => <option key={t.id} value={t.id}>{t.name}{t.decided_default ? ' (standard)' : ''}</option>)}
+            </select>
+          ) : (
+            <select className="input text-sm" value={newMatter.type} onChange={e => setNewMatter(f => ({ ...f, type: e.target.value }))}>
+              {MATTER_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+          )}
+          {!practiceAreas.length && <p className="text-xs text-[var(--color-text-muted)] mt-1">Using the standard matter form while reference data is unavailable.</p>}
+        </div>
+        <div>
+          <label className="label">Engagement objective <span className="text-[var(--color-text-muted)]">(optional)</span></label>
+          <input className="input text-sm" value={newMatter.engagement_objective} onChange={e => setNewMatter(f => ({ ...f, engagement_objective: e.target.value }))} placeholder="Leave blank for a single-matter engagement" />
         </div>
         <div>
           <label className="label">Description</label>

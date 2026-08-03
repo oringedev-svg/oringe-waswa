@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { JusticeDataService } from '@/lib/justice/service'
 import { INSTITUTION_LABELS, type InstitutionType } from '@/lib/justice/types'
 import { JUSTICE_ZONES } from '@/lib/justice/zones'
@@ -20,6 +20,7 @@ export function generateStaticParams() {
 export default function InstitutionListPage({ params }: { params: { type: string } }) {
   const type = SLUG_TO_TYPE[params.type]
   if (!type) notFound()
+  if (type === 'court') redirect('/admin/courts')
 
   const label = INSTITUTION_LABELS[type]
   const meta = JusticeDataService.getMeta(type)

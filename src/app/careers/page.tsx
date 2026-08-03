@@ -5,6 +5,7 @@ import { Loader2, MapPin, Clock, X, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { formatDate } from '@/lib/utils'
 import WorkingAtOringe from '@/components/careers/WorkingAtOringe'
+import MissionCallout from '@/components/layout/MissionCallout'
 
 interface JobOpening {
   id: string
@@ -45,7 +46,7 @@ export default function CareersPage() {
 
   return (
     <PublicLayout>
-      <div className="py-20" style={{ background: 'var(--color-surface-raised)' }}>
+      <div className="career-intro py-20" style={{ background: 'var(--color-surface-raised)' }}>
         <div className="container">
           <span className="eyebrow mb-4 block">Join Us</span>
           <h1 className="font-display font-light mb-4" style={{ fontSize: 'var(--heading-page-size)' }}>Careers</h1>
@@ -55,17 +56,18 @@ export default function CareersPage() {
         </div>
       </div>
 
-      {/* Quick jump, mirrors the four-track + vacancy-list menu structure */}
-      <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] sticky top-16 z-40 overflow-x-auto">
-        <div className="container flex gap-0">
+      {/* A local jump list belongs to the Careers page, not the global
+          navigation stack. It deliberately scrolls away with the intro. */}
+      <nav aria-label="Career tracks" className="border-b border-[var(--color-border)] bg-[var(--color-surface)] overflow-x-auto">
+        <div className="container flex gap-1 py-2">
           {[...TRACKS, { key: 'vacancy-list', label: 'Vacancy List' }].map(t => (
             <a key={t.key} href={`#${t.key.replace('_', '-')}`}
-              className="px-5 py-4 text-sm font-medium whitespace-nowrap text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors border-b-2 border-transparent hover:border-[var(--color-accent)]">
+              className="px-4 py-2.5 text-sm font-medium whitespace-nowrap text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-surface-overlay)] transition-colors rounded-sm">
               {t.label}
             </a>
           ))}
         </div>
-      </div>
+      </nav>
 
       {loading ? (
         <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
@@ -138,6 +140,15 @@ export default function CareersPage() {
 
           {/* Renders only once staff voices have been added in the admin. */}
           <WorkingAtOringe />
+          <MissionCallout
+            eyebrow="Build your practice with us"
+            title="See your work make a difference."
+            description="Join a team that pairs rigorous legal work with practical service to people, businesses and institutions across Kenya."
+            primaryHref="#vacancy-list"
+            primaryLabel="Explore open positions"
+            secondaryHref="#trainee-program"
+            secondaryLabel="Explore our programmes"
+          />
         </>
       )}
 

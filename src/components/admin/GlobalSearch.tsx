@@ -77,7 +77,7 @@ export default function GlobalSearch() {
   return (
     <div ref={containerRef} className="relative w-full max-w-xs">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--on-band-muted)] pointer-events-none" />
         <input
           ref={inputRef}
           value={query}
@@ -85,9 +85,9 @@ export default function GlobalSearch() {
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search everything…"
-          className="input pl-9 pr-14 text-sm !py-2"
+          className="w-full pl-9 pr-14 text-sm py-2 bg-[color-mix(in_srgb,var(--on-band)_10%,transparent)] border border-[color-mix(in_srgb,var(--on-band)_20%,transparent)] text-[var(--on-band)] placeholder:text-[var(--on-band-muted)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--on-band)] transition-colors"
         />
-        <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] px-1.5 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-muted)] hidden sm:block">
+        <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] px-1.5 py-0.5 rounded border border-[color-mix(in_srgb,var(--on-band)_20%,transparent)] text-[var(--on-band-muted)] hidden sm:block">
           ⌘K
         </kbd>
       </div>

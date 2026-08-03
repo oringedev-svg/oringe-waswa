@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient, deleteFile } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase'
+import { getDocumentProvider } from '@/lib/documentProvider'
 import { getSessionProfile } from '@/lib/auth'
 import { userHasPermission } from '@/lib/permissions'
 import { getMatterAccessScope, canAccessMatter } from '@/lib/matterScope'
@@ -60,7 +61,11 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
 
   const supabase = createAdminClient()
   // Get file path first
-  const { data: doc } = await supabase.from('legal_documents').select('file_url, file_name').eq('id', params.id).single()
+  const { data: doc } = await supabase.from('legal_documents').select('provider_key, provider_path').eq('id', params.id).single()
+  if (doc?.provider_path) {
+    try { await getDocumentProvider(doc.provider_key || 'owa_storage').deleteDocument(doc.provider_path) }
+    catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not remove document file' }, { status: 500 }) }
+  }
   // Log deletion
   await supabase.from('document_access_log').insert({ document_id: params.id, action: 'delete' })
   // Delete record

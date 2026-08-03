@@ -18,8 +18,10 @@ export function generateTrackingCode(type: string): string {
   return `${prefix}-${ts}-${rand}`
 }
 
-export function formatDate(date: string | Date, format: 'short' | 'long' | 'datetime' = 'long') {
+export function formatDate(date: string | Date | null | undefined, format: 'short' | 'long' | 'datetime' = 'long') {
+  if (!date) return '—'
   const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return '—'
   const opts: Intl.DateTimeFormatOptions =
     format === 'short'
       ? { day: '2-digit', month: '2-digit', year: 'numeric' }

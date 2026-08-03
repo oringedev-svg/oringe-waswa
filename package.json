@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "import:drafting-library": "node scripts/import-drafting-library.mjs"
   },
   "dependencies": {
     "@azure-rest/ai-inference": "^1.0.0-beta.6",

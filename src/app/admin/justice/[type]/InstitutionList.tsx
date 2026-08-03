@@ -87,11 +87,11 @@ export default function InstitutionList({
     <div>
       <PageHeader
         icon={Building2}
-        eyebrow="Justice Directory"
+        eyebrow="Hubs · Reference data"
         title={title}
         meta={[`${filtered.length} of ${rows.length}`, county || null, subCategory || null]}
         actions={
-          <Link href="/admin/justice" className="btn btn-outline text-sm">All registers</Link>
+          <Link href="/admin/hubs" className="btn btn-outline text-sm">All Hubs</Link>
         }
       >
         <SearchInput value={query} onChange={setQuery} placeholder="Search name, county or town" className="max-w-sm" />

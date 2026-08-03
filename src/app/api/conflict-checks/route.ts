@@ -52,11 +52,29 @@ export async function POST(req: NextRequest) {
   // same search over the same firm-wide records, just entered from a
   // different point in one continuous pipeline.
   let matter: { id: string; status: string } | null = null
+  let practiceAreaIds: string[] = []
   let submission: { id: string; intake_stage: string | null; submitter_name: string } | null = null
   if (matterId) {
     const { data } = await supabase.from('legal_matters').select('id, status').eq('id', matterId).single()
     if (!data) return NextResponse.json({ error: 'Matter not found' }, { status: 404 })
     matter = data
+    const { data: links, error: areaError } = await supabase
+      .from('matter_practice_areas')
+      .select('practice_area_id')
+      .eq('matter_id', matterId)
+    if (areaError) {
+      // The multi-area junction was introduced after the original matter
+      // system. Existing matters still synchronize with conflict checks by
+      // using their legacy primary area until migration 044 is present.
+      const { data: legacyMatter } = await supabase
+        .from('legal_matters')
+        .select('practice_area_id')
+        .eq('id', matterId)
+        .maybeSingle()
+      practiceAreaIds = legacyMatter?.practice_area_id ? [legacyMatter.practice_area_id] : []
+    } else {
+      practiceAreaIds = (links || []).map(link => link.practice_area_id)
+    }
   } else {
     const { data } = await supabase.from('submissions').select('id, intake_stage, submitter_name').eq('id', submissionId).single()
     if (!data) return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
@@ -68,7 +86,7 @@ export async function POST(req: NextRequest) {
     excludeSubmissionId: submissionId,
   })
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('conflict_checks')
     .insert({
       matter_id: matterId || null,
@@ -76,10 +94,28 @@ export async function POST(req: NextRequest) {
       search_query: summary,
       results,
       highest_risk: highestRisk,
+      practice_area_ids: practiceAreaIds,
       checked_by: guard.profile.id,
     })
     .select()
     .single()
+
+  // practice_area_ids is an additive audit field. Let legacy conflict
+  // checks continue to be recorded when that column is not yet deployed.
+  if (error) {
+    ;({ data, error } = await supabase
+      .from('conflict_checks')
+      .insert({
+        matter_id: matterId || null,
+        submission_id: submissionId || null,
+        search_query: summary,
+        results,
+        highest_risk: highestRisk,
+        checked_by: guard.profile.id,
+      })
+      .select()
+      .single())
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   await logAudit({ table_name: 'conflict_checks', record_id: data.id, action: 'INSERT', new_data: { matter_id: matterId, submission_id: submissionId, targets, search_query: summary, highest_risk: highestRisk } })

@@ -1,214 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+/* All CSS custom properties live in one place. Import this before anything
+   else so every subsequent stylesheet can reference the tokens. */
+@import './design-tokens.css';
 @import './auth.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Editorial serif for section headings, precision grotesk for body. */
-  --font-display: 'Fraunces';
-  --font-body: 'Inter';
-  --font-mono: 'DM Mono';
-  /* OWA Digital Design Guidelines: cool neutral gray, architectural, no
-     warmth, no hue. --color-accent is the functional interactive tone
-     (buttons, active states, chips that carry white text), kept dark
-     enough to hold that contrast. --color-accent-tint is the literal
-     guideline accent (#C5C8CC), used only where it never carries text:
-     borders, dividers, faint background texture, glows. */
-  --color-accent: #44474b;
-  --color-accent-light: #6f7276;
-  --color-accent-dark: #2f3134;
-  --color-accent-rgb: 68,71,75;
-  --color-accent-tint: #c5c8cc;
-  --color-accent-tint-rgb: 197,200,204;
-  /* BRAND COLOUR. The neutral gray system reads as architectural but, on
-     its own, flat. This brass carries the warmth (borrowed from Bowmans,
-     whose gold does the same job against a restrained base) and is the one
-     hue allowed to mark interactive and editorial accents. */
-  --color-brand: #a97d2f;
-  --color-brand-strong: #8a6524;
-  --color-brand-rgb: 169,125,47;
-  /* SECTION TINTS. Bird & Bird block whole sections in soft colour despite
-     an otherwise plain identity; these are muted far enough to stay
-     executive while still breaking up a page of unbroken gray. */
-  --tint-sage: #e7ece6;
-  --tint-clay: #f2e9e2;
-  --tint-slate: #e4ebee;
-  /* Line accent: the teal (green-blue) used by animated line work like the
-     spotlight stat line, distinct from the brass which marks interactive
-     and editorial accents. */
-  --color-line: #2f6e78;
-
-  /* ---- FIXED BANDS ----------------------------------------------------
-     Bands that stay dark in BOTH themes, so they read as a deliberate
-     panel rather than inverting with the page. Declared once here and
-     never overridden in .dark, which is what makes them fixed.
-
-     --band-slate is the deep blue-grey carried by the announcement bar and
-     the footer. It is the dark-mode value of --tint-slate promoted to a
-     fixed band token, so those two keep the Case Record strip's hue in
-     light mode as well as dark rather than inverting to a pale surface.
-     --band-slate-accent is the decorative yellow field over that band. It
-     appears as one large, heavily blurred, very low opacity field and never
-     carries text, because yellow is the least corporate colour in the
-     system and earns the smallest area. Gold is the readable warm tone for
-     labels on both fixed bands. */
-  --band-slate: #242e34;
-  --band-slate-accent: #c9a227;
-  --band-gold: #c99a4e;
-  --on-band: rgba(255,255,255,.80);
-  --on-band-strong: #ffffff;
-  --on-band-muted: rgba(255,255,255,.46);
-  --on-band-line: rgba(255,255,255,.18);
-
-  /* Admin sidebar, a fixed dark navigation panel in both themes. Uses the
-     same slate family as the announcement bar but scoped so hover/active
-     states can be tuned independently of other fixed bands. */
-  --admin-sidebar-bg: var(--band-slate);
-  --admin-sidebar-border: var(--on-band-line);
-  --admin-sidebar-fg: var(--on-band);
-  --admin-sidebar-fg-muted: var(--on-band-muted);
-  --admin-sidebar-hover: rgba(255,255,255,.07);
-  --admin-sidebar-active-bg: color-mix(in srgb, var(--band-gold) 14%, transparent);
-  --admin-sidebar-active-border: color-mix(in srgb, var(--band-gold) 42%, transparent);
-  --admin-sidebar-active-fg: var(--on-band-strong);
-  --admin-sidebar-icon-active: var(--band-gold);
-
-  /* The hero's underline accent. Was hardcoded in two places before it
-     was ever a token, which is exactly the drift this block exists to
-     prevent. */
-  --color-hero-accent: #e8672c;
-  --color-hero-ground: #0a0908;
-  --color-hero-text: #f7f6f2;
-
-  /* ---- SEMANTIC STATUS ------------------------------------------------
-     The one place a hue means something rather than decorating something.
-     Badges, form validation and pipeline states all resolve here, so
-     "what colour is success" has exactly one answer across the site and
-     the admin. */
-  --status-success: #2d6a4f;
-  --status-success-rgb: 45,106,79;
-  --status-info: #1a4d6e;
-  --status-info-rgb: 26,77,110;
-  --status-review: #6b3d99;
-  --status-review-rgb: 107,61,153;
-  --status-danger: #9b2335;
-  --status-danger-rgb: 155,35,53;
-  --color-surface: #f5f5f5;
-  /* A warm ivory, the panel tone from the reference board. This was #d7d7d7,
-     a mid grey that read as a dull beige on every card and, being darker
-     than --color-surface, made a "raised" element sit visually below the
-     page it floats on. Ivory is both warmer and genuinely lighter than the
-     ground, so a card now reads as lifted rather than as a grey patch. */
-  --color-surface-raised: #faf7f1;
-  --color-surface-overlay: #e6e6e6;
-  --color-border: #c5c5c5;
-  --color-muted: #9a9da1;
-  --color-text-primary: #2a2b2d;
-  --color-text-secondary: #6b6e72;
-  --color-text-muted: #8a8d91;
-  --color-text-inverse: #f5f5f3;
-  /* Ink feature bands (Blog/CTA): a deliberate dark panel that stays the
-     darkest element in BOTH themes, so these sections never invert to light
-     in dark mode. Text on them uses --color-on-ink. */
-  --color-ink: #2a2b2d;
-  --color-on-ink: #f5f5f3;
-  --color-on-ink-muted: rgba(245,245,243,.62);
-  /* Applied to every photo on the site (media cards, service detail images)
-     so any image an admin uploads reads as cool, neutral, architectural
-     material (limestone/basalt/graphite) instead of a warm snapshot cast. */
-  --site-photo-filter: grayscale(20%) saturate(0.92) contrast(1.05);
-  /* Primary: used for text/borders on sections whose background is
-     var(--color-text-primary) (e.g. the CTA band). Must contrast against
-     that, light in light mode, dark in dark mode. */
-  --color-primary-50: #f5f5f3;
-  --color-primary-100: #f5f5f3;
-  --color-primary-200: #f5f5f3;
-  --color-primary-300: #f5f5f3;
-  --color-primary-400: #f5f5f3;
-  --color-primary-500: #c5c8cc;
-  --color-primary-600: #c5c8cc;
-  --color-primary-700: #9a9da1;
-  --color-primary-800: #9a9da1;
-  --color-primary-900: #f5f5f3;
-  --shadow-sm: 0 1px 3px rgba(42,43,45,0.08);
-  --shadow-md: 0 4px 14px rgba(42,43,45,0.1);
-  --shadow-lg: 0 10px 28px rgba(42,43,45,0.13);
-  --shadow-xl: 0 20px 56px rgba(42,43,45,0.18);
-  --shadow-glow: 0 0 40px rgba(197,200,204,0.25);
-  /* Near-sharp corners, an executive, architectural feel. Pills/badges
-     keep --radius-full; everything else reads crisp. */
-  --radius-sm: 1px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 3px;
-  --radius-full: 9999px;
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-spring: cubic-bezier(.16,1,.3,1);
-  /* Shared heading sizes, kept deliberately small/sleek rather than loud. */
-  --heading-page-size: clamp(1.5rem, 2.2vw, 2.05rem);
-  --heading-section-size: clamp(1.3rem, 1.8vw, 1.65rem);
-}
-.dark {
-  /* The whole dark gray family re-tuned around slate (#1e2427, a cool tone
-     with a slight blue-green lean) instead of the old neutral #202225 grays,
-     so dark mode carries one consistent hue rather than flat gray. Every
-     step keeps its original lightness relationship, only the hue moved. */
-  --color-accent: #57636b;
-  --color-accent-light: #7b878f;
-  --color-accent-dark: #3c474e;
-  --color-accent-rgb: 87,99,107;
-  --color-accent-tint: #c5c8cc;
-  --color-accent-tint-rgb: 197,200,204;
-  /* Brass lifts in dark mode so it still reads as warm metal, not mud. */
-  --color-brand: #c9a45c;
-  --color-brand-strong: #dcbb78;
-  --color-brand-rgb: 201,164,92;
-  /* Neutral, not sage. The green cast (#1e2823) sat a hair off the page
-     ground (#1e2427) and read as a discoloured patch rather than a band;
-     a slightly deeper neutral recedes properly instead. */
-  --tint-sage: #181d20;
-  --tint-clay: #292322;
-  /* Slate is now the page ground itself, so the slate SECTION tint sits a
-     step above it to stay a visible panel rather than vanishing. */
-  --tint-slate: #242e34;
-  /* Teal lifts in dark mode to hold contrast against the slate ground. */
-  --color-line: #62a9b3;
-  /* Ink stays the darkest element even in dark mode, a touch below the page
-     ground so the feature band reads as a deliberate panel, never inverting. */
-  --color-ink: #0e1417;
-  --color-on-ink: #f5f5f3;
-  --color-on-ink-muted: rgba(245,245,243,.6);
-  --color-surface: #1e2427;
-  --color-surface-raised: #3a464d;
-  --color-surface-overlay: #283136;
-  --color-border: #45525a;
-  --color-muted: #8b969d;
-  --color-text-primary: #f5f5f3;
-  --color-text-secondary: #b4bec4;
-  --color-text-muted: #8b969d;
-  --color-text-inverse: #1e2427;
-  /* Primary: dark in dark mode (that section's background flips light) */
-  --color-primary-50: #1e2427;
-  --color-primary-100: #1e2427;
-  --color-primary-200: #1e2427;
-  --color-primary-300: #1e2427;
-  --color-primary-400: #1e2427;
-  --color-primary-500: #6f7a81;
-  --color-primary-600: #6f7a81;
-  --color-primary-700: #3a464d;
-  --color-primary-800: #3a464d;
-  --color-primary-900: #1e2427;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.35);
-  --shadow-md: 0 4px 14px rgba(0,0,0,0.45);
-  --shadow-lg: 0 10px 28px rgba(0,0,0,0.55);
-  --shadow-xl: 0 20px 56px rgba(0,0,0,0.65);
-  /* Sidebar sits one step below the page ground in dark mode. */
-  --admin-sidebar-bg: #141a1d;
-}
+/* Token definitions removed — they live in design-tokens.css.
+   This file contains only component CSS and Tailwind directives. */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
+.skip-link{position:fixed;left:1rem;top:1rem;z-index:100;transform:translateY(-200%);padding:.7rem 1rem;background:var(--color-text-primary);color:var(--color-surface);border-radius:var(--radius-sm);font-weight:600;transition:transform var(--transition-fast)}
+.skip-link:focus{transform:translateY(0);outline:3px solid var(--color-brand);outline-offset:3px}
+/* A shared, high-contrast focus ring makes keyboard position visible across
+   the public site and workspace without changing the visual system. */
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid var(--color-brand);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 body{font-family:var(--font-body),sans-serif;font-size:.9375rem;line-height:1.6;color:var(--color-text-primary);background:var(--color-surface);transition:background-color .25s ease,color .25s ease;overflow-x:hidden}
 h1,h2,h3,h4,h5,h6{font-family:var(--font-display),serif;font-weight:400;font-style:normal;line-height:1.2;letter-spacing:-.02em;color:var(--color-text-primary)}
 h1{font-size:1.85rem}h2{font-size:1.5rem}h3{font-size:1.25rem}h4{font-size:1.0625rem}
@@ -407,9 +215,9 @@ em,i{font-style:italic}
 
    Default is a 3/4 portrait, which suits people. Use .photo-card--wide for
    subjects that are not a person (an event, an article cover). */
-.photo-card{position:relative;display:block;aspect-ratio:3/4;overflow:hidden;border-radius:var(--radius-lg);background:var(--color-surface-raised);box-shadow:var(--shadow-sm);transition:box-shadow .3s ease}
+.photo-card{position:relative;display:block;aspect-ratio:3/4;overflow:hidden;border-radius:var(--radius-lg);background:var(--color-surface-raised);box-shadow:var(--shadow-sm);border:1px solid color-mix(in srgb, var(--color-border) 50%, transparent);transition:box-shadow .3s ease,transform .3s cubic-bezier(.16,1,.3,1),border-color .3s ease}
 .photo-card--wide{aspect-ratio:16/11}
-.photo-card:hover{box-shadow:var(--shadow-xl)}
+.photo-card:hover{box-shadow:var(--shadow-xl);transform:translateY(-3px);border-color:color-mix(in srgb, var(--color-brand) 25%, transparent)}
 .photo-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;filter:var(--site-photo-filter);transition:transform .6s cubic-bezier(.16,1,.3,1)}
 .photo-card--wide img{object-position:center}
 .photo-card:hover img{transform:scale(1.06)}
@@ -431,8 +239,11 @@ em,i{font-style:italic}
 .photo-card-note{display:block;font-size:.78rem;line-height:1.5;color:var(--color-on-ink-muted);margin-top:.55rem}
 .photo-card-tags{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem}
 .photo-card-tag{font-size:.65rem;padding:.15rem .55rem;border:1px solid color-mix(in srgb, var(--color-on-ink) 35%, transparent);border-radius:var(--radius-full);color:var(--color-on-ink-muted)}
-.photo-card-action{position:absolute;top:.85rem;right:.85rem;z-index:3;width:2rem;height:2rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--color-ink) 70%, transparent);color:var(--color-on-ink);opacity:0;transition:opacity .3s ease}
-.photo-card:hover .photo-card-action{opacity:1}
+.photo-card-actions{position:absolute;top:.85rem;right:.85rem;z-index:3;display:flex;gap:.45rem}
+.photo-card-action{position:relative;width:2rem;height:2rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--color-ink) 70%, transparent);color:var(--color-on-ink);opacity:0;transition:opacity .3s ease,background .2s ease}
+.photo-card-action:hover{background:var(--color-brand);color:#fff}
+.photo-card:hover .photo-card-action,.photo-card:focus-within .photo-card-action{opacity:1}
+@media(hover:none){.photo-card-action{opacity:1}}
 
 /* CAPABILITY GRID, the homepage practice-group cards (borrowed from Elite
    Designs' services grid): a lead tile spanning two columns and two rows,
@@ -578,10 +389,12 @@ em,i{font-style:italic}
 .hero-full-content-center{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding-top:4rem}
 .hero-full-bottom-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1.5rem;padding-bottom:2rem}
 .hero-full-statement{font-family:var(--font-body),sans-serif;font-weight:500;font-style:normal;line-height:1.3;letter-spacing:-.01em;font-size:clamp(1.35rem,2.4vw,1.9rem);color:var(--color-on-ink);max-width:36ch}
-.hero-btn-solid{display:inline-flex;align-items:center;padding:.75rem 1.5rem;border-radius:var(--radius-full);background:var(--color-on-ink);color:var(--color-ink);font-size:.8125rem;font-weight:500;transition:opacity .2s ease}
-.hero-btn-solid:hover{opacity:.85;color:var(--color-ink)}
-.hero-btn-outline{display:inline-flex;align-items:center;padding:.75rem 1.5rem;border-radius:var(--radius-full);border:1px solid color-mix(in srgb, var(--color-on-ink) 30%, transparent);background:color-mix(in srgb, var(--color-on-ink) 8%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--color-on-ink);font-size:.8125rem;font-weight:500;transition:border-color .2s ease,background .2s ease}
-.hero-btn-outline:hover{border-color:color-mix(in srgb, var(--color-on-ink) 60%, transparent);background:color-mix(in srgb, var(--color-on-ink) 16%, transparent);color:var(--color-on-ink)}
+.hero-btn-solid{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:44px;padding:.75rem 1.75rem;border-radius:var(--radius-full);background:var(--color-on-ink);color:var(--color-ink);font-size:.8125rem;font-weight:600;letter-spacing:.04em;transition:background .2s ease,transform .15s ease,box-shadow .2s ease;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.hero-btn-solid:hover{background:color-mix(in srgb, var(--color-on-ink) 92%, var(--color-brand));color:var(--color-ink);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.hero-btn-brand{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:44px;padding:.75rem 1.75rem;border-radius:var(--radius-full);background:var(--color-brand);color:#fff;font-size:.8125rem;font-weight:600;letter-spacing:.04em;transition:background .2s ease,transform .15s ease,box-shadow .2s ease;box-shadow:0 2px 12px rgba(var(--color-brand-rgb),.35)}
+.hero-btn-brand:hover{background:var(--color-brand-strong);color:#fff;transform:translateY(-1px);box-shadow:0 4px 20px rgba(var(--color-brand-rgb),.45)}
+.hero-btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:44px;padding:.75rem 1.75rem;border-radius:var(--radius-full);border:1px solid color-mix(in srgb, var(--color-on-ink) 35%, transparent);background:color-mix(in srgb, var(--color-on-ink) 10%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--color-on-ink);font-size:.8125rem;font-weight:600;letter-spacing:.04em;transition:border-color .2s ease,background .2s ease,transform .15s ease}
+.hero-btn-outline:hover{border-color:color-mix(in srgb, var(--color-on-ink) 65%, transparent);background:color-mix(in srgb, var(--color-on-ink) 18%, transparent);color:var(--color-on-ink);transform:translateY(-1px)}
 .hero-full-footbar{position:relative;z-index:2;display:flex;align-items:center;padding:0 2.5rem 1.5rem;font-size:.75rem;color:color-mix(in srgb, var(--color-on-ink) 55%, transparent)}
 .hero-full-footbar-end{justify-content:flex-end}
 
@@ -689,23 +502,27 @@ em,i{font-style:italic}
    ground a warm-white panel is only a 1.02 luminance step, so the shadow
    alone left the card edge ambiguous. A fine rule is also how the reference
    board defines its panels, so this reads as intent rather than patch. */
-.card{background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);transition:box-shadow .25s ease,transform .25s ease}
-.card:hover{box-shadow:var(--shadow-md)}
+.card{background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);transition:box-shadow .25s ease,transform .25s ease,border-color .25s ease}
+.card:hover{box-shadow:var(--shadow-md);border-color:color-mix(in srgb, var(--color-brand) 20%, var(--color-border))}
 .card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
 .service-card{transition:all .3s cubic-bezier(.16,1,.3,1);cursor:pointer}
 .service-card:hover{transform:translateY(-8px) scale(1.02);box-shadow:var(--shadow-xl),var(--shadow-glow)}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.75rem;font-family:var(--font-body);font-size:.75rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;border-radius:var(--radius-sm);border:1px solid transparent;cursor:pointer;transition:all .15s ease;white-space:nowrap;position:relative;overflow:hidden}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.75rem 1.5rem;min-height:44px;font-family:var(--font-body);font-size:.8125rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--radius-md);border:1px solid transparent;cursor:pointer;transition:background .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease,transform .15s ease;white-space:nowrap;position:relative;overflow:hidden}
 .btn:active{transform:scale(.98)}
 .btn-primary{background:var(--color-text-primary);color:var(--color-surface);border-color:var(--color-text-primary);box-shadow:var(--shadow-sm)}
 .btn-primary:hover{background:var(--color-accent-dark);border-color:var(--color-accent-dark);box-shadow:var(--shadow-md);color:var(--color-surface);transform:translateY(-1px)}
+.btn-brand{background:var(--color-brand);color:#fff;border-color:var(--color-brand);box-shadow:var(--shadow-sm)}
+.btn-brand:hover{background:var(--color-brand-strong);border-color:var(--color-brand-strong);box-shadow:var(--shadow-md);color:#fff;transform:translateY(-1px)}
 .btn-outline{background:transparent;color:var(--color-text-primary);border-color:var(--color-border)}
 .btn-outline:hover{background:var(--color-text-primary);color:var(--color-surface);border-color:var(--color-text-primary);transform:translateY(-1px)}
 .btn-ghost{background:transparent;color:var(--color-text-secondary);border-color:transparent}
 .btn-ghost:hover{background:var(--color-surface-overlay);color:var(--color-text-primary)}
+.nav-appointment-cta{display:inline-flex;align-items:center;justify-content:center;min-height:2.35rem;padding:.45rem .8rem;border-radius:var(--radius-full);font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.install-app-button{display:inline-flex;align-items:center;gap:.4rem;min-height:2.35rem;padding:.45rem .7rem;border:1px solid var(--color-border);border-radius:var(--radius-full);background:transparent;color:var(--color-text-secondary);font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:color .2s ease,border-color .2s ease,background .2s ease}.install-app-button:hover{border-color:var(--color-brand);background:color-mix(in srgb,var(--color-brand) 10%,transparent);color:var(--color-text-primary)}
 
-.input{width:100%;padding:.75rem 1rem;font-family:var(--font-body);font-size:.875rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);color:var(--color-text-primary);transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;outline:none}
-.input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(var(--color-accent-rgb),.12);background:var(--color-surface-raised)}
+.input{width:100%;padding:.75rem 1rem;min-height:44px;font-family:var(--font-body);font-size:.875rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);color:var(--color-text-primary);transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;outline:none}
+.input:focus{border-color:var(--color-brand);box-shadow:0 0 0 3px rgba(var(--color-brand-rgb),.12);background:var(--color-surface-raised)}
 .input:hover:not(:focus){border-color:var(--color-muted)}
 .input::placeholder{color:var(--color-muted)}
 .input.error{border-color:var(--status-danger);box-shadow:0 0 0 3px rgba(var(--status-danger-rgb),.1)}
@@ -713,8 +530,23 @@ em,i{font-style:italic}
 .label{display:block;font-size:.75rem;font-weight:600;color:var(--color-text-muted);margin-bottom:.5rem;letter-spacing:.05em;text-transform:uppercase}
 .badge{display:inline-flex;align-items:center;gap:.25rem;padding:2px .75rem;font-size:.75rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase;border-radius:var(--radius-full);border:1px solid currentColor}
 .divider{border:none;border-top:1px solid var(--color-border);margin:1.5rem 0}
-.section{padding:7.5rem 0}
+.section{padding:var(--space-section) 0}
 .container{width:100%;max-width:1360px;margin:0 auto;padding:0 2.5rem}
+
+/* SECTION HEADER, a reusable block for consistent visual hierarchy
+   across homepage and inner-page sections. Eyebrow → title → desc → rule. */
+.section-header{display:flex;flex-direction:column;gap:1.5rem;margin-bottom:clamp(2.5rem,5vw,3.5rem)}
+.section-header--with-action{flex-direction:column}
+@media(min-width:768px){.section-header--with-action{flex-direction:row;align-items:flex-end;justify-content:space-between}}
+.section-header--center{text-align:center;align-items:center}
+.section-header--center .grow-line-left{margin-left:auto;margin-right:auto}
+.section-header-body{max-width:42rem}
+.section-header-eyebrow{display:inline-flex;align-items:center;gap:.5em;font-family:var(--font-mono);font-size:.6875rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--color-brand);margin-bottom:.75rem}
+.section-header-eyebrow::before{content:'';width:.4em;height:.4em;background:var(--color-brand);flex-shrink:0;border-radius:1px}
+.section-header-title{font-family:var(--font-display),serif;font-weight:400;font-size:var(--heading-section-size);letter-spacing:-.02em;line-height:1.15;color:var(--color-text-primary)}
+.section-header-desc{font-size:clamp(.9rem,1.2vw,1rem);line-height:1.7;color:var(--color-text-secondary);margin-top:.75rem;max-width:38ch}
+.section-header--center .section-header-desc{margin-left:auto;margin-right:auto}
+.section-header-action{flex-shrink:0}
 @media(min-width:1280px){.container{padding:0 4rem}}
 @media(min-width:1600px){.container{padding:0 6rem}}
 
@@ -793,8 +625,23 @@ body{top:0!important}
 .prose blockquote{border-left:3px solid var(--color-accent);padding-left:1rem;color:var(--color-text-muted);margin:1.5rem 0}
 
 /* RESPONSIVE */
-@media(max-width:768px){.section{padding:4rem 0}h1{font-size:clamp(2rem,8vw,3rem)}h2{font-size:clamp(1.5rem,6vw,2.25rem)}.hero-shape,.hero-orb-2{display:none}}
+@media(max-width:768px){.section{padding:var(--space-section-sm) 0}h1{font-size:clamp(2rem,8vw,3rem)}h2{font-size:clamp(1.5rem,6vw,2.25rem)}.hero-shape,.hero-orb-2{display:none}}
 @media(max-width:480px){.container{padding:0 1rem}.btn{padding:.6rem 1.2rem;font-size:.8rem}}
+
+/* Mobile keeps the whole product usable as an app: readable fields without
+   iOS auto-zoom, comfortable touch targets, safe-area breathing room, and
+   no horizontal escape from wide cards, tables, or media. */
+@media(max-width:767px){
+  html{scroll-padding-top:4.5rem}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  .container{padding-left:1rem;padding-right:1rem}
+  input,select,textarea{font-size:16px!important}
+  .btn{min-height:44px}
+  .nav-appointment-cta{min-height:40px;padding:.45rem .72rem}
+  .install-app-button{min-height:40px}
+  table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  pre,code{max-width:100%;overflow-x:auto}
+}
 
 .react-hot-toast{font-family:var(--font-body)!important}
 
@@ -818,7 +665,9 @@ body{top:0!important}
 /* ADMIN SHELL, a persistent left sidebar of the current domain's tools plus
    a breadcrumb row on every page. Sidebar hides on mobile where the top-bar
    launcher carries navigation. */
-.admin-topbar{position:sticky;top:0;z-index:50;border-bottom:1px solid var(--color-border);background:color-mix(in srgb,var(--color-surface-raised) 92%,transparent);backdrop-filter:blur(12px)}
+/* Topbar joins the sidebar in the dark --band-slate family so both read
+   as one unified application chrome frame. */
+.admin-topbar{position:sticky;top:0;z-index:50;border-bottom:1px solid var(--admin-topbar-border);background:var(--admin-topbar-bg);color:var(--admin-topbar-fg)}
 .admin-sidebar{flex-shrink:0;width:15rem;border-right:1px solid var(--admin-sidebar-border);background:var(--admin-sidebar-bg);min-height:calc(100vh - 3.5rem);position:sticky;top:3.5rem;align-self:flex-start;display:none;padding:1.25rem .75rem;color:var(--admin-sidebar-fg)}
 @media(min-width:1024px){.admin-sidebar{display:block}}
 .admin-sidebar-head{display:flex;align-items:center;gap:.5rem;padding:.4rem .75rem 1rem;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--admin-sidebar-fg-muted);font-weight:500}
@@ -828,7 +677,13 @@ body{top:0!important}
 .admin-sidebar-item.is-active{background:var(--admin-sidebar-active-bg);color:var(--admin-sidebar-active-fg);border-color:var(--admin-sidebar-active-border);font-weight:500}
 .admin-sidebar-item.is-active svg{color:var(--admin-sidebar-icon-active)}
 .admin-sidebar-item.is-active:hover{color:var(--admin-sidebar-active-fg)}
-.admin-main{flex:1;min-width:0;padding:1.5rem 1.5rem 3rem;background:var(--color-surface)}
+.admin-sidebar-secondary{margin-top:1.5rem;padding:.9rem .75rem 0;border-top:1px solid var(--admin-sidebar-border);display:flex;flex-wrap:wrap;gap:.8rem}
+.admin-sidebar-link{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;color:var(--admin-sidebar-fg-muted);text-decoration:underline;text-underline-offset:3px;transition:color .15s ease}
+.admin-sidebar-link:hover,.admin-sidebar-link.is-active{color:var(--admin-sidebar-active-fg)}
+.admin-sidebar-link.is-active svg{color:var(--admin-sidebar-icon-active)}
+/* Main content area: warm ivory "paper" on the dark chrome frame in
+   light mode; uses the page ground itself in dark mode (see design-tokens.css). */
+.admin-main{flex:1;min-width:0;padding:1.5rem 1.5rem 3rem;background:var(--admin-main-bg)}
 @media(min-width:768px){.admin-main{padding:2rem 2.5rem 4rem}}
 .admin-breadcrumbs{display:flex;align-items:center;gap:.4rem;font-family:var(--font-body);font-size:.8rem;color:var(--color-text-muted);margin-bottom:1.75rem}
 .admin-breadcrumbs a{color:var(--color-text-muted);transition:color .15s ease}
@@ -924,6 +779,40 @@ body{top:0!important}
 .staff-voice-avatar-fallback{display:flex;align-items:center;justify-content:center;background:var(--color-ink);color:var(--color-on-ink);font-family:var(--font-display),serif;font-size:1.1rem}
 .staff-voice-name{display:block;font-size:.875rem;font-weight:600;color:var(--color-text-primary)}
 .staff-voice-role{display:block;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-muted);margin-top:.15rem}
+
+/* Editorial public-page vocabulary: a quiet serif lead, then a structured
+   choice surface. It borrows the reference's generous rhythm and outline
+   treatment while retaining OWA's brass, ink and accessible text tokens. */
+.team-editorial-intro,.career-intro{position:relative;overflow:hidden}
+.team-editorial-intro::after,.career-intro::after{content:'';display:block;width:4rem;height:2px;background:var(--color-brand);margin-top:1.75rem}
+.mission-callout{position:relative;isolation:isolate;min-height:31rem;display:flex;align-items:center;overflow:hidden;background:var(--color-ink);color:var(--color-on-ink);margin-top:3rem}
+.mission-callout-image{position:absolute;inset:0;z-index:-2;background-image:url('https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1800&q=85');background-position:center;background-size:cover;filter:grayscale(32%) saturate(72%)}
+.mission-callout-scrim{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(15,29,35,.94) 0%,rgba(15,29,35,.78) 38%,rgba(15,29,35,.34) 68%,transparent 100%)}
+.mission-callout-content{padding-top:5rem;padding-bottom:5rem;max-width:76rem}
+.mission-callout-content>*{max-width:40rem}
+.mission-callout-eyebrow{display:block;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--band-gold);margin-bottom:1rem}
+.mission-callout h2{font-family:var(--font-display),serif;font-size:clamp(2.35rem,5vw,4.6rem);font-weight:400;line-height:1.02;letter-spacing:-.035em;color:#fff}
+.mission-callout p{font-size:1.05rem;line-height:1.65;color:rgba(255,255,255,.86);margin-top:1.2rem}
+.mission-callout-actions{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:2rem}
+.mission-callout-primary,.mission-callout-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:3.1rem;padding:.7rem 1.25rem;border-radius:999px;font-size:.88rem;font-weight:700;transition:transform .2s ease,background .2s ease,border-color .2s ease}
+.mission-callout-primary{background:#fff;color:var(--color-ink)}.mission-callout-primary:hover{transform:translateY(-2px);background:var(--band-gold)}
+.mission-callout-secondary{border:1px solid rgba(255,255,255,.8);color:#fff}.mission-callout-secondary:hover{transform:translateY(-2px);background:rgba(255,255,255,.12)}
+@media(max-width:640px){.mission-callout{min-height:27rem}.mission-callout-content{padding-top:4rem;padding-bottom:4rem}.mission-callout-actions{flex-direction:column;align-items:stretch}.mission-callout-primary,.mission-callout-secondary{width:100%}}
+
+.pupils-showcase{background:linear-gradient(180deg,transparent,var(--color-surface-raised) 45%,transparent)}
+.pupil-slider-track{display:flex;gap:1.25rem;overflow-x:auto;padding:0 .125rem 1rem;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--color-border) transparent}
+.pupil-slide{flex:0 0 min(22rem,84vw);aspect-ratio:3/4;scroll-snap-align:start}
+.pupil-slider-control{display:inline-flex;align-items:center;justify-content:center;width:2.7rem;height:2.7rem;border:1px solid var(--color-border);border-radius:999px;color:var(--color-text-primary);background:var(--color-surface);transition:background .2s ease,color .2s ease,border-color .2s ease}.pupil-slider-control:hover{background:var(--color-text-primary);border-color:var(--color-text-primary);color:var(--color-surface)}.pupil-slider-control:focus-visible{outline-color:var(--color-brand)}
+
+/* Individual people profiles: editorial hero above a quiet, anchor-linked
+   dossier. The layout makes a person feel like a professional practice page
+   rather than a pop-up biography. */
+.person-profile-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(20rem,.95fr);min-height:31rem;background:var(--color-ink)}
+.person-profile-photo{position:relative;min-height:31rem;background:linear-gradient(135deg,var(--color-brand-strong),var(--color-ink));overflow:hidden}.person-profile-photo::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 55%,rgba(18,28,31,.35))}.person-profile-fallback{height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display),serif;font-size:12rem;color:rgba(255,255,255,.55)}
+.person-profile-identity{display:flex;align-items:center;padding:4rem clamp(2rem,6vw,7rem) 4rem clamp(2rem,5vw,5rem);background:linear-gradient(135deg,#263a43,#19282f);color:#fff}.person-profile-identity-inner{max-width:34rem}.person-profile-back{display:inline-flex;align-items:center;gap:.5rem;font-size:.82rem;color:rgba(255,255,255,.72);margin-bottom:3.5rem}.person-profile-back:hover{color:#fff}.person-profile-identity .eyebrow{color:var(--band-gold);margin-bottom:1rem}.person-profile-identity h1{font-family:var(--font-display),serif;font-size:clamp(2.5rem,5vw,4.65rem);line-height:1;font-weight:400;letter-spacing:-.04em}.person-profile-role{margin-top:.85rem;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.person-profile-meta{display:flex;flex-wrap:wrap;gap:.85rem 1.25rem;margin-top:1.8rem;font-size:.82rem;color:rgba(255,255,255,.8)}.person-profile-meta span{display:inline-flex;align-items:center;gap:.4rem}.person-profile-actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2rem}.person-profile-primary,.person-profile-secondary{display:inline-flex;align-items:center;gap:.5rem;padding:.72rem 1rem;border:1px solid rgba(255,255,255,.65);font-size:.82rem;font-weight:600;transition:background .2s ease,color .2s ease}.person-profile-primary{background:#fff;color:var(--color-ink);border-color:#fff}.person-profile-primary:hover{background:var(--band-gold)}.person-profile-secondary{color:#fff}.person-profile-secondary:hover{background:rgba(255,255,255,.12)}
+.person-profile-grid{display:grid;grid-template-columns:13rem minmax(0,43rem);gap:clamp(2.5rem,8vw,9rem);justify-content:center}.person-profile-nav{position:sticky;top:7rem;align-self:start;display:flex;flex-direction:column;gap:1rem;font-family:var(--font-display),serif;font-size:1.35rem;color:var(--color-text-muted)}.person-profile-nav a:first-child{color:var(--color-text-primary);text-decoration:underline;text-underline-offset:.35rem}.person-profile-nav a:hover{color:var(--color-brand-strong)}.person-profile-content{display:flex;flex-direction:column;gap:3.5rem}.person-profile-content article{scroll-margin-top:7rem}.person-profile-content h2{font-family:var(--font-display),serif;font-size:clamp(1.8rem,3vw,2.5rem);font-weight:400;color:var(--color-text-primary);margin-bottom:1rem}.person-profile-content p{line-height:1.78;color:var(--color-text-secondary);max-width:42rem}.person-profile-capabilities{display:flex;flex-wrap:wrap;gap:.65rem}.person-profile-capabilities span{padding:.55rem .85rem;border:1px solid var(--color-border);font-size:.85rem;color:var(--color-text-secondary)}.person-profile-education{display:grid;gap:1rem}.person-profile-education div{display:grid;gap:.2rem;padding-bottom:1rem;border-bottom:1px solid var(--color-border)}.person-profile-education strong{font-size:.95rem;color:var(--color-text-primary)}.person-profile-education span{font-size:.85rem;color:var(--color-text-muted)}
+@media(max-width:760px){.person-profile-hero{grid-template-columns:1fr}.person-profile-photo{min-height:20rem}.person-profile-identity{padding:2.75rem 1.5rem}.person-profile-back{margin-bottom:2rem}.person-profile-grid{grid-template-columns:1fr}.person-profile-nav{position:static;flex-direction:row;flex-wrap:wrap;font-size:1rem}.person-profile-content{gap:2.5rem}}
 
 /* AWARD YEAR NAV + PER-YEAR DECK, on a fixed dark photo band rather than
    the solid gold tried previously: a moody, mossy classical-column shot

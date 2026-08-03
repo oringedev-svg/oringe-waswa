@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient, uploadFile } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase'
+import { getDocumentProvider } from '@/lib/documentProvider'
 import { getSessionProfile, isAdminRole } from '@/lib/auth'
 
 // Upload a deliverable to an assignment, the "here's the work" counterpart
@@ -38,6 +39,7 @@ export async function POST(
   const formData = await req.formData()
   const file = formData.get('file') as File
   const documentType = (formData.get('document_type') as string) || 'work_product'
+  const deliverableId = formData.get('deliverable_id') as string | null
 
   if (!file) {
     return NextResponse.json({ error: 'A file is required' }, { status: 400 })
@@ -45,8 +47,7 @@ export async function POST(
 
   const path = `assignments/${params.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
   const buffer = Buffer.from(await file.arrayBuffer())
-  await uploadFile('legal-docs', path, buffer, file.type)
-  const { data: publicData } = supabase.storage.from('legal-docs').getPublicUrl(path)
+  const stored = await getDocumentProvider().createDocument({ path, content: buffer, contentType: file.type })
 
   // legal_documents, not the separate `documents` table (built for the AI
   // extraction pipeline): Matter Documents reads only legal_documents, so a
@@ -61,17 +62,24 @@ export async function POST(
       title: file.name,
       type: documentType,
       file_name: file.name,
-      file_url: publicData.publicUrl,
+      file_url: stored.publicUrl,
       file_size: file.size,
       mime_type: file.type,
       access_level: 'staff',
       uploaded_by: profile.id,
+      provider_key: stored.providerKey,
+      provider_path: stored.path,
     })
     .select()
     .single()
 
   if (createError) {
     return NextResponse.json({ error: createError.message }, { status: 500 })
+  }
+  if (deliverableId) {
+    const { data: deliverable } = await supabase.from('deliverables').select('id').eq('id', deliverableId).eq('assignment_id', params.id).maybeSingle()
+    if (!deliverable) return NextResponse.json({ error: 'Deliverable does not belong to this assignment' }, { status: 422 })
+    await supabase.from('deliverables').update({ artifact_id: doc.id, status: 'PRODUCED' }).eq('id', deliverable.id)
   }
 
   await supabase.from('assignment_messages').insert({

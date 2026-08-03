@@ -17,8 +17,11 @@ export default function ForgotPasswordPage() {
     setError('')
 
     const supabase = createClient()
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      // Recovery links use the same PKCE exchange boundary as magic links.
+      // A raw /reset-password redirect can leave the code unexchanged on a
+      // production host, causing updateUser() to fail without a session.
+      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/reset-password')}`,
     })
 
     setLoading(false)

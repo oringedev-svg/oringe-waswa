@@ -63,7 +63,11 @@ export async function POST(req: NextRequest) {
     .insert({
       title, description: description || null, type: type || 'meeting', start_at, end_at,
       location: location || null, meeting_link: meeting_link || null,
-      matter_id: matter_id || null, submission_id: submission_id || null, job_application_id: job_application_id || null,
+      matter_id: matter_id || null, submission_id: submission_id || null,
+      // This is a recruitment-only column introduced in migration 037. Do
+      // not name it for ordinary meetings: a database still awaiting that
+      // migration must be able to schedule normal staff events.
+      ...(job_application_id ? { job_application_id } : {}),
       created_by: guard.profile.id,
     })
     .select()

@@ -5,6 +5,7 @@ import { Play, Pause, Square, Volume2, VolumeX, ChevronDown } from 'lucide-react
 interface ReadAloudProps {
   text: string
   title?: string
+  compact?: boolean
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
@@ -16,7 +17,7 @@ function getVoices(): SpeechSynthesisVoice[] {
   return window.speechSynthesis?.getVoices() || []
 }
 
-export default function ReadAloud({ text, title }: ReadAloudProps) {
+export default function ReadAloud({ text, title, compact = false }: ReadAloudProps) {
   const [playing, setPlaying] = useState(false)
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -164,13 +165,75 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
     speak(targetWordIndex)
   }
 
+  if (compact) {
+    return (
+      <div className="relative inline-block not-prose" onClick={(e) => e.preventDefault()}>
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            if (!playing && !paused) {
+              togglePause()
+            }
+            setShowSettings(!showSettings)
+          }}
+          className="w-10 h-10 bg-white shadow-[var(--shadow-md)] flex items-center justify-center rounded-sm hover:bg-[var(--color-surface-raised)] transition-colors text-[var(--color-brand)]"
+          title="Listen to this article"
+        >
+          {playing && !paused ? <Volume2 className="w-5 h-5 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
+        </button>
+
+        {(showSettings || playing) && (
+          <div className="absolute top-12 right-0 z-50 w-64 p-3 bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-xl)] rounded-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePause(); }} className="w-8 h-8 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center hover:bg-[var(--color-brand-dark)] transition-colors flex-shrink-0">
+                  {playing && !paused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                </button>
+                {(playing || progress > 0) && (
+                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); stop(); }} className="w-6 h-6 rounded-full bg-[var(--color-surface-overlay)] text-[var(--color-muted)] flex items-center justify-center hover:bg-[var(--color-border)] transition-colors flex-shrink-0">
+                    <Square className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              <div className="read-aloud-progress flex-1 min-w-0 cursor-pointer h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSeek(e); }}>
+                <div className="h-full bg-[var(--color-brand)] transition-all duration-200" style={{ width: `${progress}%` }} />
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault(); e.stopPropagation();
+                  const nextMuted = !muted
+                  setMuted(nextMuted)
+                  if (utteranceRef.current) utteranceRef.current.volume = nextMuted ? 0 : volume
+                }}
+                className="flex-shrink-0 text-[var(--color-muted)] hover:text-[var(--color-brand)] transition-colors ml-1"
+              >
+                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+            </div>
+            
+            <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--color-border)]">
+               <div className="flex items-center gap-1">
+                 {SPEEDS.map(s => (
+                   <button key={s} onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeSpeed(s); }} className={`text-[10px] px-1.5 py-1 rounded transition-colors ${speed === s ? 'bg-[var(--color-brand)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-text-primary)]'}`}>
+                     {SPEED_LABELS[s]}
+                   </button>
+                 ))}
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="read-aloud-bar not-prose">
       {/* Play/Pause/Stop */}
       <div className="flex items-center gap-2">
         <button
           onClick={togglePause}
-          className="w-9 h-9 rounded-full bg-[var(--color-accent)] text-white flex items-center justify-center hover:bg-[var(--color-accent-dark)] transition-colors flex-shrink-0"
+          className="w-9 h-9 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center hover:bg-[var(--color-brand-dark)] transition-colors flex-shrink-0"
           title={playing && !paused ? 'Pause' : 'Play'}
         >
           {playing && !paused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
@@ -212,7 +275,7 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
             onClick={() => changeSpeed(s)}
             className={`text-xs px-2 py-1 rounded transition-colors ${
               speed === s
-                ? 'bg-[var(--color-accent)] text-white'
+                ? 'bg-[var(--color-brand)] text-white'
                 : 'text-[var(--color-muted)] hover:text-[var(--color-text-primary)]'
             }`}
           >
@@ -228,7 +291,7 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
           setMuted(nextMuted)
           if (utteranceRef.current) utteranceRef.current.volume = nextMuted ? 0 : volume
         }}
-        className="flex-shrink-0 text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors"
+        className="flex-shrink-0 text-[var(--color-muted)] hover:text-[var(--color-brand)] transition-colors"
         title={muted ? 'Unmute' : 'Mute'}
       >
         {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -239,12 +302,12 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
         <div className="flex-shrink-0 relative">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors"
+            className="flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-brand)] transition-colors"
           >
             Voice <ChevronDown className="w-3 h-3" />
           </button>
           {showSettings && (
-            <div className="absolute bottom-full right-0 mb-2 w-56 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-xl)] z-50 max-h-48 overflow-y-auto">
+            <div className="absolute bottom-full right-0 mb-2 w-56 bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-xl)] z-50 max-h-48 overflow-y-auto">
               {voices.filter(v => v.lang.startsWith('en')).map(v => (
                 <button
                   key={v.name}
@@ -257,7 +320,7 @@ export default function ReadAloud({ text, title }: ReadAloudProps) {
                       setTimeout(() => speak(resumeFrom), 100)
                     }
                   }}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-surface-overlay)] transition-colors ${selectedVoice === v.name ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'}`}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-surface-overlay)] transition-colors ${selectedVoice === v.name ? 'text-[var(--color-brand)]' : 'text-[var(--color-text-secondary)]'}`}
                 >
                   {v.name} <span className="text-[var(--color-muted)]">({v.lang})</span>
                 </button>

@@ -1,0 +1,1188 @@
+{
+  "BUNGOMA": {
+    "high_court_stations": {
+      "Bungoma": [
+        {
+          "station_name": "Bungoma Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Bungoma Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Webuye Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kimilili Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Sirisia Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "BUSIA": {
+    "high_court_stations": {
+      "Busia": [
+        {
+          "station_name": "Busia Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Busia SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Malaba Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Malaba SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Port Victoria Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "UASIN GISHU": {
+    "high_court_stations": {
+      "Eldoret": [
+        {
+          "station_name": "Eldoret Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Eldoret Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Eldoret SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Moiben Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "NANDI": {
+    "high_court_stations": {
+      "Eldoret": [
+        {
+          "station_name": "Kapsabet Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kabiyet Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Tinderet Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "ELGEYO MARAKWET": {
+    "high_court_stations": {
+      "Eldoret": [
+        {
+          "station_name": "Iten Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "EMBU": {
+    "high_court_stations": {
+      "Embu": [
+        {
+          "station_name": "Embu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Embu SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Runyenjes Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Siakago Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "GARISSA": {
+    "high_court_stations": {
+      "Garissa": [
+        {
+          "station_name": "Garissa Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Garissa Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Daadab Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Dadaab Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Dadaab SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Balambala Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Elwak Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Ijara Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Modogashe Kadhis Court - subregistry",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Bura/Fafi Kadhis Court - subregistry",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Witu Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "WAJIR": {
+    "high_court_stations": {
+      "Garissa": [
+        {
+          "station_name": "Wajir Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Wajir Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Wajir SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Bute Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Eldas Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Habaswein Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "MANDERA": {
+    "high_court_stations": {
+      "Garissa": [
+        {
+          "station_name": "Mandera Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mandera Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Mandera SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Takaba Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "HOMABAY": {
+    "high_court_stations": {
+      "Homabay": [
+        {
+          "station_name": "Homabay Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mbita Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Oyugis Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kendu Bay Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Ndhiwa Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "KAKAMEGA": {
+    "high_court_stations": {
+      "Kakamega": [
+        {
+          "station_name": "Kakamega Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kakamega Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kakamega SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Mumias Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Butere Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Butali Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "VIHIGA": {
+    "high_court_stations": {
+      "Vihiga": [
+        {
+          "station_name": "Vihiga Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Hamisi Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "KERICHO": {
+    "high_court_stations": {
+      "Kericho": [
+        {
+          "station_name": "Kericho Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kericho Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kericho SCC",
+          "court_type": "Small Claims Court"
+        }
+      ]
+    }
+  },
+  "BOMET": {
+    "high_court_stations": {
+      "Bomet": [
+        {
+          "station_name": "Bomet Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Sotik Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "KIRINYAGA": {
+    "high_court_stations": {
+      "Kerugoya": [
+        {
+          "station_name": "Kerugoya Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kerugoya SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Baricho Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Gichugu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Wang'uru Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "TRANS NZOIA": {
+    "high_court_stations": {
+      "Kitale": [
+        {
+          "station_name": "Kitale Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kitale SCC",
+          "court_type": "Small Claims Court"
+        }
+      ]
+    }
+  },
+  "TURKANA": {
+    "high_court_stations": {
+      "Lodwar": [
+        {
+          "station_name": "Lodwar Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kakuma Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kakuma Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kakuma SCC",
+          "court_type": "Small Claims Court"
+        }
+      ]
+    }
+  },
+  "WEST POKOT": {
+    "high_court_stations": {
+      "Kapenguria": [
+        {
+          "station_name": "Kapenguria Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "KISII": {
+    "high_court_stations": {
+      "Kisii": [
+        {
+          "station_name": "Kisii Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kisii SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Ogembo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Etago Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "NYAMIRA": {
+    "high_court_stations": {
+      "Nyamira": [
+        {
+          "station_name": "Nyamira Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Keroka Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "NAROK": {
+    "high_court_stations": {
+      "Narok": [
+        {
+          "station_name": "Narok Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Narok SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Kilgoris Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "KISUMU": {
+    "high_court_stations": {
+      "Kisumu": [
+        {
+          "station_name": "Kisumu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kisumu Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kisumu SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Winam Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Maseno Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Nyando Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Tamu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kombewa Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "SIAYA": {
+    "high_court_stations": {
+      "Siaya": [
+        {
+          "station_name": "Siaya Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Siaya SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Bondo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Ukwala Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Madiany Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "KITUI": {
+    "high_court_stations": {
+      "Kitui": [
+        {
+          "station_name": "Kitui Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kitui Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kitui SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Mutomo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mwingi Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kyuso Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "MACHAKOS": {
+    "high_court_stations": {
+      "Machakos": [
+        {
+          "station_name": "Machakos Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Machakos Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Machakos SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Kithimani Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kangundo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mavoko Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Wamunyu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "MAKUENI": {
+    "high_court_stations": {
+      "Makueni": [
+        {
+          "station_name": "Makueni Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Tawa Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kilungu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Makindu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Makindu SCC",
+          "court_type": "Small Claims Court"
+        }
+      ]
+    }
+  },
+  "KAJIADO": {
+    "high_court_stations": {
+      "Kajiado": [
+        {
+          "station_name": "Kajiado Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kajiado Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kajiado SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Loitoktok Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Loitoktok SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Ngong Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "KILIFI": {
+    "high_court_stations": {
+      "Malindi": [
+        {
+          "station_name": "Malindi Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Malindi Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Malindi SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Kilifi Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kilifi Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kaloleni Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mariakani Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mariakani Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "TANA RIVER": {
+    "high_court_stations": {
+      "Garsen": [
+        {
+          "station_name": "Garsen Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Garsen Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Hola Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Hola Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "LAMU": {
+    "high_court_stations": {
+      "Garsen": [
+        {
+          "station_name": "Lamu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Lamu Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Lamu SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Mpeketoni Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "MERU": {
+    "high_court_stations": {
+      "Meru": [
+        {
+          "station_name": "Meru Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Meru Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Meru SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Nkubu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Maua Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Tigania Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Githongo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "ISIOLO": {
+    "high_court_stations": {
+      "Meru": [
+        {
+          "station_name": "Isiolo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Isiolo Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Garbatulla Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Merti Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "THARAKA NITHI": {
+    "high_court_stations": {
+      "Chuka": [
+        {
+          "station_name": "Chuka Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Chuka SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Marimanti Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "MARSABIT": {
+    "high_court_stations": {
+      "Marsabit": [
+        {
+          "station_name": "Marsabit Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Marsabit Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Moyale Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Moyale Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Moyale SCC",
+          "court_type": "Small Claims Court"
+        }
+      ]
+    }
+  },
+  "MIGORI": {
+    "high_court_stations": {
+      "Migori": [
+        {
+          "station_name": "Migori Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Migori SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Rongo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kehancha Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "MOMBASA": {
+    "high_court_stations": {
+      "Mombasa": [
+        {
+          "station_name": "Mombasa Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mombasa SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Shanzu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Tononoka Children's Court",
+          "court_type": "Children's Court"
+        },
+        {
+          "station_name": "Mombasa Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "KWALE": {
+    "high_court_stations": {
+      "Kwale": [
+        {
+          "station_name": "Msambweni Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Msambweni Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kwale Law Court",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kwale Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "TAITA TAVETA": {
+    "high_court_stations": {
+      "Voi": [
+        {
+          "station_name": "Taveta Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Taveta SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Wundanyi Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Voi Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Voi Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ]
+    }
+  },
+  "MURANG'A": {
+    "high_court_stations": {
+      "Murang'a": [
+        {
+          "station_name": "Murang'a Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Murang'a SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Kangema Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kigumo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kandara Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kenol Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "NAIROBI": {
+    "high_court_stations": {
+      "Nairobi": [
+        {
+          "station_name": "Milimani Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Milimani Children's Court",
+          "court_type": "Children's Court"
+        },
+        {
+          "station_name": "Milimani Anti-Corruption Court",
+          "court_type": "Anti-Corruption Court"
+        },
+        {
+          "station_name": "Nairobi City County Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Milimani Commercial - Commercial & Civil Div.",
+          "court_type": "Commercial Court (Milimani Commercial)"
+        },
+        {
+          "station_name": "Milimani Commercial - Family & Divorce Div.",
+          "court_type": "Commercial Court (Milimani Commercial)"
+        },
+        {
+          "station_name": "Milimani Small Claims Court",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Makadara Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "JKIA Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Upperhill Kadhis Court",
+          "court_type": "Kadhis' Court"
+        }
+      ],
+      "Kibera": [
+        {
+          "station_name": "Kibera Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kibera Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Kahawa Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Dagoretti Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Dagoretti SCC",
+          "court_type": "Small Claims Court"
+        }
+      ]
+    }
+  },
+  "KIAMBU": {
+    "high_court_stations": {
+      "Kiambu": [
+        {
+          "station_name": "Kiambu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kikuyu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Limuru Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Githunguri Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ],
+      "Thika": [
+        {
+          "station_name": "Thika Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Thika SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Gatundu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Ruiru Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Ruiru SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Kamwangi Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "NAKURU": {
+    "high_court_stations": {
+      "Nakuru": [
+        {
+          "station_name": "Nakuru Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Nakuru Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Nakuru SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Molo Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ],
+      "Naivasha": [
+        {
+          "station_name": "Naivasha Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Naivasha SCC",
+          "court_type": "Small Claims Court"
+        }
+      ]
+    }
+  },
+  "NYANDARUA": {
+    "high_court_stations": {
+      "Nyandarua": [
+        {
+          "station_name": "Engineer Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Ol Kalou Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "BARINGO": {
+    "high_court_stations": {
+      "Kabarnet": [
+        {
+          "station_name": "Eldama Ravine Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Kabarnet Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "LAIKIPIA": {
+    "high_court_stations": {
+      "Nyahururu": [
+        {
+          "station_name": "Nyahururu Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ],
+      "Nanyuki": [
+        {
+          "station_name": "Nanyuki Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Nanyuki SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Rumuruti Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "SAMBURU": {
+    "high_court_stations": {
+      "Nanyuki": [
+        {
+          "station_name": "Maralal Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  },
+  "NYERI": {
+    "high_court_stations": {
+      "Nyeri": [
+        {
+          "station_name": "Nyeri Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Nyeri Kadhis Court",
+          "court_type": "Kadhis' Court"
+        },
+        {
+          "station_name": "Nyeri SCC",
+          "court_type": "Small Claims Court"
+        },
+        {
+          "station_name": "Othaya Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Karatina Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        },
+        {
+          "station_name": "Mukurwe-ini Law Courts",
+          "court_type": "Magistrate's Court (Law Courts)"
+        }
+      ]
+    }
+  }
+}

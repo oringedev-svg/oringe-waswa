@@ -12,10 +12,11 @@ export default function PublicLayout({ children, fullBleedTop = false }: { child
     <SiteSettingsProvider>
       <ScrollRevealProvider>
         <div className="exec-ground flex flex-col min-h-screen">
+          <a href="#main-content" className="skip-link">Skip to main content</a>
           <PageViewTracker />
           <TranslatePersistence />
           <Navbar />
-          <main className={fullBleedTop ? 'flex-1' : 'flex-1 pt-16 md:pt-20'}>
+          <main id="main-content" tabIndex={-1} className={fullBleedTop ? 'flex-1' : 'flex-1 pt-16 md:pt-20'}>
             {children}
           </main>
           <Footer />

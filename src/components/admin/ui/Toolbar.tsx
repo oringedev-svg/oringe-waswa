@@ -62,7 +62,7 @@ export function FilterTabs<T extends string>({
             className={[
               'px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium transition-colors whitespace-nowrap',
               active
-                ? 'bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-[var(--shadow-sm)]'
+                ? 'bg-[var(--color-brand)] text-white shadow-[var(--shadow-sm)]'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
             ].join(' ')}
           >

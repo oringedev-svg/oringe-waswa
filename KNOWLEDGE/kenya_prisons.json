@@ -1,0 +1,722 @@
+{
+  "budget_year": 2025,
+  "currency": "KES",
+  "regional_commands": [
+    {
+      "name": "Rift Valley Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 7037517831.0
+    },
+    {
+      "name": "Nairobi Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 5178217661.0
+    },
+    {
+      "name": "Central Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 2856103236.0
+    },
+    {
+      "name": "Nyanza Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 2697404633.0
+    },
+    {
+      "name": "Eastern Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 2597725396.0
+    },
+    {
+      "name": "Coast Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 2578550843.0
+    },
+    {
+      "name": "Western Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 1792642906.0
+    },
+    {
+      "name": "North Eastern Regional Command",
+      "category": "Regional Command",
+      "allocation_kes": 1294643456.0
+    }
+  ],
+  "maximum_prisons": [
+    {
+      "name": "Nairobi Remand & Allocation",
+      "category": "Maximum Prison",
+      "allocation_kes": 313761893.0
+    },
+    {
+      "name": "Naivasha Maximum Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 194668911.0
+    },
+    {
+      "name": "Kamiti Maximum Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 192289833.0
+    },
+    {
+      "name": "Kisumu Maximum Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 141154754.0
+    },
+    {
+      "name": "Shimo Maximum Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 125593980.0
+    },
+    {
+      "name": "Nyeri Maximum Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 108113838.0
+    },
+    {
+      "name": "Manyani Maximum Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 93579885.0
+    },
+    {
+      "name": "Langata Women Maximum",
+      "category": "Maximum Prison",
+      "allocation_kes": 77458579.0
+    },
+    {
+      "name": "Kibos Maximum Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 75244775.0
+    },
+    {
+      "name": "Kwale Main Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 32573042.0
+    },
+    {
+      "name": "Garissa Main Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 28025837.0
+    },
+    {
+      "name": "Hindi Main Prison",
+      "category": "Maximum Prison",
+      "allocation_kes": 16868907.0
+    }
+  ],
+  "youth_and_borstal_prisons": [
+    {
+      "name": "Shimo Borstal",
+      "category": "Youth/Borstal",
+      "allocation_kes": 20877973.0
+    },
+    {
+      "name": "Shikusa Borstal",
+      "category": "Youth/Borstal",
+      "allocation_kes": 19950504.0
+    },
+    {
+      "name": "Youth Corrective Training Centre (YCTC)",
+      "category": "Youth/Borstal",
+      "allocation_kes": 13567341.0
+    },
+    {
+      "name": "Kamae Girls",
+      "category": "Youth/Borstal",
+      "allocation_kes": 4067786.0
+    }
+  ],
+  "medium_and_other_district_prisons": [
+    {
+      "name": "Nakuru Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 141481006.0
+    },
+    {
+      "name": "Eldoret Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 124114782.0
+    },
+    {
+      "name": "Embu Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 112296518.0
+    },
+    {
+      "name": "Kisii Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 99412928.0
+    },
+    {
+      "name": "Kamiti Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 85500832.0
+    },
+    {
+      "name": "Meru Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 84352940.0
+    },
+    {
+      "name": "Thika Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 84311710.0
+    },
+    {
+      "name": "Kitale Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 82156510.0
+    },
+    {
+      "name": "Bungoma Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 78423146.0
+    },
+    {
+      "name": "Machakos Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 78091238.0
+    },
+    {
+      "name": "Kakamega Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 75830709.0
+    },
+    {
+      "name": "Naivasha Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 68582398.0
+    },
+    {
+      "name": "Kangeta Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 67252468.0
+    },
+    {
+      "name": "Malindi Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 66158832.0
+    },
+    {
+      "name": "Kitengela Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 60327869.0
+    },
+    {
+      "name": "Makueni Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 60301041.0
+    },
+    {
+      "name": "Narok Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 60156300.0
+    },
+    {
+      "name": "Kiambu Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 59561412.0
+    },
+    {
+      "name": "Nyahururu Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 58403999.0
+    },
+    {
+      "name": "Mwea Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 58059580.0
+    },
+    {
+      "name": "Muranga Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 57636260.0
+    },
+    {
+      "name": "Lodwar Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 55741624.0
+    },
+    {
+      "name": "Nairobi Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 55329130.0
+    },
+    {
+      "name": "Kericho Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 54936292.0
+    },
+    {
+      "name": "Ruiru Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 53464152.0
+    },
+    {
+      "name": "Kerugoya Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 53051787.0
+    },
+    {
+      "name": "Migori Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 52690146.0
+    },
+    {
+      "name": "Nanyuki Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 51402179.0
+    },
+    {
+      "name": "Busia Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 49364276.0
+    },
+    {
+      "name": "Kitui Main Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 48492478.0
+    },
+    {
+      "name": "Shikusa Farm Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 47481522.0
+    },
+    {
+      "name": "Kericho Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 46737419.0
+    },
+    {
+      "name": "Kisumu Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 44725436.0
+    },
+    {
+      "name": "Nairobi West Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 43924260.0
+    },
+    {
+      "name": "Yatta Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 38728852.0
+    },
+    {
+      "name": "Ngeria Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 37958609.0
+    },
+    {
+      "name": "Homa-Bay Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 37522836.0
+    },
+    {
+      "name": "Siaya Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 35908092.0
+    },
+    {
+      "name": "Uruku Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 32325354.0
+    },
+    {
+      "name": "Maranjau Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 32280137.0
+    },
+    {
+      "name": "Shimo Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 32173701.0
+    },
+    {
+      "name": "Bomet Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 31989614.0
+    },
+    {
+      "name": "Mwingi Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 31969579.0
+    },
+    {
+      "name": "Kapsabet Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 30490360.0
+    },
+    {
+      "name": "Kibos Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 30020734.0
+    },
+    {
+      "name": "Chuka Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 29663663.0
+    },
+    {
+      "name": "Nyeri Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 29229798.0
+    },
+    {
+      "name": "Mombasa Remand Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 28794040.0
+    },
+    {
+      "name": "Kilifi Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 27444366.0
+    },
+    {
+      "name": "Isiolo Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 27268329.0
+    },
+    {
+      "name": "Kajiado Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 26472973.0
+    },
+    {
+      "name": "Makueni Remand Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 25241509.0
+    },
+    {
+      "name": "Rumuruti Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 25018296.0
+    },
+    {
+      "name": "Kilgoris Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 22767766.0
+    },
+    {
+      "name": "Kapenguria Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 22280709.0
+    },
+    {
+      "name": "Nyandarua Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 19025922.0
+    },
+    {
+      "name": "Tambach Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 18695482.0
+    },
+    {
+      "name": "Meru Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 18209329.0
+    },
+    {
+      "name": "Rachuonyo Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16986337.0
+    },
+    {
+      "name": "Eldoret Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16977460.0
+    },
+    {
+      "name": "Mutomo Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16943991.0
+    },
+    {
+      "name": "Kaloleni Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16529331.0
+    },
+    {
+      "name": "Voi Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16451200.0
+    },
+    {
+      "name": "Kitale Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16425316.0
+    },
+    {
+      "name": "Sotik Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16158361.0
+    },
+    {
+      "name": "Kitale Annex Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 16052958.0
+    },
+    {
+      "name": "Wundanyi Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 15246747.0
+    },
+    {
+      "name": "Kabarnet Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 14698341.0
+    },
+    {
+      "name": "Jamhuri Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 13998589.0
+    },
+    {
+      "name": "Marsabit Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 13987529.0
+    },
+    {
+      "name": "Taveta Remand Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 13910119.0
+    },
+    {
+      "name": "Vihiga Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 13850269.0
+    },
+    {
+      "name": "Eldama Ravine Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 13806184.0
+    },
+    {
+      "name": "Marimanti Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 13517038.0
+    },
+    {
+      "name": "Maralal Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 12340917.0
+    },
+    {
+      "name": "Moyale Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 12051818.0
+    },
+    {
+      "name": "Shimo Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 11815881.0
+    },
+    {
+      "name": "Thika Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 11361888.0
+    },
+    {
+      "name": "Wajir Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 11345065.0
+    },
+    {
+      "name": "Hola Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10731098.0
+    },
+    {
+      "name": "Nakuru Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10720866.0
+    },
+    {
+      "name": "Kisii Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10635949.0
+    },
+    {
+      "name": "Kericho Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10609120.0
+    },
+    {
+      "name": "Kehancha Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10542574.0
+    },
+    {
+      "name": "Mandera Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10485919.0
+    },
+    {
+      "name": "Garissa Medium Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10317132.0
+    },
+    {
+      "name": "Embu Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 10219409.0
+    },
+    {
+      "name": "Kisumu Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 8679322.0
+    },
+    {
+      "name": "Kakamega Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 7965225.0
+    },
+    {
+      "name": "Bungoma Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 7631053.0
+    },
+    {
+      "name": "Loitoktok Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 7596809.0
+    },
+    {
+      "name": "Machakos Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 7166393.0
+    },
+    {
+      "name": "Muranga Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 6595004.0
+    },
+    {
+      "name": "Nyeri Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 6186110.0
+    },
+    {
+      "name": "Naivasha Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 6004359.0
+    },
+    {
+      "name": "Bomet Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 5612204.0
+    },
+    {
+      "name": "Nyahururu Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 5282740.0
+    },
+    {
+      "name": "Kitale Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 5243356.0
+    },
+    {
+      "name": "Migori Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 5164428.0
+    },
+    {
+      "name": "Nanyuki Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 4565848.0
+    },
+    {
+      "name": "Busia Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 4509250.0
+    },
+    {
+      "name": "Kapsabet Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 4120554.0
+    },
+    {
+      "name": "Lodwar Women's Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3992234.0
+    },
+    {
+      "name": "Kitui Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3941920.0
+    },
+    {
+      "name": "Mwingi Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3257184.0
+    },
+    {
+      "name": "Isiolo Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3252568.0
+    },
+    {
+      "name": "Wundanyi Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3229225.0
+    },
+    {
+      "name": "Kajiado Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3219674.0
+    },
+    {
+      "name": "Narok Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3214242.0
+    },
+    {
+      "name": "Nyamira Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3087410.0
+    },
+    {
+      "name": "Malindi Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3070082.0
+    },
+    {
+      "name": "Makueni Remand Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 3007498.0
+    },
+    {
+      "name": "Garissa Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 2532435.0
+    },
+    {
+      "name": "Homa Bay Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 2365478.0
+    },
+    {
+      "name": "Siaya Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 2169572.0
+    },
+    {
+      "name": "Kapenguria Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 2142254.0
+    },
+    {
+      "name": "Kwale Women Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 2114423.0
+    },
+    {
+      "name": "Maara Prison",
+      "category": "Medium/District Prison",
+      "allocation_kes": 206270.0
+    }
+  ]
+}

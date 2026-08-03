@@ -15,7 +15,7 @@ export type Tone = 'overdue' | 'risk' | 'safe' | 'done' | 'review' | 'neutral'
 
 const TONES: Record<Tone, { fg: string; bg: string }> = {
   overdue: { fg: 'var(--status-danger)', bg: 'rgba(var(--status-danger-rgb), 0.10)' },
-  risk: { fg: '#8a6524', bg: 'rgba(169,125,47,0.12)' },
+  risk: { fg: 'var(--status-warning)', bg: 'rgba(var(--status-warning-rgb), 0.12)' },
   safe: { fg: 'var(--status-success)', bg: 'rgba(var(--status-success-rgb), 0.10)' },
   done: { fg: 'var(--status-info)', bg: 'rgba(var(--status-info-rgb), 0.10)' },
   review: { fg: 'var(--status-review)', bg: 'rgba(var(--status-review-rgb), 0.10)' },

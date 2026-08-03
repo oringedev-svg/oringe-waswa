@@ -38,7 +38,7 @@ export default function DataTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           {caption && <caption className="sr-only">{caption}</caption>}
-          <thead className="bg-[var(--color-surface-overlay)] text-left sticky top-14 z-10">
+          <thead className="bg-[var(--color-surface)] border-b border-[var(--color-border)] text-left sticky top-0 z-10">
             <tr>
               {columns.map(c => (
                 <th

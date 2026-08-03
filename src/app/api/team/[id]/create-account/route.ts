@@ -74,7 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const origin = new URL(req.url).origin
   const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(member.email, {
-    redirectTo: `${origin}/reset-password`,
+    redirectTo: `${origin}/auth/callback?next=${encodeURIComponent('/reset-password')}`,
     data: { full_name: member.full_name },
   })
   if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 500 })

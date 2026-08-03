@@ -1,0 +1,327 @@
+/* =============================================================================
+   ORINGE WASWA & AKUDE — DESIGN TOKENS
+   src/styles/design-tokens.css
+
+   THE single source of truth for every visual decision in this product.
+   Both the public-facing site and the admin workspace read from this file.
+   Change a value here and it propagates everywhere, automatically.
+
+   ORGANISATION
+   ─────────────
+   01  Typography
+   02  Spacing & layout scale
+   03  Brand palette (warm brass — light-surface use)
+   04  Neutral accent system
+   05  Fixed dark bands (stay dark in both themes)
+   06  Section tints
+   07  Line accent
+   08  Hero tokens
+   09  Semantic status system   ← one answer to "what colour is X" site-wide
+   10  Surface system           ← page grounds, raised panels, overlays
+   11  Ink (fixed-dark feature bands)
+   12  Photo filter
+   13  Colour primaries (for ink-background sections)
+   14  Shadows
+   15  Radii
+   16  Transitions
+   17  Heading scale
+   18  Admin chrome tokens      ← sidebar + topbar unified dark frame
+   19  Auth panel tokens        ← shares band-slate/band-gold with admin chrome
+
+   THEME STRATEGY
+   ──────────────
+   :root      Light mode defaults.
+   .dark      Dark mode overrides — only what actually changes.
+
+   WARM ACCENT RULES
+   ─────────────────
+   --color-brand   (#a97d2f light / #c9a45c dark)
+                   Use on LIGHT surfaces: admin page chips, public site links,
+                   interactive marks, active filter borders.
+
+   --band-gold     (#c99a4e — fixed, not theme-dependent)
+                   Use on DARK surfaces: sidebar active state, topbar hover,
+                   auth brand panel accents, announcement bar, fixed footer
+                   bands. Lighter than --color-brand so it holds contrast
+                   against the dark slate ground.
+
+   Never use both on the same surface. The distinction is what makes the
+   chrome frame feel coherent with the login screen.
+   ============================================================================= */
+
+/* ─── 01 TYPOGRAPHY ─────────────────────────────────────────────────────────── */
+:root {
+  --font-display : 'Playfair Display';
+  --font-body    : 'Outfit';
+  --font-mono    : 'DM Mono';
+
+/* ─── 02 SPACING & LAYOUT SCALE ─────────────────────────────────────────────── */
+  --space-section    : 5rem;
+  --space-section-sm : 3rem;
+
+/* ─── 03 BRAND PALETTE — brass, for light surfaces ─────────────────────────── */
+  --color-brand        : #a97d2f;
+  --color-brand-strong : #8a6524;
+  --color-brand-rgb    : 169, 125, 47;
+
+/* ─── 04 NEUTRAL ACCENT SYSTEM ──────────────────────────────────────────────── */
+  --color-accent         : #44474b;
+  --color-accent-light   : #6f7276;
+  --color-accent-dark    : #2f3134;
+  --color-accent-rgb     : 68, 71, 75;
+  --color-accent-tint    : #c5c8cc;
+  --color-accent-tint-rgb: 197, 200, 204;
+
+/* ─── 05 FIXED DARK BANDS ───────────────────────────────────────────────────── */
+  /* These never change between themes. The announcement bar, the sidebar,
+     the topbar, the auth brand panel, and the footer all use the same
+     --band-slate so they read as one system no matter what theme is active. */
+  --band-slate       : #242e34;
+  --band-slate-accent: #c9a227;
+  /* Gold for use on dark-band surfaces. Lighter than --color-brand so it
+     stays readable against --band-slate without losing the warm quality. */
+  --band-gold        : #c99a4e;
+  /* Text/icon tokens for anything sitting on a dark band */
+  --on-band          : rgba(255, 255, 255, 0.80);
+  --on-band-strong   : #ffffff;
+  --on-band-muted    : rgba(255, 255, 255, 0.46);
+  --on-band-line     : rgba(255, 255, 255, 0.12);
+
+/* ─── 06 SECTION TINTS ──────────────────────────────────────────────────────── */
+  --tint-sage  : #e7ece6;
+  --tint-clay  : #f2e9e2;
+  --tint-slate : #e4ebee;
+
+/* ─── 07 LINE ACCENT (teal — animated line work, distinct from brass) ────────── */
+  --color-line : #2f6e78;
+
+/* ─── 08 HERO ───────────────────────────────────────────────────────────────── */
+  --color-hero-accent : var(--color-brand);
+  --color-hero-ground : #0a0908;
+  --color-hero-text   : #f7f6f2;
+
+/* ─── 09 SEMANTIC STATUS ────────────────────────────────────────────────────── */
+  /* The one place a hue carries meaning rather than decoration.
+     Badges, validation, pipeline states, and dashboard chips all resolve here.
+     There is exactly one answer to "what colour is success/warning/danger". */
+  --status-success     : #2d6a4f;
+  --status-success-rgb : 45, 106, 79;
+
+  --status-warning     : #8a5e00;   /* amber — outstanding invoices, imminent dates */
+  --status-warning-rgb : 138, 94, 0;
+
+  --status-info        : #1a4d6e;
+  --status-info-rgb    : 26, 77, 110;
+
+  --status-review      : #6b3d99;
+  --status-review-rgb  : 107, 61, 153;
+
+  --status-danger      : #9b2335;
+  --status-danger-rgb  : 155, 35, 53;
+
+/* ─── 10 SURFACE SYSTEM ─────────────────────────────────────────────────────── */
+  /* The three-level surface stack: ground → raised panel → overlay/hover */
+  --color-surface         : #f5f5f5;    /* page ground */
+  --color-surface-raised  : #faf7f1;    /* cards, modals, sidebars on main content */
+  --color-surface-overlay : #e6e6e6;    /* hover states, table rows, input backgrounds */
+  --color-border          : #c5c5c5;
+  --color-muted           : #9a9da1;
+
+  /* Text — three levels so hierarchy is legible without weight alone */
+  --color-text-primary   : #2a2b2d;
+  --color-text-secondary : #6b6e72;
+  --color-text-muted     : #8a8d91;
+  --color-text-inverse   : #f5f5f3;
+
+/* ─── 11 INK (fixed-dark feature panels) ────────────────────────────────────── */
+  --color-ink        : #2a2b2d;
+  --color-on-ink     : #f5f5f3;
+  --color-on-ink-muted: rgba(245, 245, 243, 0.62);
+
+/* ─── 12 PHOTO FILTER ───────────────────────────────────────────────────────── */
+  /* Applied to every photograph on the site so images read as cool,
+     neutral, architectural material rather than warm snapshots. */
+  --site-photo-filter: grayscale(20%) saturate(0.92) contrast(1.05);
+
+/* ─── 13 COLOUR PRIMARIES (for sections whose background is --color-text-primary) */
+  --color-primary-50 : #f5f5f3;
+  --color-primary-100: #f5f5f3;
+  --color-primary-200: #f5f5f3;
+  --color-primary-300: #f5f5f3;
+  --color-primary-400: #f5f5f3;
+  --color-primary-500: #c5c8cc;
+  --color-primary-600: #c5c8cc;
+  --color-primary-700: #9a9da1;
+  --color-primary-800: #9a9da1;
+  --color-primary-900: #f5f5f3;
+
+/* ─── 14 SHADOWS ────────────────────────────────────────────────────────────── */
+  --shadow-sm  : 0 1px 2px rgba(42, 43, 45, 0.05), 0 1px 4px rgba(42, 43, 45, 0.08);
+  --shadow-md  : 0 4px 8px rgba(42, 43, 45, 0.06), 0 2px 12px rgba(42, 43, 45, 0.10);
+  --shadow-lg  : 0 8px 24px rgba(42, 43, 45, 0.10), 0 4px 16px rgba(42, 43, 45, 0.08);
+  --shadow-xl  : 0 16px 48px rgba(42, 43, 45, 0.14), 0 8px 24px rgba(42, 43, 45, 0.10);
+  --shadow-glow: 0 0 40px rgba(var(--color-brand-rgb), 0.15);
+
+/* ─── 15 RADII ──────────────────────────────────────────────────────────────── */
+  --radius-sm  : 2px;
+  --radius-md  : 4px;
+  --radius-lg  : 6px;
+  --radius-xl  : 8px;
+  --radius-full: 9999px;
+
+/* ─── 16 TRANSITIONS ────────────────────────────────────────────────────────── */
+  --transition-fast  : 150ms ease;
+  --transition-base  : 250ms ease;
+  --transition-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+/* ─── 17 HEADING SCALE ──────────────────────────────────────────────────────── */
+  --heading-page-size   : clamp(1.65rem, 2.4vw, 2.1rem);
+  --heading-section-size: clamp(1.3rem, 1.8vw, 1.65rem);
+
+/* ─── 18 ADMIN CHROME TOKENS ────────────────────────────────────────────────── */
+  /* Sidebar and topbar share the same --band-slate so they read as one
+     persistent application frame. Active / hover accents use --band-gold
+     (the dark-surface warm token). The main content area uses the warm
+     ivory surface so it reads as a deliberate "paper" inside the chrome. */
+
+  /* — Sidebar — */
+  --admin-sidebar-bg            : var(--band-slate);
+  --admin-sidebar-border        : var(--on-band-line);
+  --admin-sidebar-fg            : var(--on-band);
+  --admin-sidebar-fg-muted      : var(--on-band-muted);
+  --admin-sidebar-hover         : rgba(255, 255, 255, 0.07);
+  --admin-sidebar-active-bg     : color-mix(in srgb, var(--band-gold) 14%, transparent);
+  --admin-sidebar-active-border : color-mix(in srgb, var(--band-gold) 42%, transparent);
+  --admin-sidebar-active-fg     : var(--on-band-strong);
+  --admin-sidebar-icon-active   : var(--band-gold);
+
+  /* — Topbar — same dark slate so sidebar + topbar = one chrome frame — */
+  --admin-topbar-bg      : var(--band-slate);
+  --admin-topbar-border  : var(--on-band-line);
+  --admin-topbar-fg      : var(--on-band);
+  --admin-topbar-fg-muted: var(--on-band-muted);
+  --admin-topbar-hover   : rgba(255, 255, 255, 0.09);
+
+  /* — Main content — warm ivory "paper" inside the chrome frame — */
+  --admin-main-bg: var(--color-surface-raised);
+
+/* ─── 19 AUTH PANEL TOKENS ──────────────────────────────────────────────────── */
+  /* The left brand panel shares --band-slate + --band-gold with the admin
+     chrome, so login → admin is a visual continuation, not a jump.
+     The right form panel uses the page surface tokens (theme-aware). */
+
+  /* — Layout — */
+  --auth-brand-width      : 44%;
+  --auth-brand-padding    : 3.5rem;
+  --auth-brand-bg         : var(--band-slate);    /* same as sidebar */
+  --auth-brand-accent     : var(--band-gold);     /* same as sidebar active */
+  --auth-card-max-width   : 22rem;
+  --auth-container-padding-x: 1.5rem;
+
+  /* — Logo badge — gold-on-slate, matching the sidebar's active icon — */
+  --auth-logo-size         : 2.75rem;
+  --auth-logo-icon-size    : 1.25rem;
+  --auth-logo-radius       : var(--radius-md);
+  --auth-logo-bg           : var(--band-gold);       /* was: --color-text-primary (near-black) */
+  --auth-logo-icon-color   : var(--band-slate);      /* dark icon on gold badge */
+
+  /* — Header — */
+  --auth-header-margin-bottom: 2.25rem;
+  --auth-logo-margin-bottom  : 1.5rem;
+  --auth-title-font          : var(--font-display);
+  --auth-title-size          : 1.5rem;
+  --auth-title-color         : var(--color-text-primary);
+  --auth-subtitle-size       : 0.875rem;
+  --auth-subtitle-color      : var(--color-text-muted);
+  --auth-subtitle-margin-top : 0.4rem;
+
+  /* — Form — */
+  --auth-form-gap        : 1.125rem;
+  --auth-submit-margin-top: 0.75rem;
+
+  /* — Links / helper text — */
+  --auth-link-size      : 0.75rem;
+  --auth-link-color     : var(--color-text-secondary);
+  --auth-error-size     : 0.8125rem;
+  --auth-error-color    : var(--status-danger);
+  --auth-message-size   : 0.875rem;
+  --auth-message-color  : var(--color-text-secondary);
+
+  /* — Footer / loading — */
+  --auth-footer-size         : 0.875rem;
+  --auth-footer-margin-top   : 1.75rem;
+  --auth-loading-padding-y   : 2rem;
+  --auth-loading-icon-size   : 1.25rem;
+  --auth-loading-icon-color  : var(--color-text-muted);
+}
+
+/* =============================================================================
+   DARK MODE OVERRIDES
+   Only values that genuinely change. Everything that stays the same in dark
+   mode (fixed bands, status-warning RGB, etc.) is intentionally omitted so
+   there is one place to look per token, not two.
+   ============================================================================= */
+.dark {
+/* ─── Brand — brass lifts so it still reads as warm metal, not mud ─────────── */
+  --color-brand        : #c9a45c;
+  --color-brand-strong : #dcbb78;
+  --color-brand-rgb    : 201, 164, 92;
+
+/* ─── Neutral accent ─────────────────────────────────────────────────────────  */
+  --color-accent      : #57636b;
+  --color-accent-light: #7b878f;
+  --color-accent-dark : #3c474e;
+  --color-accent-rgb  : 87, 99, 107;
+
+/* ─── Section tints — neutralised so they don't read as patches ──────────────  */
+  --tint-sage  : #181d20;
+  --tint-clay  : #292322;
+  --tint-slate : #242e34;
+
+/* ─── Line accent — lifts for contrast against the dark page ground ──────────  */
+  --color-line: #62a9b3;
+
+/* ─── Semantic status — warning and danger lift for readability on dark ──────  */
+  --status-warning     : #d4a44c;
+  --status-warning-rgb : 212, 164, 76;
+  --status-danger      : #c9404f;   /* stays readable on --color-surface dark */
+  --auth-error-color   : #e8848e;   /* lighter red at 6:1 on dark surface */
+
+/* ─── Surface system — slate-family so dark mode carries one consistent hue  ─  */
+  --color-surface         : #1e2427;
+  --color-surface-raised  : #253038;
+  --color-surface-overlay : #283136;
+  --color-border          : #45525a;
+  --color-muted           : #8b969d;
+  --color-text-primary    : #f5f5f3;
+  --color-text-secondary  : #b4bec4;
+  --color-text-muted      : #8b969d;
+  --color-text-inverse    : #1e2427;
+
+/* ─── Ink ────────────────────────────────────────────────────────────────────  */
+  --color-ink        : #0e1417;
+  --color-on-ink-muted: rgba(245, 245, 243, 0.60);
+
+/* ─── Shadows — heavier in dark so elevation still reads ────────────────────  */
+  --shadow-sm  : 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md  : 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg  : 0 10px 28px rgba(0, 0, 0, 0.55);
+  --shadow-xl  : 0 20px 56px rgba(0, 0, 0, 0.65);
+
+/* ─── Colour primaries (dark version) ───────────────────────────────────────  */
+  --color-primary-50 : #1e2427;
+  --color-primary-100: #1e2427;
+  --color-primary-200: #1e2427;
+  --color-primary-300: #1e2427;
+  --color-primary-400: #1e2427;
+  --color-primary-500: #6f7a81;
+  --color-primary-600: #6f7a81;
+  --color-primary-700: #3a464d;
+  --color-primary-800: #3a464d;
+  --color-primary-900: #1e2427;
+
+/* ─── Admin chrome — sidebar sits a step below the slate ground in dark ─────  */
+  --admin-sidebar-bg  : #141a1d;
+  --admin-topbar-bg   : #141a1d;
+  --admin-main-bg     : var(--color-surface);   /* dark mode: use the page ground itself */
+}

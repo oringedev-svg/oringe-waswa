@@ -31,7 +31,7 @@ export default function PageHeader({
           )}
           <div className="flex items-center gap-2.5">
             {Icon && <Icon className="w-5 h-5 flex-shrink-0 text-[var(--color-text-muted)]" />}
-            <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)] truncate">{title}</h1>
+            <h1 className="font-display text-[1.75rem] font-normal text-[var(--color-text-primary)] tracking-tight truncate">{title}</h1>
           </div>
           {description && (
             <p className="text-sm text-[var(--color-text-muted)] mt-1.5 max-w-2xl">{description}</p>

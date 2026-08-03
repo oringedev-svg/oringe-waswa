@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Plus, Trash2, Edit, Archive, ArchiveRestore, Landmark } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { COURT_TYPES, courtTypeLabel, REGISTRY_TYPES, registryTypeLabel } from '@/lib/litigationStatus'
@@ -22,6 +23,13 @@ interface Court {
   // Arrives with migration 027. Absent (undefined) on rows fetched before
   // that runs, treated the same as 'unspecified'.
   registry_type?: string
+  sub_county?: string
+  latitude?: number | null
+  longitude?: number | null
+  phone?: string
+  email?: string
+  website?: string
+  services?: string[]
 }
 
 export default function AdminCourtsPage() {
@@ -157,17 +165,15 @@ export default function AdminCourtsPage() {
     <div>
       <PageHeader
         icon={Landmark}
-        eyebrow="Reference data"
+        eyebrow="Hubs · Reference data"
         title="Courts Register"
         description="Matters pick their court from this list, so a case is never filed against a mistyped court name."
         meta={[`${filtered.length} ${trash ? 'archived' : 'available'}`, typeFilter !== 'all' ? courtTypeLabel(typeFilter) : null]}
         actions={!trash && (
-          <button
-            onClick={() => { setEditing({ court_type: 'magistrate', is_superior: false, is_active: true, display_order: courts.length }); setIsNew(true) }}
-            className="btn btn-primary gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" /> Add Court
-          </button>
+          <div className="flex gap-2">
+            <Link href="/admin/hubs" className="btn btn-ghost text-sm">All Hubs</Link>
+            <button onClick={() => { setEditing({ court_type: 'magistrate', is_superior: false, is_active: true, display_order: courts.length }); setIsNew(true) }} className="btn btn-primary gap-2 text-sm"><Plus className="w-4 h-4" /> Add Court</button>
+          </div>
         )}
       >
         <SearchInput value={search} onChange={setSearch} placeholder="Search name, station or county…" />
@@ -252,6 +258,19 @@ export default function AdminCourtsPage() {
           <label className="label">Physical Address</label>
           <input className="input text-sm" value={editing?.physical_address || ''} onChange={e => setEditing({ ...editing, physical_address: e.target.value })} />
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="label">Sub-county</label><input className="input text-sm" value={editing?.sub_county || ''} onChange={e => setEditing({ ...editing, sub_county: e.target.value })} /></div>
+          <div><label className="label">Phone</label><input className="input text-sm" value={editing?.phone || ''} onChange={e => setEditing({ ...editing, phone: e.target.value })} /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="label">Email</label><input type="email" className="input text-sm" value={editing?.email || ''} onChange={e => setEditing({ ...editing, email: e.target.value })} /></div>
+          <div><label className="label">Website</label><input type="url" className="input text-sm" value={editing?.website || ''} onChange={e => setEditing({ ...editing, website: e.target.value })} /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="label">Latitude</label><input type="number" step="any" className="input text-sm" value={editing?.latitude ?? ''} onChange={e => setEditing({ ...editing, latitude: e.target.value === '' ? null : Number(e.target.value) })} /></div>
+          <div><label className="label">Longitude</label><input type="number" step="any" className="input text-sm" value={editing?.longitude ?? ''} onChange={e => setEditing({ ...editing, longitude: e.target.value === '' ? null : Number(e.target.value) })} /></div>
+        </div>
+        <div><label className="label">Services</label><input className="input text-sm" value={(editing?.services || []).join(', ')} onChange={e => setEditing({ ...editing, services: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="Separate services with commas" /></div>
         <div>
           <label className="label">Notes (jurisdiction, divisions, registry)</label>
           <textarea rows={2} className="input text-sm" value={editing?.notes || ''} onChange={e => setEditing({ ...editing, notes: e.target.value })} />

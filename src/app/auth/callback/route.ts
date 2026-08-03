@@ -11,7 +11,10 @@ import { createRouteSupabaseClient } from '@/lib/auth'
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') || '/portal'
+  const requestedNext = searchParams.get('next') || '/portal'
+  // Never turn an authentication email into an open redirect. Only local
+  // application routes are valid continuations after the code exchange.
+  const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/portal'
 
   if (code) {
     const supabase = createRouteSupabaseClient()

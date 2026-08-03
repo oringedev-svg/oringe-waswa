@@ -1,0 +1,160 @@
+{
+  "jurisdiction": "Kenya",
+  "as_of": "2026",
+  "note": "Each entry is sourced separately per the notes in 'source_notes'. This file complements kenya_court_stations.json (which covers only Magistrates'-level stations from the Office of the Registrar Magistrates' Court) and kenya_courts_hierarchy.json (which describes the abstract tier structure).",
+  "supreme_court": {
+    "stations": [
+      "Nairobi"
+    ],
+    "note": "The Supreme Court sits only in Nairobi; it is not decentralised.",
+    "source": "Constitution of Kenya 2010, Article 163; Judiciary of Kenya"
+  },
+  "court_of_appeal": {
+    "main_registries": [
+      "Nairobi",
+      "Mombasa",
+      "Nakuru",
+      "Nyeri",
+      "Kisumu",
+      "Eldoret"
+    ],
+    "sub_registries": [
+      "Malindi",
+      "Garissa",
+      "Kisii",
+      "Busia"
+    ],
+    "additional_contact_points_unconfirmed_status": [
+      "Meru",
+      "Kakamega"
+    ],
+    "note": "As of March 2026 the Chief Justice gazetted additional Court of Appeal stations, expanding beyond the long-standing 6 main registries. Meru and Kakamega appear on the Court of Appeal's own contact page but their exact status (full registry vs sub-registry vs circuit) was not confirmed in the source used. Eldoret has historically operated as a circuit station serviced by Nakuru-based judges rather than a fixed bench.",
+    "source": "Judiciary of Kenya / KBC News, 'CJ Koome establishes new Court of Appeal stations' (2026); Court of Appeal Registry Manual; courtofappeal.judiciary.go.ke/contact-us"
+  },
+  "high_court": {
+    "stations": [
+      "Bomet",
+      "Bungoma",
+      "Busia",
+      "Chuka",
+      "Eldoret",
+      "Embu",
+      "Garissa",
+      "Garsen",
+      "Homabay",
+      "Kabarnet",
+      "Kajiado",
+      "Kakamega",
+      "Kapenguria",
+      "Kericho",
+      "Kerugoya",
+      "Kiambu",
+      "Kibera",
+      "Kisii",
+      "Kisumu",
+      "Kitale",
+      "Kitui",
+      "Kwale",
+      "Lodwar",
+      "Machakos",
+      "Makueni",
+      "Malindi",
+      "Marsabit",
+      "Meru",
+      "Migori",
+      "Mombasa",
+      "Murang'a",
+      "Nairobi",
+      "Naivasha",
+      "Nakuru",
+      "Nanyuki",
+      "Narok",
+      "Nyahururu",
+      "Nyamira",
+      "Nyandarua",
+      "Nyeri",
+      "Siaya",
+      "Thika",
+      "Vihiga",
+      "Voi"
+    ],
+    "count": 44,
+    "note": "Derived from the Office of the Registrar Magistrates' Court list of which High Court station each Magistrates' Court reports to. This is a reliable proxy for High Court station locations but was not cross-verified against a standalone 'List of High Court Stations' publication, since none was found in a structured, scrapable form.",
+    "source": "Office of the Registrar Magistrates' Court (ormc.judiciary.go.ke/list-of-courts)"
+  },
+  "employment_and_labour_relations_court": {
+    "established_stations": [
+      "Nairobi",
+      "Mombasa",
+      "Kisumu",
+      "Nakuru",
+      "Kericho",
+      "Nyeri",
+      "Eldoret",
+      "Kakamega",
+      "Malindi",
+      "Machakos",
+      "Bungoma",
+      "Garissa",
+      "Kisii",
+      "Voi",
+      "Kitale",
+      "Meru"
+    ],
+    "currently_publishing_cause_lists_on_kenya_law": [
+      "Eldoret",
+      "Kakamega",
+      "Kericho",
+      "Kisumu",
+      "Malindi",
+      "Meru",
+      "Mombasa",
+      "Nairobi",
+      "Nyeri"
+    ],
+    "note": "The Judiciary's own ELRC page (last substantively updated some time ago) describes 7 stations plus 8 sub-registries. More recent county-level news (2023 Kakamega operationalisation) and Kenya Law's judgments taxonomy show a larger, expanded list, reflected in 'established_stations'. Kenya Law's live cause-list index currently shows only 9 stations actively publishing cause lists -- the gap between 'established' and 'actively publishing' likely reflects stations that sit or circuit less frequently, not stations that have closed.",
+    "source": "Judiciary of Kenya (judiciary.go.ke/employment-and-labour-relations-court); Kenya Law judgments and cause-list indices (new.kenyalaw.org)"
+  },
+  "environment_and_land_court": {
+    "stations_with_published_cause_lists": [
+      "Bomet",
+      "Busia",
+      "Eldoret",
+      "Embu",
+      "Homa Bay",
+      "Isiolo",
+      "Kabarnet",
+      "Kajiado",
+      "Kakamega",
+      "Kericho",
+      "Kerugoya",
+      "Kisumu",
+      "Kitale",
+      "Kwale",
+      "Machakos",
+      "Malindi",
+      "Meru",
+      "Mombasa",
+      "Nairobi",
+      "Naivasha",
+      "Nakuru",
+      "Nanyuki",
+      "Narok",
+      "Nyahururu",
+      "Nyandarua",
+      "Nyeri",
+      "Siaya",
+      "Thika",
+      "Vihiga",
+      "Voi"
+    ],
+    "count_with_cause_lists": 30,
+    "official_total_stations_claimed_by_judiciary": 37,
+    "note": "The Judiciary's own ELC page states there are 37 ELC stations nationally, but only names the original 10 (Milimani, Mombasa, Malindi, Kerugoya, Nyeri, Nakuru, Bungoma, Kisumu, Eldoret, Machakos) established in 2012. The 30 listed here are every station with its own live cause-list registry on Kenya Law as of this data pull -- a more complete and verifiable list, though it falls short of the claimed 37 by 7 stations that may exist administratively without yet publishing separately, e.g. Bungoma is a founding station but doesn't appear with its own cause-list page, suggesting it may be merged into a neighbouring station's registry.",
+    "source": "Judiciary of Kenya (judiciary.go.ke/environment-and-land-court); Kenya Law cause-list index (new.kenyalaw.org/causelists/KEELC)"
+  },
+  "subordinate_courts": {
+    "note": "Magistrates' Courts, Kadhis' Courts, and Small Claims Courts -- see kenya_court_stations.json for the full 224-entry list by county and court type, sourced from the Office of the Registrar Magistrates' Court.",
+    "reference_file": "kenya_court_stations.json"
+  }
+}
