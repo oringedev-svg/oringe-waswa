@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('appointments')
-    .select('*, assigned_attorney:team_members(full_name, position, avatar_url)', { count: 'exact' })
+    .select('*, assigned_attorney:assigned_attorney_id(full_name, position, avatar_url)', { count: 'exact' })
     .order('scheduled_date', { ascending: true })
     .range((page - 1) * limit, page * limit - 1)
 
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const { data: appointment, error } = await supabase
     .from('appointments')
     .insert(body)
-    .select('*, assigned_attorney:team_members(full_name)')
+    .select('*, assigned_attorney:assigned_attorney_id(full_name)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

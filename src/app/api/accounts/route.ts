@@ -49,7 +49,7 @@ export async function GET() {
 
   const [{ data: matters }, { data: invoices }, { data: pendingConflicts }, { data: submissions }] = await Promise.all([
     allMatterIds.length > 0
-      ? supabase.from('legal_matters').select('id, matter_number, title, status, updated_at, assigned_attorney:team_members(full_name)').in('id', allMatterIds)
+      ? supabase.from('legal_matters').select('id, matter_number, title, status, updated_at, assigned_attorney:assigned_attorney_id(full_name)').in('id', allMatterIds)
       : Promise.resolve({ data: [] as never[] }),
     allMatterIds.length > 0
       ? supabase.from('invoices').select('matter_id, status, total, due_date').in('matter_id', allMatterIds).is('deleted_at', null)

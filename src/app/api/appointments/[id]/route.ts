@@ -12,7 +12,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('appointments')
-    .select('*, assigned_attorney:team_members(full_name, position)')
+    .select('*, assigned_attorney:assigned_attorney_id(full_name, position)')
     .eq('id', params.id)
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .from('appointments')
     .update(updates)
     .eq('id', params.id)
-    .select('*, assigned_attorney:team_members(full_name)')
+    .select('*, assigned_attorney:assigned_attorney_id(full_name)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

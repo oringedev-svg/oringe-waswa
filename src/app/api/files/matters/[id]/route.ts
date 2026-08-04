@@ -21,7 +21,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('legal_matters')
-    .select('*, assigned_attorney:team_members(full_name, position, email), people:matter_people(*, profile:profiles(id, full_name, email, role, user_id))')
+    .select('*, assigned_attorney:assigned_attorney_id(full_name, position, email), people:matter_people(*, profile:profiles(id, full_name, email, role, user_id))')
     .eq('id', params.id)
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })

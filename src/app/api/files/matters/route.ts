@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('legal_matters')
-    .select('*, assigned_attorney:team_members(full_name, position)', { count: 'exact' })
+    .select('*, assigned_attorney:assigned_attorney_id(full_name, position)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1)
 

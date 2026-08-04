@@ -47,11 +47,10 @@ export async function GET(
       assigned_by_user:assigned_by(full_name, email),
       assignee:assigned_to(id, full_name, position),
       messages:assignment_messages(id, sender_id, message_type, content, created_at),
-      work_item:work_items(id, title, instructions, activity_type:activity_types(name, description)),
       matter:legal_matters(
         id, matter_number, title, type, status, description, client_name,
         opposing_party, court, case_number, county, claim_value, is_confidential,
-        opening_date, submission_id, assigned_attorney:team_members(full_name, position)
+        opening_date, submission_id, assigned_attorney:assigned_attorney_id(full_name, position)
       )
     `)
     .eq('id', params.id)
@@ -64,6 +63,28 @@ export async function GET(
   const { allowed, teamMemberId } = await resolveAccess(profile, assignment)
   if (!allowed) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
+
+  // Fetched by id rather than embedded as work_item:work_items(...). The
+  // embed needs a foreign key PostgREST can see, and on this deployment
+  // assignments.work_item_id has no FK: migration 034 declares it with
+  // REFERENCES, but ADD COLUMN IF NOT EXISTS is a no-op when the column is
+  // already there, so the constraint was silently never created. PostgREST
+  // then failed the ENTIRE select, and the assignment page rendered
+  // "Assignment not found" for work that plainly existed and belonged to
+  // the person looking at it. A separate read can't break that way, and is
+  // skipped altogether when there's no work item to load.
+  let workItemRecord: { id: string; title: string | null; instructions: string | null; activity_type: { name: string; description: string | null } | null } | null = null
+  if (assignment.work_item_id) {
+    const { data: wi } = await supabase
+      .from('work_items')
+      .select('id, title, instructions, activity_type:activity_types(name, description)')
+      .eq('id', assignment.work_item_id)
+      .maybeSingle()
+    if (wi) {
+      const at = Array.isArray(wi.activity_type) ? wi.activity_type[0] : wi.activity_type
+      workItemRecord = { id: wi.id, title: wi.title, instructions: wi.instructions, activity_type: (at as { name: string; description: string | null }) ?? null }
+    }
   }
 
   // Part D: an assignee who isn't also the assigner or an admin-tier/
@@ -118,8 +139,8 @@ export async function GET(
   ])
 
   const allMatterDocs = matterDocsRes.data || []
-  const workItem = Array.isArray(assignment.work_item) ? assignment.work_item[0] : assignment.work_item
-  const activityType = workItem ? (Array.isArray(workItem.activity_type) ? workItem.activity_type[0] : workItem.activity_type) : null
+  const workItem = workItemRecord
+  const activityType = workItem?.activity_type ?? null
 
   const brief = buildAssignmentBrief({
     stageKey: assignment.stage_key,
@@ -148,6 +169,9 @@ export async function GET(
 
   const responseBody: Record<string, unknown> = {
     ...assignment,
+    // Read separately above rather than embedded, so it has to be put back
+    // on the payload by hand; the page reads assignment.work_item.title.
+    work_item: workItemRecord,
     currentStageLabel,
     priority,
     brief,

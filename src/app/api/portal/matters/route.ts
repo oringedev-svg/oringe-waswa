@@ -23,7 +23,7 @@ export async function GET() {
   const [{ data: matters }, { data: docs }, { data: invoices }] = await Promise.all([
     supabase
       .from('legal_matters')
-      .select('id, matter_number, title, type, status, opening_date, assigned_attorney:team_members(full_name, position)')
+      .select('id, matter_number, title, type, status, opening_date, assigned_attorney:assigned_attorney_id(full_name, position)')
       .in('id', matterIds)
       .order('created_at', { ascending: false }),
     supabase

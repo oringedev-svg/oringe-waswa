@@ -49,7 +49,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     // Appointments belong to the account too, matched by the client's email.
     supabase
       .from('appointments')
-      .select('id, matter_type, description, status, scheduled_date, scheduled_time, assigned_attorney:team_members(full_name), created_at')
+      .select('id, matter_type, description, status, scheduled_date, scheduled_time, assigned_attorney:assigned_attorney_id(full_name), created_at')
       .eq('client_email', profile.email)
       .order('scheduled_date', { ascending: false, nullsFirst: false }),
   ])
