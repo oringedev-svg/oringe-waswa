@@ -73,11 +73,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (userId) return NextResponse.json({ error: 'This person already has an account' }, { status: 400 })
 
   const origin = new URL(req.url).origin
-  const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(member.email, {
+  const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(member.email, {
     redirectTo: `${origin}/auth/callback?next=${encodeURIComponent('/reset-password')}`,
     data: { full_name: member.full_name },
   })
   if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 500 })
+
+  // Set profiles.user_id directly instead of trusting the
+  // on_auth_user_created DB trigger to backfill it. Confirmed on this
+  // deployment that it doesn't always: a person can be invited, confirm
+  // their email, and even sign in successfully at the Supabase auth layer
+  // while profiles.user_id stays null, which getSessionProfile() then
+  // reads as "not signed in" no matter how many times they authenticate.
+  // inviteUserByEmail returns the new user's id synchronously, no reason
+  // to depend on the trigger for this path.
+  if (inviteData.user?.id) {
+    await supabase.from('profiles').update({ user_id: inviteData.user.id }).eq('id', profileId)
+  }
 
   await logAudit({ table_name: 'profiles', record_id: profileId!, action: 'UPDATE', new_data: { invited: true, role } })
   return NextResponse.json({ success: true, role })

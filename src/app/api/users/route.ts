@@ -114,6 +114,19 @@ export async function POST(req: NextRequest) {
     })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     userId = data.user?.id ?? null
+
+    // Set profiles.user_id directly rather than trusting the
+    // on_auth_user_created DB trigger to backfill it. It should -- but on
+    // this deployment it demonstrably hasn't been for some signups, which
+    // leaves someone with a real, confirmed, sign-in-capable auth account
+    // that the app itself can never resolve a profile for (getSessionProfile
+    // looks up profiles by user_id; a null there is functionally "not
+    // logged in" no matter how many times they authenticate). inviteUserByEmail
+    // returns the new user's id synchronously, so there's no reason to wait
+    // on the trigger for this path specifically.
+    if (userId) {
+      await supabase.from('profiles').update({ user_id: userId }).eq('id', profileId)
+    }
   }
 
   if (userId && permissionKeys.length > 0) {
