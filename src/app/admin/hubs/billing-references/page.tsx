@@ -325,7 +325,8 @@ export default function BillingReferencesPage() {
                 <div className="text-sm text-[var(--color-text-muted)] mt-2 space-y-1">
                   <div>
                     <span className="font-medium">{ref.billing_method}:</span>{' '}
-                    {ref.billing_method === 'Hourly' ? `${ref.default_value}/hr` : formatCurrency(ref.default_value, ref.currency)}
+                    {ref.currency} {Number(ref.default_value).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                    {ref.billing_method === 'Hourly' ? '/hr' : ''}
                   </div>
                   {ref.estimated_hours && (
                     <div>

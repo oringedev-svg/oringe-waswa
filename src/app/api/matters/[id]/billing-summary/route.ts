@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
-import { requirePermissionApi } from '@/lib/auth'
+import { requireAdminApi } from '@/lib/auth'
+import { getMatterAccessScope, canAccessMatter } from '@/lib/matterScope'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const guard = await requirePermissionApi()
+  const guard = await requireAdminApi()
   if ('response' in guard) return guard.response
 
   const { id } = await params
+
+  // Matter owner reviews billing on their own matters, not just Finance;
+  // scope by matter access rather than gating behind manage_billing.
+  const scope = await getMatterAccessScope(guard.profile)
+  if (!canAccessMatter(scope, id)) {
+    return NextResponse.json({ error: 'Not authorized for this matter' }, { status: 403 })
+  }
+
   const supabase = createAdminClient()
 
   // Get all assignments for the matter with billing data

@@ -87,10 +87,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Wire billing reference from activity type if it exists
-    if (activityType.billing_reference_id && activityType.billing_reference) {
+    const linkedBillingReference = activityType.billing_reference as unknown as
+      | { id: string; default_value: number; estimated_hours: number | null }
+      | null
+    if (activityType.billing_reference_id && linkedBillingReference) {
       resolvedBillingReferenceId = activityType.billing_reference_id
-      resolvedEstimatedValue = activityType.billing_reference.default_value
-      resolvedEstimatedHours = activityType.billing_reference.estimated_hours
+      resolvedEstimatedValue = linkedBillingReference.default_value
+      resolvedEstimatedHours = linkedBillingReference.estimated_hours
     }
 
     const dueAt = activityType.default_due_days

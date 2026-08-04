@@ -76,6 +76,10 @@ export interface TeamMember extends Profile {
   education?: { degree: string; institution: string; year: number }[]
   display_order: number
   is_visible: boolean
+  // The team_members row's own link back to profiles(id), distinct from
+  // this interface's inherited `id` (the team_members row's own id).
+  // Messaging and other profile-scoped features key off this, not `id`.
+  profile_id?: string | null
 }
 
 export interface Volunteer {
