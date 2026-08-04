@@ -5,7 +5,7 @@ import Image from 'next/image'
 import PublicLayout from '@/components/layout/PublicLayout'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Clock, User, Eye, Loader2, ChevronRight, Send } from 'lucide-react'
+import { Clock, User, Eye, Loader2, ChevronRight, Send, Calendar } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
@@ -35,7 +35,7 @@ interface BlogPost {
   reading_time_minutes: number
   views: number
   published_at: string
-  authors: { name: string; role: string; group_name?: string; is_external: boolean }[]
+  authors: { name: string; role: string; group_name?: string; is_external: boolean; avatar_url?: string | null }[]
   comments: Comment[]
 }
 
@@ -124,22 +124,9 @@ export default function BlogPostPage() {
               {/* Meta */}
               <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--color-muted)] mb-8 pb-6 border-b border-[var(--color-border)]">
                 <span className="flex items-center gap-1.5">
-                  <User className="w-4 h-4" />
-                  {post.authors?.length > 0
-                    ? post.authors.map(a => a.group_name || a.name).join(', ')
-                    : 'OW Team'}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" />
-                  {post.reading_time_minutes} min read
-                </span>
-                <span className="flex items-center gap-1.5">
                   <Eye className="w-4 h-4" />
                   {post.views} views
                 </span>
-                {post.published_at && (
-                  <span>{formatDate(post.published_at, 'long')}</span>
-                )}
               </div>
 
               {/* Read Aloud bar */}
@@ -159,25 +146,7 @@ export default function BlogPostPage() {
                 </div>
               )}
 
-              {/* Authors */}
-              {post.authors?.length > 0 && (
-                <div className="card p-6 mt-10">
-                  <h3 className="font-display font-semibold text-lg mb-4">About the Author{post.authors.length > 1 ? 's' : ''}</h3>
-                  <div className="flex flex-col gap-3">
-                    {post.authors.map((a, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[var(--color-accent)]/10 flex items-center justify-center">
-                          <span className="font-display text-lg text-[var(--color-accent)]">{(a.group_name || a.name).charAt(0)}</span>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-sm text-[var(--color-text-primary)]">{a.group_name || a.name}</div>
-                          <div className="text-xs text-[var(--color-muted)] capitalize">{a.role.replace(/_/g, ' ')}{a.is_external ? ' · Guest Contributor' : ''}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
 
               {/* Comments */}
               <div className="mt-12">
@@ -249,17 +218,59 @@ export default function BlogPostPage() {
             </article>
 
             {/* Sidebar */}
-            <aside className="space-y-6">
-              <div className="card p-6">
-                <h3 className="font-display font-semibold text-lg mb-4">Book a Consultation</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mb-4">Have a legal question? Our attorneys are here to help.</p>
-                <Link href="/appointments" className="btn btn-primary w-full justify-center text-sm">Book Now</Link>
+            <aside className="space-y-8 lg:pl-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--color-muted)] mb-3">Published</div>
+                <div className="text-sm font-medium flex items-center gap-2 text-[var(--color-text-primary)]">
+                   <Calendar className="w-4 h-4 text-[var(--color-muted)]" />
+                   {post.published_at ? formatDate(post.published_at, 'long') : 'Unknown Date'}
+                </div>
               </div>
-              <div className="card p-6">
-                <h3 className="font-display font-semibold text-lg mb-4">More Articles</h3>
-                <Link href="/blog" className="btn btn-outline w-full justify-center text-sm gap-2">
-                  View All Posts <ChevronRight className="w-4 h-4" />
-                </Link>
+
+              <div className="border-t border-[var(--color-border)] pt-6">
+                <div className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--color-muted)] mb-3">Reading Time</div>
+                <div className="text-sm font-medium flex items-center gap-2 text-[var(--color-text-primary)]">
+                   <Clock className="w-4 h-4 text-[var(--color-muted)]" />
+                   {post.reading_time_minutes} minutes
+                </div>
+              </div>
+
+              {post.authors?.length > 0 && (
+                <div className="border-t border-[var(--color-border)] pt-6">
+                  <div className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--color-muted)] mb-6">Authors</div>
+                  <div className="space-y-8">
+                    {post.authors.map((a, i) => (
+                      <div key={i} className="flex flex-col gap-4">
+                         <div className="w-full aspect-[4/3] bg-[var(--color-surface-overlay)] relative overflow-hidden flex items-center justify-center">
+                            {a.avatar_url ? (
+                              <Image src={a.avatar_url} alt={a.group_name || a.name} fill className="object-cover" />
+                            ) : (
+                              <span className="font-display text-6xl text-[var(--color-accent)] opacity-20">{(a.group_name || a.name).charAt(0)}</span>
+                            )}
+                         </div>
+                         <div>
+                           <h4 className="font-display text-lg mb-1 text-[var(--color-text-primary)]">{a.group_name || a.name}</h4>
+                           <div className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-muted)] font-semibold">
+                             {a.role.replace(/_/g, ' ')}{a.is_external ? ' · Guest' : ''}
+                           </div>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-[var(--color-border)] pt-6">
+                 <h3 className="font-display text-xl mb-4 text-[var(--color-text-primary)]">Related</h3>
+                 <Link href="/blog" className="text-sm font-medium text-[var(--color-accent)] hover:underline inline-flex items-center gap-1">
+                   Explore more insights <ChevronRight className="w-4 h-4" />
+                 </Link>
+              </div>
+
+              <div className="card p-6 bg-[var(--color-surface-overlay)] border-0 mt-12">
+                <h3 className="font-display font-semibold text-lg mb-3">Book a Consultation</h3>
+                <p className="text-sm text-[var(--color-text-muted)] mb-5">Have a legal question? Our attorneys are here to help.</p>
+                <Link href="/appointments" className="btn btn-primary w-full justify-center text-sm">Book Now</Link>
               </div>
             </aside>
           </div>

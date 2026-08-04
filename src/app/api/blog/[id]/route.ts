@@ -13,10 +13,26 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   const isUUID = /^[0-9a-f-]{36}$/i.test(params.id)
   const { data, error } = await supabase
     .from('blog_posts')
-    .select('*, authors:blog_authors(*), comments:blog_comments(*, replies:blog_comments(*)), status_history:blog_post_status_history(*)')
+    .select(
+      '*, authors:blog_authors(*, profile:profiles(team_member:team_members(avatar_url))), comments:blog_comments(*, replies:blog_comments(*)), status_history:blog_post_status_history(*)'
+    )
     .eq(isUUID ? 'id' : 'slug', params.id)
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
+
+  // An author linked to a real team_member (profile_id set) gets that
+  // person's actual photo; the public page falls back to an initials
+  // placeholder only when there genuinely isn't one, not as the default.
+  // Flattened here (profile.team_member is an array from the reverse FK
+  // embed) so the response carries a single field the frontend can just
+  // read.
+  if (Array.isArray(data.authors)) {
+    data.authors = data.authors.map((a: { profile?: { team_member?: { avatar_url: string | null }[] } | null; [k: string]: unknown }) => {
+      const { profile, ...rest } = a
+      const avatarUrl = profile?.team_member?.[0]?.avatar_url ?? null
+      return { ...rest, avatar_url: avatarUrl }
+    })
+  }
 
   // Only published posts are visible to the public, everything else (draft,
   // in review, unpublished, archived...) is admin-only, same as the list
@@ -106,12 +122,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data, error } = await supabase.from('blog_posts').update(updates).eq('id', params.id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // The editor always sends the full author list, so this is a replace, not a merge.
+  // The editor always sends the full author list, so this is a replace, not
+  // a merge. Explicitly picked rather than spread: the editor round-trips
+  // whatever GET returned, which now includes a derived avatar_url that
+  // isn't a real blog_authors column, spreading it straight into insert()
+  // would fail the write.
   if (authors !== undefined) {
     await supabase.from('blog_authors').delete().eq('post_id', params.id)
     if (authors.length) {
       const { error: authorsError } = await supabase.from('blog_authors').insert(
-        authors.map((a: { name: string; email?: string; role?: string }) => ({ ...a, post_id: params.id }))
+        authors.map((a: { name: string; email?: string; role?: string; is_external?: boolean; group_name?: string; profile_id?: string }) => ({
+          name: a.name,
+          email: a.email,
+          role: a.role,
+          is_external: a.is_external,
+          group_name: a.group_name,
+          profile_id: a.profile_id,
+          post_id: params.id,
+        }))
       )
       if (authorsError) console.warn('Post updated but authors failed to sync:', authorsError.message)
     }

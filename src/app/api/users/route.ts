@@ -2,12 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { requirePermissionApi } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
-
-// Every role the app's own UI can select, kept as one list re-exported by
-// every route in this family, so a role the create/list/update paths agree
-// on can never silently diverge again (this is what broke PATCH earlier:
-// its own local list had fallen behind the one the page actually offers).
-export const ASSIGNABLE_ROLES = ['admin', 'staff', 'moderator', 'pupil', 'admin_assistant', 'client', 'public']
+import { ASSIGNABLE_ROLES } from '@/lib/roles'
 
 export async function GET() {
   const guard = await requirePermissionApi('manage_users')

@@ -60,7 +60,10 @@ export default function AcceptInvitePage() {
 
     setLoading(false)
     if (updateError) {
-      setError('Could not set password. Ask for a new invitation link.')
+      // Same fix as reset-password: a failure here is past the ready/session
+      // gate, so it's almost always the password itself, not the link.
+      const isSessionError = /session|token|jwt|expired|unauthorized/i.test(updateError.message)
+      setError(isSessionError ? 'Your invitation link has expired. Ask an administrator to resend it.' : updateError.message)
       return
     }
     router.push('/admin')

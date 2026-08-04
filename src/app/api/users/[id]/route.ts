@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { requirePermissionApi } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
-import { ASSIGNABLE_ROLES } from '../route'
+import { ASSIGNABLE_ROLES } from '@/lib/roles'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const guard = await requirePermissionApi('manage_users')
