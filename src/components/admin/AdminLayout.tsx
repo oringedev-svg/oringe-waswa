@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
-  LayoutDashboard, LayoutGrid, ChevronRight, History, Sun, Moon, Bell, LogOut, HelpCircle, X,
+  LayoutDashboard, LayoutGrid, ChevronRight, History, Sun, Moon, LogOut, HelpCircle, X,
   Scale, Gavel, Landmark, Inbox, ChevronDown, ChevronUp, BookOpen, Cpu,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ import { ADMIN_DOMAINS, domainForPath } from '@/lib/adminDomains'
 import { createClient } from '@/lib/supabase'
 import AdminAIAssistant from './AdminAIAssistant'
 import GlobalSearch from './GlobalSearch'
+import PushNotificationBell from './PushNotificationBell'
 import HelpWidget from '@/components/help/HelpWidget'
 
 // The shell is a slim top bar plus a persistent left sidebar that appears
@@ -205,9 +206,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors" title="Toggle theme">
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button className="p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors relative" title="Notifications">
-              <Bell className="w-4 h-4" />
-            </button>
+            <PushNotificationBell />
             {profile && (
               <div className="flex items-center gap-2 pl-2 ml-1 border-l border-[color-mix(in_srgb,var(--on-band)_15%,transparent)]">
                 <div className="text-right hidden lg:block">

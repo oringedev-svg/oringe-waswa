@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase'
 import { getSessionProfile } from '@/lib/auth'
 import { userHasPermission } from '@/lib/permissions'
 import { isParticipant } from '@/lib/messaging'
+import { sendPushToProfiles } from '@/lib/webPush'
 
 export async function GET(
   req: NextRequest,
@@ -121,6 +122,34 @@ export async function POST(
     .update({ last_read_at: message.created_at })
     .eq('conversation_id', id)
     .eq('profile_id', profile.id)
+
+  // Push every other participant, best-effort: a push failure (no
+  // subscription, expired endpoint, VAPID not configured on this
+  // deployment) must never fail the message that was already saved.
+  // Deep-linking straight to this conversation is a follow-up, /admin/
+  // messages doesn't yet read a conversation id from the URL.
+  try {
+    const { data: others } = await supabase
+      .from('conversation_participants')
+      .select('profile_id')
+      .eq('conversation_id', id)
+      .neq('profile_id', profile.id)
+
+    const recipientIds = (others || []).map((p) => p.profile_id)
+    if (recipientIds.length > 0) {
+      const displaySender = message.display_sender as unknown as { full_name: string } | null
+      const actualSender = message.actual_sender as unknown as { full_name: string } | null
+      const senderName = displaySender?.full_name || actualSender?.full_name || 'Someone'
+      await sendPushToProfiles(recipientIds, {
+        title: senderName,
+        body: content.trim().length > 140 ? `${content.trim().slice(0, 137)}...` : content.trim(),
+        url: '/admin/messages',
+        tag: `conversation-${id}`,
+      })
+    }
+  } catch (err) {
+    console.warn('[push] message notification failed:', err instanceof Error ? err.message : err)
+  }
 
   return NextResponse.json(message, { status: 201 })
 }
