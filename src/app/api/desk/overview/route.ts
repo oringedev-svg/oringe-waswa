@@ -38,7 +38,11 @@ export async function GET() {
   if (!teamMember) {
     // No linked team profile yet, permissions can still work, but there's
     // no assignee identity for tasks/meetings/messages to resolve against.
-    return NextResponse.json({ teamMember: null, tasks: [], meetings: [], messages: [], permissions })
+    // reviewQueue must still be included: the desk page reads
+    // data.reviewQueue.length unconditionally, omitting it here crashed
+    // the whole page for exactly this case (a profile with no team_members
+    // row yet) with a bare client-side exception and no hint why.
+    return NextResponse.json({ teamMember: null, tasks: [], reviewQueue: [], meetings: [], messages: [], permissions })
   }
 
   const now = new Date().toISOString()
