@@ -17,6 +17,7 @@ import type { WorkContext } from '@/lib/workContext'
 import SectionCard from '@/components/admin/SectionCard'
 import LitigationCard from '@/components/admin/LitigationCard'
 import DocumentTemplateLauncher from '@/components/admin/DocumentTemplateLauncher'
+import MatterBillingWorkspace from '@/components/admin/MatterBillingWorkspace'
 import { KENYA_COUNTIES } from '@/lib/kenyaCounties'
 import toast from 'react-hot-toast'
 
@@ -810,6 +811,11 @@ export default function MatterDetailPage() {
             )}
           </SectionCard>
           )}
+
+          {/* Billing Workspace - aggregated view of estimated, approved, and invoiced work */}
+          <div style={{ order: 2.1 }}>
+            <MatterBillingWorkspace matterId={matter.id} />
+          </div>
 
           {/* Documents */}
           <SectionCard title={`Documents (${docs.length})`} icon={FileText} color="slate" defaultOpen style={{ order: 3 }}

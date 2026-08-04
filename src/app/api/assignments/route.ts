@@ -60,6 +60,9 @@ export async function POST(req: NextRequest) {
   let resolvedSubmissionId: string | null = submission_id || null
   let resolvedInstructions: string | null = instructions || null
   let resolvedWorkItemId: string | null = work_item_id || null
+  let resolvedBillingReferenceId: string | null = null
+  let resolvedEstimatedValue: number | null = null
+  let resolvedEstimatedHours: number | null = null
 
   // Assigning a specific activity (e.g. "Draft Demand Letter") from the
   // library, rather than writing free-text instructions, is what starts a
@@ -75,12 +78,19 @@ export async function POST(req: NextRequest) {
     }
     const { data: activityType, error: activityTypeError } = await supabase
       .from('activity_types')
-      .select('id, firm_id, name, description, default_due_days, default_urgency')
+      .select('id, firm_id, name, description, default_due_days, default_urgency, billing_reference_id, billing_reference:billing_references(id, default_value, estimated_hours)')
       .eq('id', activity_type_id)
       .single()
 
     if (activityTypeError || !activityType) {
       return NextResponse.json({ error: 'Activity type not found' }, { status: 404 })
+    }
+
+    // Wire billing reference from activity type if it exists
+    if (activityType.billing_reference_id && activityType.billing_reference) {
+      resolvedBillingReferenceId = activityType.billing_reference_id
+      resolvedEstimatedValue = activityType.billing_reference.default_value
+      resolvedEstimatedHours = activityType.billing_reference.estimated_hours
     }
 
     const dueAt = activityType.default_due_days
@@ -192,6 +202,10 @@ export async function POST(req: NextRequest) {
       instructions: resolvedInstructions,
       due_date: due_date || null,
       status: 'Assigned',
+      billing_reference_id: resolvedBillingReferenceId,
+      estimated_value: resolvedEstimatedValue,
+      estimated_hours: resolvedEstimatedHours,
+      billing_status: resolvedBillingReferenceId ? 'PRICED' : 'NOT_PRICED',
     })
     .select()
     .single()

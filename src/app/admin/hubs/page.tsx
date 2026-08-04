@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, Building2, CalendarDays, Landmark, Plus, RefreshCw, Scale, Shield, Trash2 } from 'lucide-react'
+import { BookOpen, Building2, CalendarDays, DollarSign, Landmark, Plus, RefreshCw, Scale, Shield, Trash2 } from 'lucide-react'
 import { PageHeader, EmptyState, LoadingState, StatusPill } from '@/components/admin/ui'
 
 type Holiday = { id: string; name: string; calculation_rule: string; faith_scope: string | null; is_non_working_day: boolean; notes: string | null }
 
 const REFERENCE_HUBS = [
+  { href: '/admin/hubs/billing-references', icon: DollarSign, title: 'Billing References', description: 'Define work types, pricing and valuation for billing automation. Hub source of truth for all assignment valuations.', source: 'Firm-controlled billing taxonomy', action: 'Manage billing' },
   { href: '/admin/hubs/holidays', icon: CalendarDays, title: 'Holidays', description: 'Working-day rules and public-holiday overrides for scheduling and deadlines.', source: 'Public Holidays Act (Kenya Law)', action: 'Manage holidays' },
   { href: '/admin/courts', icon: Landmark, title: 'Courts', description: 'One controlled, editable court register used whenever a matter is filed.', source: 'Judiciary of Kenya, Kenya Law & court registries reference', action: 'Manage courts' },
   { href: '/admin/practice-areas', icon: Scale, title: 'Practice & Matter Taxonomy', description: 'Shared service lines and matter classifications used by the website, intake and matter work.', source: 'Firm-controlled reference taxonomy', action: 'Manage taxonomy' },
