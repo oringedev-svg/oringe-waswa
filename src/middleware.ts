@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { restrictedRoleMayAccess } from '@/lib/adminPathAccess'
 
 // Routes under /api that require a signed-in admin/staff/moderator user
 // for every method, including GET, these never serve public data.
@@ -180,13 +181,37 @@ export async function middleware(request: NextRequest) {
   // assignment (access to that is still enforced per-row by its own API,
   // this is just keeping them out of pages that were never scoped for
   // them at all). Everyone else's access is unchanged.
+  //
+  // ...with one addition: a blanket role bounce also made every capability
+  // GRANTED to these roles unusable. A pupil given publish_articles saw a
+  // Blog card on their desk whose link bounced them straight back to the
+  // desk, because /admin/blog is still /admin. The gate is therefore
+  // permission-aware rather than role-blanket: a mapped path opens only to
+  // someone actually holding the permission that unlocks it. Unmapped paths
+  // stay shut, so this is a narrowing of the deny, not a widening of the
+  // allow -- the 57 pages that self-enforce nothing are exactly the ones
+  // with no entry in ADMIN_PATH_PERMISSIONS.
   const restrictedRoles = ['pupil', 'admin_assistant']
   const isOwnAssignmentPage = /^\/admin\/assignments(\/[^/]+)?$/.test(path)
+
   if (restrictedRoles.includes(profile!.role) && path.startsWith('/admin') && !isOwnAssignmentPage) {
-    if (isApi) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    const url = request.nextUrl.clone()
-    url.pathname = '/desk'
-    return NextResponse.redirect(url)
+    // Only these roles, only on an admin path, pay for this second lookup;
+    // admin/staff/moderator traffic never reaches it. Role defaults are
+    // empty for both restricted roles (see ROLE_DEFAULT_PERMISSIONS), so
+    // explicit grants are the whole picture here, and this matches what
+    // /api/desk/overview derives the desk's own tool cards from.
+    const { data: grants } = await admin
+      .from('user_permissions')
+      .select('permission_key')
+      .eq('user_id', user.id)
+    const permissions = (grants || []).map((g) => g.permission_key as string)
+
+    if (!restrictedRoleMayAccess(path, permissions)) {
+      if (isApi) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      const url = request.nextUrl.clone()
+      url.pathname = '/desk'
+      return NextResponse.redirect(url)
+    }
   }
 
   return response

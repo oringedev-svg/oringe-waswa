@@ -196,7 +196,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           )}
 
-          <Link href="/admin" className="font-display text-[var(--on-band-strong)] hidden sm:block flex-shrink-0 tracking-tight">{brandLabel}</Link>
+          <Link href={isStaffTier ? '/admin' : '/desk'} className="font-display text-[var(--on-band-strong)] hidden sm:block flex-shrink-0 tracking-tight">{brandLabel}</Link>
 
           <div className="flex-1" />
 
@@ -242,8 +242,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               const active = item.href === '/admin'
                 ? pathname === '/admin'
                 : pathname === item.href || pathname.startsWith(item.href + '/')
+              // '/admin' is the one lane every signed-in role sees, but it's
+              // closed to restricted roles -- their equivalent is /desk.
+              const href = item.href === '/admin' && !isStaffTier ? '/desk' : item.href
               return (
-                <Link key={item.href} href={item.href}
+                <Link key={item.href} href={href}
                   className={cn('admin-sidebar-item', active && 'is-active')}>
                   <item.icon className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{item.label}</span>
@@ -281,12 +284,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </>
           )}
 
-          <div className="admin-sidebar-secondary">
-            {SECONDARY_LINKS.map(item => {
-              const active = pathname === item.href || pathname.startsWith(item.href + '/')
-              return <Link key={item.href} href={item.href} className={cn('admin-sidebar-link', active && 'is-active')}><item.icon className="w-3.5 h-3.5" />{item.label}</Link>
-            })}
-          </div>
+          {/* Hubs and Engines are firm-wide reference and automation
+              surfaces with no per-permission mapping, so they stay closed to
+              restricted roles and are hidden rather than shown as links that
+              bounce. */}
+          {isStaffTier && (
+            <div className="admin-sidebar-secondary">
+              {SECONDARY_LINKS.map(item => {
+                const active = pathname === item.href || pathname.startsWith(item.href + '/')
+                return <Link key={item.href} href={item.href} className={cn('admin-sidebar-link', active && 'is-active')}><item.icon className="w-3.5 h-3.5" />{item.label}</Link>
+              })}
+            </div>
+          )}
         </aside>
 
         <main id="admin-main-content" tabIndex={-1} className="admin-main">
@@ -294,11 +303,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               (the old version tucked these into the top bar and hid them on
               mobile). */}
           <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
-            <Link href="/admin">{homeLabel}</Link>
+            {/* A restricted role reaches an admin page only via a specific
+                permission (see adminPathAccess.ts), so neither /admin nor the
+                page's domain hub is open to them -- both crumbs would bounce
+                straight to /desk. Home points at their own workspace, and the
+                domain is shown as context rather than offered as a link. */}
+            <Link href={isStaffTier ? '/admin' : '/desk'}>{homeLabel}</Link>
             {domain && (
               <>
                 <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-                <Link href={domain.href}>{domain.label}</Link>
+                {isStaffTier ? (
+                  <Link href={domain.href}>{domain.label}</Link>
+                ) : (
+                  <span>{domain.label}</span>
+                )}
               </>
             )}
             {currentTool && (
