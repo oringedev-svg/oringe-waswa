@@ -9,7 +9,12 @@ export const metadata: Metadata = {
   description: 'Leading law firm in Kenya, Justice, Integrity, Excellence.',
   keywords: ['law firm', 'Kenya', 'Nairobi', 'legal services', 'advocates'],
   manifest: '/manifest.webmanifest',
-  icons: { icon: '/app-icon.svg', apple: '/app-icon.svg' },
+  // iOS's home-screen icon comes from this apple-touch-icon link tag, not
+  // from the web manifest's icons array (iOS Safari doesn't read that for
+  // Add to Home Screen). It has to be a raster image -- iOS does not
+  // reliably render SVG here, it can fall back to a screenshot of the page
+  // instead of the logo.
+  icons: { icon: '/app-icon.svg', apple: '/apple-touch-icon.png' },
   appleWebApp: { capable: true, title: 'OWA Advocates', statusBarStyle: 'default' },
 }
 
