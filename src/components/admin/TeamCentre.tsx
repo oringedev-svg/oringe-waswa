@@ -5,6 +5,7 @@ import { MessageSquare, Bell, Calendar as CalendarIcon, Clock, MapPin, Video, Ga
 import { formatDate, MATTER_TYPES } from '@/lib/utils'
 import { LoadingState, EmptyState } from '@/components/admin/ui'
 import { toolsForPermissions } from '@/lib/permissionTools'
+import { CALENDAR_KIND_STYLES, LEGEND_ORDER, kindFromEventType, styleFor, type CalendarItemKind } from '@/lib/calendarColors'
 
 interface DeskTask {
   id: string
@@ -26,12 +27,38 @@ interface DeskMeeting {
   status: string
 }
 
+interface DeskHoliday {
+  date: string
+  name: string
+  isNonWorkingDay: boolean
+}
+
 interface DeskOverview {
   teamMember: { id: string; full_name: string; position: string; seniority: string } | null
   tasks: DeskTask[]
   reviewQueue: unknown[]
   meetings: DeskMeeting[]
   permissions: string[]
+  holidays: DeskHoliday[]
+}
+
+/** Local YYYY-MM-DD. toISOString() would shift the day for anyone east of
+ *  UTC, which is everyone here -- a 9am Nairobi meeting must not land on
+ *  the previous date in the grid. */
+function localISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** "Today", "Tomorrow", "Yesterday", else a written date -- the Canvas-style
+ *  heading for a day's worth of work. */
+function dayHeading(dateStr: string, todayStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`)
+  const today = new Date(`${todayStr}T00:00:00`)
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Tomorrow'
+  if (diff === -1) return 'Yesterday'
+  return d.toLocaleDateString('en-KE', { weekday: 'long' })
 }
 
 function matterTypeLabel(type?: string) {
@@ -76,25 +103,38 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
 
   const tasks = desk?.tasks || []
   const meetings = desk?.meetings || []
+  const holidays = desk?.holidays || []
   const reviewCount = desk?.reviewQueue?.length || 0
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = localISO(new Date())
 
-  const grouped = useMemo(() => {
+  // Grouped by the day work is actually due rather than into three coarse
+  // buckets, so the list reads as a schedule ("Tomorrow: two things") instead
+  // of a pile. Overdue stays collapsed into one section at the top: the point
+  // there is that it's late, not which day it was late from.
+  const { overdue, byDay, undated } = useMemo(() => {
     const overdue: DeskTask[] = []
-    const today: DeskTask[] = []
-    const upcoming: DeskTask[] = []
+    const undated: DeskTask[] = []
+    const dayMap = new Map<string, DeskTask[]>()
     for (const t of tasks) {
-      if (!t.due_date) { upcoming.push(t); continue }
-      if (t.due_date < todayStr) overdue.push(t)
-      else if (t.due_date === todayStr) today.push(t)
-      else upcoming.push(t)
+      if (!t.due_date) { undated.push(t); continue }
+      const day = t.due_date.slice(0, 10)
+      if (day < todayStr) { overdue.push(t); continue }
+      if (!dayMap.has(day)) dayMap.set(day, [])
+      dayMap.get(day)!.push(t)
     }
-    return { overdue, today, upcoming }
+    return {
+      overdue: overdue.sort((a, b) => (a.due_date || '').localeCompare(b.due_date || '')),
+      byDay: Array.from(dayMap.entries()).sort((a, b) => a[0].localeCompare(b[0])),
+      undated,
+    }
   }, [tasks, todayStr])
 
+  // localISO, not start_at.slice(0,10): the latter reads the UTC date off
+  // the timestamp, so a 1am Nairobi meeting (10pm UTC the day before) would
+  // file itself under yesterday.
   const todayMeetings = useMemo(
-    () => meetings.filter((m) => m.start_at.slice(0, 10) === todayStr),
+    () => meetings.filter((m) => localISO(new Date(m.start_at)) === todayStr),
     [meetings, todayStr]
   )
 
@@ -110,23 +150,57 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
     return arr
   }, [startWeekday, daysInMonth])
 
-  const eventsByDay = useMemo(() => {
-    const map = new Map<number, DeskMeeting[]>()
+  // Everything that can occupy a day, in one shape, so the grid and the day
+  // agenda read from a single list and a court date can't be styled one way
+  // in one place and another elsewhere. A meeting's own type decides its
+  // colour; a due assignment is a task; a public holiday is a holiday.
+  const calendarItems = useMemo(() => {
+    const items: { date: string; time: string | null; label: string; kind: CalendarItemKind; href?: string }[] = []
+
     for (const m of meetings) {
       const d = new Date(m.start_at)
+      items.push({
+        date: localISO(d),
+        time: d.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }),
+        label: m.title,
+        kind: kindFromEventType(m.type),
+      })
+    }
+    for (const t of tasks) {
+      if (!t.due_date) continue
+      items.push({
+        date: t.due_date.slice(0, 10),
+        time: null,
+        label: t.title,
+        kind: 'task',
+        href: `/admin/assignments/${t.id}`,
+      })
+    }
+    for (const h of holidays) {
+      items.push({ date: h.date, time: null, label: h.name, kind: 'holiday' })
+    }
+    return items
+  }, [meetings, tasks, holidays])
+
+  const itemsByDay = useMemo(() => {
+    const map = new Map<number, typeof calendarItems>()
+    for (const item of calendarItems) {
+      const d = new Date(`${item.date}T00:00:00`)
       if (d.getFullYear() === cursor.getFullYear() && d.getMonth() === cursor.getMonth()) {
         const day = d.getDate()
         if (!map.has(day)) map.set(day, [])
-        map.get(day)!.push(m)
+        map.get(day)!.push(item)
       }
     }
     return map
-  }, [meetings, cursor])
+  }, [calendarItems, cursor])
 
   const dailyAgenda = useMemo(() => {
-    const dayStr = selectedDay.toISOString().slice(0, 10)
-    return meetings.filter((m) => m.start_at.slice(0, 10) === dayStr).sort((a, b) => a.start_at.localeCompare(b.start_at))
-  }, [meetings, selectedDay])
+    const dayStr = localISO(selectedDay)
+    return calendarItems
+      .filter((i) => i.date === dayStr)
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+  }, [calendarItems, selectedDay])
 
   function selectDay(day: number) {
     setSelectedDay(new Date(cursor.getFullYear(), cursor.getMonth(), day))
@@ -275,33 +349,49 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
             />
           ) : (
             <div className="space-y-5">
-              {grouped.overdue.length > 0 && (
+              {/* Overdue isn't split by day: what matters is that it's late,
+                  not which day it was due. */}
+              {overdue.length > 0 && (
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-400 mb-2">
-                    Overdue ({grouped.overdue.length})
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-400">Overdue</span>
+                    <span className="text-[0.65rem] text-rose-600/70 dark:text-rose-400/70">{overdue.length}</span>
                   </div>
                   <div className="space-y-2">
-                    {grouped.overdue.map((t) => <TaskCard key={t.id} task={t} overdue />)}
+                    {overdue.map((t) => <TaskCard key={t.id} task={t} overdue />)}
                   </div>
                 </div>
               )}
-              {grouped.today.length > 0 && (
+
+              {/* One section per day work is actually due, so the list reads
+                  as a schedule rather than an undifferentiated pile. */}
+              {byDay.map(([day, dayTasks]) => {
+                const isToday = day === todayStr
+                return (
+                  <div key={day}>
+                    <div className="flex items-baseline justify-between mb-2 pb-1.5 border-b border-[var(--color-border)]">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isToday ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}>
+                        {dayHeading(day, todayStr)}
+                      </span>
+                      <span className="text-[0.65rem] text-[var(--color-text-muted)]">
+                        {formatDate(day, 'long')}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {dayTasks.map((t) => <TaskCard key={t.id} task={t} />)}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {undated.length > 0 && (
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
-                    Today ({grouped.today.length})
+                  <div className="flex items-baseline justify-between mb-2 pb-1.5 border-b border-[var(--color-border)]">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">No due date</span>
+                    <span className="text-[0.65rem] text-[var(--color-text-muted)]">{undated.length}</span>
                   </div>
                   <div className="space-y-2">
-                    {grouped.today.map((t) => <TaskCard key={t.id} task={t} />)}
-                  </div>
-                </div>
-              )}
-              {grouped.upcoming.length > 0 && (
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
-                    Upcoming ({grouped.upcoming.length})
-                  </div>
-                  <div className="space-y-2">
-                    {grouped.upcoming.map((t) => <TaskCard key={t.id} task={t} />)}
+                    {undated.map((t) => <TaskCard key={t.id} task={t} />)}
                   </div>
                 </div>
               )}
@@ -387,13 +477,20 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
                 {cells.map((day, i) => {
                   const now = new Date()
                   const isToday = !!day && cursor.getFullYear() === now.getFullYear() && cursor.getMonth() === now.getMonth() && day === now.getDate()
-                  const dayEvents = day ? eventsByDay.get(day) || [] : []
+                  const dayItems = day ? itemsByDay.get(day) || [] : []
+                  // One dot per KIND present, not per item -- three meetings
+                  // on one day is still "there are meetings", and a day with a
+                  // court date plus a deadline needs to show both colours.
+                  const kinds = Array.from(new Set(dayItems.map((it) => it.kind)))
+                  const isHoliday = kinds.includes('holiday')
                   return (
                     <button
                       key={i}
                       disabled={!day}
                       onClick={() => day && selectDay(day)}
+                      title={dayItems.map((it) => it.label).join(' · ') || undefined}
                       className={`aspect-square flex flex-col items-center justify-center text-xs border-b border-r border-[var(--color-border)]/40 last:border-r-0 hover:bg-[var(--color-surface-overlay)] transition-colors ${!day ? 'cursor-default' : ''}`}
+                      style={isHoliday && !isToday ? { background: styleFor('holiday').tint } : undefined}
                     >
                       {day && (
                         <>
@@ -404,7 +501,11 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
                           >
                             {day}
                           </span>
-                          {dayEvents.length > 0 && <span className="w-1 h-1 rounded-full bg-[var(--color-accent)] mt-0.5" />}
+                          <span className="flex items-center gap-0.5 mt-0.5 h-1.5">
+                            {kinds.slice(0, 4).map((k) => (
+                              <span key={k} className="w-1.5 h-1.5 rounded-full" style={{ background: styleFor(k).hex }} />
+                            ))}
+                          </span>
                         </>
                       )}
                     </button>
@@ -433,21 +534,42 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
               </div>
               <div className="divide-y divide-[var(--color-border)] max-h-80 overflow-y-auto">
                 {dailyAgenda.length === 0 ? (
-                  <p className="text-xs text-[var(--color-text-muted)] p-4 text-center">No events this day.</p>
+                  <p className="text-xs text-[var(--color-text-muted)] p-4 text-center">Nothing on this day.</p>
                 ) : (
-                  dailyAgenda.map((m) => (
-                    <div key={m.id} className="p-3">
-                      <div className="text-sm font-medium text-[var(--color-text-primary)]">{m.title}</div>
-                      <div className="text-xs text-[var(--color-text-muted)] mt-1">
-                        {new Date(m.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} –{' '}
-                        {new Date(m.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  dailyAgenda.map((item, idx) => {
+                    const s = styleFor(item.kind)
+                    const row = (
+                      <div className="p-3 border-l-[3px]" style={{ borderLeftColor: s.hex }}>
+                        <div className="text-sm font-medium text-[var(--color-text-primary)]">{item.label}</div>
+                        <div className="text-xs text-[var(--color-text-muted)] mt-1 flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 rounded text-[0.65rem] font-medium" style={{ background: s.tint, color: s.hex }}>
+                            {s.label}
+                          </span>
+                          {item.time && <span>{item.time}</span>}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )
+                    return item.href ? (
+                      <Link key={idx} href={item.href} className="block hover:bg-[var(--color-surface-overlay)] transition-colors">{row}</Link>
+                    ) : (
+                      <div key={idx}>{row}</div>
+                    )
+                  })
                 )}
               </div>
             </div>
           )}
+
+          {/* Legend: the colours are only useful if what they mean is on the
+              same screen as the dots. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1">
+            {LEGEND_ORDER.map((k) => (
+              <span key={k} className="flex items-center gap-1.5 text-[0.65rem] text-[var(--color-text-muted)]">
+                <span className="w-2 h-2 rounded-full" style={{ background: CALENDAR_KIND_STYLES[k].hex }} />
+                {CALENDAR_KIND_STYLES[k].label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

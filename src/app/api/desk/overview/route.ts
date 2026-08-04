@@ -2,6 +2,41 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { getSessionProfile } from '@/lib/auth'
 import { getUserPermissions } from '@/lib/permissions'
+import { resolveHolidaysForYear, type ResolvedHoliday } from '@/lib/holidayDates'
+
+// Holidays are firm-wide, not per-person, and the rule set changes about
+// once a year -- so they're resolved once per request rather than being
+// worth their own round trip from the client. Covers this year and next so
+// a calendar paged into December/January doesn't go blank.
+async function loadHolidays(supabase: ReturnType<typeof createAdminClient>): Promise<ResolvedHoliday[]> {
+  try {
+    const year = new Date().getFullYear()
+    const [{ data: rules }, { data: overrides }] = await Promise.all([
+      supabase.from('public_holidays').select('name, calculation_rule, month, day, is_non_working_day, is_active').eq('country_code', 'KE'),
+      supabase.from('public_holiday_overrides').select('observed_on, name, is_non_working_day').eq('country_code', 'KE'),
+    ])
+
+    const resolved = [
+      ...resolveHolidaysForYear(rules || [], year),
+      ...resolveHolidaysForYear(rules || [], year + 1),
+      // Gazette-declared and lunar dates can't be computed; the override
+      // table is where their real dates live once announced.
+      ...(overrides || []).map((o) => ({
+        date: String(o.observed_on).slice(0, 10),
+        name: o.name as string,
+        isNonWorkingDay: o.is_non_working_day as boolean,
+      })),
+    ]
+
+    // An override for a date a rule already produced should win, not double up.
+    const byDate = new Map<string, ResolvedHoliday>()
+    for (const h of resolved) byDate.set(`${h.date}|${h.name}`, h)
+    return Array.from(byDate.values())
+  } catch {
+    // A desk that loads without holiday shading beats one that doesn't load.
+    return []
+  }
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +77,9 @@ export async function GET() {
     // data.reviewQueue.length unconditionally, omitting it here crashed
     // the whole page for exactly this case (a profile with no team_members
     // row yet) with a bare client-side exception and no hint why.
-    return NextResponse.json({ teamMember: null, tasks: [], reviewQueue: [], meetings: [], messages: [], permissions })
+    // Holidays still apply to someone with no team profile yet -- they're
+    // firm-wide, not assigned.
+    return NextResponse.json({ teamMember: null, tasks: [], reviewQueue: [], meetings: [], messages: [], permissions, holidays: await loadHolidays(supabase) })
   }
 
   const now = new Date().toISOString()
@@ -118,5 +155,5 @@ export async function GET() {
   const tasks = rows.map(toTask)
   const reviewQueue = reviewRows.map((r) => ({ ...toTask(r), assigneeName: r.assignee?.full_name || null }))
 
-  return NextResponse.json({ teamMember, tasks, reviewQueue, meetings, messages: messages || [], permissions })
+  return NextResponse.json({ teamMember, tasks, reviewQueue, meetings, messages: messages || [], permissions, holidays: await loadHolidays(supabase) })
 }
