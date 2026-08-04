@@ -5,6 +5,7 @@ import { CheckCircle2, X, Play, Send, MessageCircle, AlertCircle, FileUp, Loader
 import SectionCard from '@/components/admin/SectionCard'
 import AssignmentMessages from '@/components/assignments/AssignmentMessages'
 import MatterTimelineStrip from '@/components/assignments/MatterTimelineStrip'
+import DocumentTemplateLauncher from '@/components/admin/DocumentTemplateLauncher'
 import toast from 'react-hot-toast'
 
 interface AssignmentBrief {
@@ -149,6 +150,14 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
 
     loadAssignment()
   }, [params.id])
+
+  // Re-fetches just the assignment record, used after creating a working
+  // copy from a template so "Related documents" picks up the new file
+  // without re-running the full initial load (me, desk, assignees).
+  const refreshAssignment = async () => {
+    const res = await fetch(`/api/assignments/${params.id}`)
+    if (res.ok) setAssignment(await res.json())
+  }
 
   const handleAction = async (action: string, messageOverride?: string) => {
     setActing(true)
@@ -449,7 +458,18 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
               and everything that's happened on it so far, so whoever picks
               this up isn't working blind. */}
           {assignment.matter && (
-            <SectionCard title="Matter Context" color="purple" defaultOpen={true}>
+            <SectionCard
+              title="Matter Context"
+              color="purple"
+              defaultOpen={true}
+              headerExtra={
+                <DocumentTemplateLauncher
+                  matterId={assignment.matter.id}
+                  matterType={assignment.matter.type || 'other'}
+                  onCreated={refreshAssignment}
+                />
+              }
+            >
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide">Client</p>

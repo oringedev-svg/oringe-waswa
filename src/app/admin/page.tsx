@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { PageHeader, StatusPill, LoadingState, EmptyState, type Tone } from '@/components/admin/ui'
+import TeamCentre from '@/components/admin/TeamCentre'
 
 interface Overview {
   attention: { label: string; count: number; href: string; urgency: 'overdue' | 'almost_overdue' | 'safe' }[]
@@ -48,7 +49,13 @@ const URGENCY: Record<Urgency, { label: string; tone: Tone }> = {
   info: { label: 'Notice', tone: 'neutral' },
 }
 
-export default function AdminDashboard() {
+// The firm-wide command centre: business metrics, decisions queue, and
+// links into every domain. Reserved for the managing admin (profile.role
+// === 'admin') -- everyone else lands on TeamCentre instead, see the
+// router component below. A pupil or an individual advocate has no use
+// for firm-wide unbilled-work totals or a submissions triage queue; their
+// entire job is what's on their own desk.
+function ExecutiveDashboard() {
   const [data, setData] = useState<Overview | null>(null)
   const [recent, setRecent] = useState<RecentSubmission[]>([])
   const [canTriage, setCanTriage] = useState(false)
@@ -552,4 +559,27 @@ export default function AdminDashboard() {
       </div>
     </div>
   )
+}
+
+// Entry point for /admin: decides which workspace a signed-in staff member
+// lands on. The managing admin gets the full ExecutiveDashboard; everyone
+// else (pupils, individual advocates, anyone without the 'admin' role)
+// gets TeamCentre. If a non-admin role is later granted broader
+// permissions, extend TeamCentre itself with permission-conditional
+// sections rather than routing them back into ExecutiveDashboard, it stays
+// overkill for a single practice area's worth of work.
+export default function AdminDashboard() {
+  const [role, setRole] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me) => setRole(me?.role || null))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <LoadingState label="Preparing your workspace" />
+
+  return role === 'admin' ? <ExecutiveDashboard /> : <TeamCentre />
 }

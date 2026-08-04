@@ -48,17 +48,17 @@ export async function GET() {
     // Accepted, and In Progress, it drops off once submitted for review.
     supabase
       .from('assignments')
-      .select('id, instructions, status, assigned_at, submission_id, matter:legal_matters(id, matter_number, title, submission_id)')
+      .select('id, instructions, status, assigned_at, due_date, submission_id, matter:legal_matters(id, matter_number, title, type, submission_id)')
       .eq('assigned_to', teamMember.id)
       .in('status', ['Assigned', 'Accepted', 'In Progress'])
-      .order('assigned_at', { ascending: false }),
+      .order('due_date', { ascending: true, nullsFirst: false }),
     // The other side of the same coin: work THIS person handed out that's
     // now sitting Submitted, waiting on their approve/reject decision.
     // Nothing surfaced this before, an assigner had no way to discover a
     // submission short of already knowing to check /admin/assignments.
     supabase
       .from('assignments')
-      .select('id, instructions, status, submitted_at, submission_id, assignee:assigned_to(full_name), matter:legal_matters(id, matter_number, title, submission_id)')
+      .select('id, instructions, status, submitted_at, due_date, submission_id, assignee:assigned_to(full_name), matter:legal_matters(id, matter_number, title, type, submission_id)')
       .eq('assigned_by', profile.id)
       .eq('status', 'Submitted')
       .order('submitted_at', { ascending: false }),
@@ -83,7 +83,7 @@ export async function GET() {
   // work) and/or, once promoted, at the matter that submission became,
   // fetched separately since Supabase can't follow that second hop in one
   // select.
-  type AssignmentRow = { id: string; instructions: string | null; status: string; submission_id: string | null; matter: { id: string; matter_number: string; title: string; submission_id: string | null } | null }
+  type AssignmentRow = { id: string; instructions: string | null; status: string; due_date: string | null; submission_id: string | null; matter: { id: string; matter_number: string; title: string; type: string; submission_id: string | null } | null }
   type ReviewRow = AssignmentRow & { assignee?: { full_name: string } | null }
   const rows = (assignments || []) as unknown as AssignmentRow[]
   const reviewRows = (submittedForReview || []) as unknown as ReviewRow[]
@@ -105,8 +105,8 @@ export async function GET() {
       id: r.id,
       title: r.instructions || 'Assignment',
       status: r.status,
-      due_date: null as string | null,
-      matter: r.matter ? { id: r.matter.id, matter_number: r.matter.matter_number, title: r.matter.title } : null,
+      due_date: r.due_date,
+      matter: r.matter ? { id: r.matter.id, matter_number: r.matter.matter_number, title: r.matter.title, type: r.matter.type } : null,
       submission: submissionId ? submissionsById.get(submissionId) || null : null,
     }
   }
