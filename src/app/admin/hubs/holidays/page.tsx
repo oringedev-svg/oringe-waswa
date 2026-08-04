@@ -1,7 +1,5 @@
-'use client'
-
-import { HolidayHub } from '../page'
+import HolidayHub from '@/components/admin/HolidayHub'
 
 export default function HolidaysHubPage() {
-  return <HolidayHub standalone />
+  return <HolidayHub />
 }
