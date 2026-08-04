@@ -255,9 +255,21 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
       {/* Top bar */}
       <div className="flex items-center justify-between gap-4 pb-4 border-b border-[var(--color-border)]">
         <div>
-          <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-[var(--color-text-muted)] font-medium">
-            Team Centre
-          </div>
+          {/* The eyebrow is the way into the team itself. Only on /desk:
+              /admin has its own navigation, and the team page lives under
+              /desk so restricted roles can actually reach it. */}
+          {variant === 'desk' ? (
+            <Link
+              href="/desk/team"
+              className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-[var(--color-text-muted)] font-medium hover:text-[var(--color-accent)] transition-colors inline-flex items-center gap-1"
+            >
+              Team Centre <ChevronRight className="w-3 h-3" />
+            </Link>
+          ) : (
+            <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-[var(--color-text-muted)] font-medium">
+              Team Centre
+            </div>
+          )}
           <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
             {teamMember ? `Welcome, ${teamMember.full_name.split(' ')[0]}` : 'Your workspace'}
           </h1>
