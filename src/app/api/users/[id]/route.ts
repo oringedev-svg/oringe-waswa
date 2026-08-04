@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { requirePermissionApi } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
-
-const ROLES = ['admin', 'staff', 'moderator', 'client', 'public']
+import { ASSIGNABLE_ROLES } from '../route'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const guard = await requirePermissionApi('manage_users')
   if ('response' in guard) return guard.response
 
   const body = await req.json()
-  if (body.role !== undefined && !ROLES.includes(body.role)) {
-    return NextResponse.json({ error: `Invalid role. Must be one of: ${ROLES.join(', ')}` }, { status: 400 })
+  if (body.role !== undefined && !ASSIGNABLE_ROLES.includes(body.role)) {
+    return NextResponse.json({ error: `Invalid role. Must be one of: ${ASSIGNABLE_ROLES.join(', ')}` }, { status: 400 })
+  }
+  // Same privilege-escalation guard as user creation: promoting someone TO
+  // admin must itself come from an admin, not merely from manage_users.
+  if (body.role === 'admin' && guard.profile.role !== 'admin') {
+    return NextResponse.json({ error: 'Only an administrator can grant the administrator role' }, { status: 403 })
   }
 
   const supabase = createAdminClient()
