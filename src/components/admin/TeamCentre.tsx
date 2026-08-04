@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { MessageSquare, Bell, Calendar as CalendarIcon, Clock, MapPin, Video, Gavel, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatDate, MATTER_TYPES } from '@/lib/utils'
 import { LoadingState, EmptyState } from '@/components/admin/ui'
+import { toolsForPermissions } from '@/lib/permissionTools'
 
 interface DeskTask {
   id: string
@@ -30,6 +31,7 @@ interface DeskOverview {
   tasks: DeskTask[]
   reviewQueue: unknown[]
   meetings: DeskMeeting[]
+  permissions: string[]
 }
 
 function matterTypeLabel(type?: string) {
@@ -43,7 +45,12 @@ function matterTypeLabel(type?: string) {
 // only what's personally on their desk today: assigned tasks, today's
 // meetings, and their calendar. Data comes from /api/desk/overview, which
 // already existed as the personal-view backend before this component did.
-export default function TeamCentre() {
+// `variant` decides which links are safe to render, not how it looks.
+// Middleware bounces pupils and administrative assistants out of /admin
+// entirely except their own assignment pages, so the same component
+// rendered at /desk must not offer links that would just bounce them
+// back here. See src/middleware.ts's restrictedRoles block.
+export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 'desk' } = {}) {
   const [loading, setLoading] = useState(true)
   const [desk, setDesk] = useState<DeskOverview | null>(null)
   const [unreadMessages, setUnreadMessages] = useState(0)
@@ -129,6 +136,7 @@ export default function TeamCentre() {
   if (loading) return <LoadingState label="Preparing your workspace" />
 
   const teamMember = desk?.teamMember
+  const tools = toolsForPermissions(desk?.permissions || [])
 
   function TaskCard({ task, overdue }: { task: DeskTask; overdue?: boolean }) {
     return (
@@ -182,18 +190,24 @@ export default function TeamCentre() {
           {teamMember?.position && <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{teamMember.position}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/admin/messages"
-            className="relative p-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-overlay)] transition-colors"
-            title="Messages"
-          >
-            <MessageSquare className="w-4 h-4" />
-            {unreadMessages > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--color-accent)] text-white text-[0.6rem] font-semibold flex items-center justify-center">
-                {unreadMessages > 9 ? '9+' : unreadMessages}
-              </span>
-            )}
-          </Link>
+          {/* /admin/messages is off-limits to the roles that land on /desk,
+              so linking there would bounce them straight back to this page.
+              Omitted rather than shipped as a dead link; those roles have no
+              messages surface of their own yet. */}
+          {variant === 'admin' && (
+            <Link
+              href="/admin/messages"
+              className="relative p-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+              title="Messages"
+            >
+              <MessageSquare className="w-4 h-4" />
+              {unreadMessages > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--color-accent)] text-white text-[0.6rem] font-semibold flex items-center justify-center">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </Link>
+          )}
           {reviewCount > 0 && (
             <Link
               href="/admin/assignments"
@@ -208,6 +222,45 @@ export default function TeamCentre() {
           )}
         </div>
       </div>
+
+      {/* Nothing routes work to a person until their profile is linked to a
+          team_members row -- assignments, meeting attendance and messages all
+          resolve against that id, not profiles.id. Worth saying plainly here
+          rather than leaving someone staring at three empty panels. */}
+      {!teamMember && (
+        <div className="card p-5 text-sm text-[var(--color-text-muted)]">
+          Your account isn&apos;t linked to a team profile yet, so tasks, meetings, and messages assigned
+          to you won&apos;t show here until it is. Ask an administrator to link it from Team.
+        </div>
+      )}
+
+      {/* The only navigation these roles get: /desk has no admin shell around
+          it, so without this a pupil granted, say, publish_articles would have
+          no way to reach the blog at all. */}
+      {variant === 'desk' && tools.length > 0 && (
+        <div>
+          <h2 className="font-display font-semibold text-lg text-[var(--color-text-primary)] mb-3">My Tools</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {tools.map((t) => (
+              <Link
+                key={t.href}
+                href={t.href}
+                className="card p-4 flex items-center gap-3 hover:border-[var(--color-accent)] transition-colors group"
+              >
+                <div className="w-9 h-9 rounded-md bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
+                  <t.icon className="w-4 h-4 text-[var(--color-accent)]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
+                    {t.label}
+                  </div>
+                  <div className="text-xs text-[var(--color-text-muted)] truncate">{t.description}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Tasks */}
