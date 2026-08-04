@@ -61,7 +61,19 @@ export default function ResetPasswordPage() {
 
     setLoading(false)
     if (updateError) {
-      setError('Could not update password. Try requesting a new reset link.')
+      // A blanket "link expired" message here was actively misleading: the
+      // recovery session at this point is already valid (we're past the
+      // `ready` gate), so a failure is almost always the password itself --
+      // too weak for the project's policy, or identical to the current
+      // one, both of which Supabase reports in updateError.message. Only
+      // an actual session/auth failure should point the user back to
+      // requesting a new link.
+      const isSessionError = /session|token|jwt|expired|unauthorized/i.test(updateError.message)
+      setError(
+        isSessionError
+          ? 'Your session has expired. Request a new reset link.'
+          : updateError.message
+      )
       return
     }
 
