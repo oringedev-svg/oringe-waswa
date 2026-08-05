@@ -4,6 +4,7 @@ import { requireAdminApi } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 import { sendEmail } from '@/lib/email'
 import { buildIcsInvite, meetingInviteEmail } from '@/lib/ics'
+import { resolveAttendees } from '@/lib/attendeeResolver'
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const guard = await requireAdminApi()
@@ -47,18 +48,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (rescheduled || allowed.status === 'cancelled') {
     try {
       const attendees = (data.attendees || []).filter((a: { external_email?: string; team_member_id?: string; profile_id?: string }) => a.external_email || a.team_member_id || a.profile_id)
-      const resolved: { name: string; email: string }[] = []
-      for (const a of attendees) {
-        if (a.team_member_id) {
-          const { data: m } = await supabase.from('team_members').select('full_name, email').eq('id', a.team_member_id).single()
-          if (m?.email) resolved.push({ name: m.full_name, email: m.email })
-        } else if (a.profile_id) {
-          const { data: p } = await supabase.from('profiles').select('full_name, email').eq('id', a.profile_id).single()
-          if (p?.email) resolved.push({ name: p.full_name, email: p.email })
-        } else if (a.external_email) {
-          resolved.push({ name: a.external_name || a.external_email, email: a.external_email })
-        }
-      }
+      // Same batched two-query resolution as POST /api/calendar-events -- was
+      // the identical sequential loop, one round-trip per attendee.
+      const resolved = await resolveAttendees(attendees as { team_member_id?: string; profile_id?: string; external_name?: string; external_email?: string }[])
       const method = allowed.status === 'cancelled' ? 'CANCEL' : 'REQUEST'
       const ics = buildIcsInvite({
         uid: `${data.id}@oringewaswa`,

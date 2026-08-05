@@ -120,22 +120,38 @@ export async function POST(req: NextRequest) {
 
   // Reuse an existing direct conversation between the same two people
   // instead of spawning a duplicate every time "message X" is clicked.
+  //
+  // Was a per-conversation loop: one round trip per direct conversation the
+  // caller had ever been in, just to compare participant sets. Now fetches
+  // every candidate's participants in ONE .in() query and does the
+  // comparison in memory. For someone with 50 direct threads this drops
+  // ~50 round trips to 2.
   if (type === 'direct') {
     const { data: mine } = await supabase
       .from('conversation_participants')
       .select('conversation_id, conversation:conversations(type)')
       .eq('profile_id', profile.id)
 
-    for (const row of mine || []) {
-      if ((row.conversation as any)?.type !== 'direct') continue
-      const { data: otherParticipants } = await supabase
+    const candidateIds = (mine || [])
+      .filter((row) => (row.conversation as unknown as { type?: string })?.type === 'direct')
+      .map((row) => row.conversation_id as string)
+
+    if (candidateIds.length > 0) {
+      const { data: allParticipantRows } = await supabase
         .from('conversation_participants')
-        .select('profile_id')
-        .eq('conversation_id', row.conversation_id)
-      const ids = new Set((otherParticipants || []).map((p) => p.profile_id))
-      if (ids.size === allParticipantIds.length && allParticipantIds.every((id) => ids.has(id))) {
-        const { data: existing } = await supabase.from('conversations').select('*').eq('id', row.conversation_id).single()
-        return NextResponse.json(existing, { status: 200 })
+        .select('conversation_id, profile_id')
+        .in('conversation_id', candidateIds)
+
+      const idsByConversation = new Map<string, Set<string>>()
+      for (const row of allParticipantRows || []) {
+        if (!idsByConversation.has(row.conversation_id)) idsByConversation.set(row.conversation_id, new Set())
+        idsByConversation.get(row.conversation_id)!.add(row.profile_id)
+      }
+      for (const [conversationId, ids] of Array.from(idsByConversation.entries())) {
+        if (ids.size === allParticipantIds.length && allParticipantIds.every((id) => ids.has(id))) {
+          const { data: existing } = await supabase.from('conversations').select('*').eq('id', conversationId).single()
+          return NextResponse.json(existing, { status: 200 })
+        }
       }
     }
   }

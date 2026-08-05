@@ -4,6 +4,7 @@ import { requireAdminApi } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 import { sendEmail } from '@/lib/email'
 import { buildIcsInvite, meetingInviteEmail } from '@/lib/ics'
+import { resolveAttendees } from '@/lib/attendeeResolver'
 
 interface AttendeeInput {
   team_member_id?: string
@@ -76,18 +77,10 @@ export async function POST(req: NextRequest) {
 
   // Resolve every attendee to a real name + email, whether they're internal
   // staff, a client with a profile, or someone with no account at all.
-  const resolved: { name: string; email: string; row: AttendeeInput }[] = []
-  for (const a of attendees || []) {
-    if (a.team_member_id) {
-      const { data: m } = await supabase.from('team_members').select('full_name, email').eq('id', a.team_member_id).single()
-      if (m?.email) resolved.push({ name: m.full_name, email: m.email, row: a })
-    } else if (a.profile_id) {
-      const { data: p } = await supabase.from('profiles').select('full_name, email').eq('id', a.profile_id).single()
-      if (p?.email) resolved.push({ name: p.full_name, email: p.email, row: a })
-    } else if (a.external_email) {
-      resolved.push({ name: a.external_name || a.external_email, email: a.external_email, row: a })
-    }
-  }
+  // Batched in exactly two queries via resolveAttendees(); was previously a
+  // sequential per-attendee loop (a meeting with a dozen invitees fired
+  // twenty-plus round trips).
+  const resolved = await resolveAttendees<AttendeeInput>(attendees || [])
 
   let insertedAttendees: { id: string }[] = []
   if (resolved.length > 0) {
