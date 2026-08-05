@@ -63,6 +63,7 @@ export default function BlogEditorPage() {
   const [loading, setLoading] = useState(!isNew)
   const [aiGenerating, setAiGenerating] = useState(false)
   const [permissions, setPermissions] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<'editor' | 'comments'>('editor')
   // Bumped every time content is freshly loaded from the server (initial load,
   // after a save, after a status transition, after a revision restore) so the
   // WYSIWYG editor, whose `markdown` prop is read only on mount, remounts
@@ -254,7 +255,34 @@ export default function BlogEditorPage() {
         </div>
       </div>
 
-      {/* Workflow: where this post is, and everything that can happen to it next, all in one place */}
+      {/* Tabs */}
+      {!isNew && (
+        <div className="flex border-b border-[var(--color-border)] mb-6">
+          <button
+            onClick={() => setActiveTab('editor')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'editor'
+                ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+            }`}
+          >
+            Editor
+          </button>
+          <button
+            onClick={() => setActiveTab('comments')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'comments'
+                ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+            }`}
+          >
+            Comments
+          </button>
+        </div>
+      )}
+
+      <div style={{ display: activeTab === 'editor' ? 'block' : 'none' }}>
+        {/* Workflow: where this post is, and everything that can happen to it next, all in one place */}
       {!isNew && (
         <div className="card p-5 mb-6">
           <h3 className="font-display font-semibold text-[var(--color-text-primary)] mb-4">Workflow</h3>
@@ -525,6 +553,11 @@ export default function BlogEditorPage() {
           </div>
         </div>
       )}
+      </div>
+
+      {activeTab === 'comments' && (
+        <CommentsManager postId={params.id as string} />
+      )}
 
       {/* Revision preview modal */}
       {viewingRevision && (
@@ -561,6 +594,97 @@ export default function BlogEditorPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function CommentsManager({ postId }: { postId: string }) {
+  const [comments, setComments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  function load() {
+    setLoading(true)
+    fetch(`/api/blog/comments?post_id=${postId}&pending=true`)
+      .then((r) => r.json())
+      .then((data) => setComments(data || []))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [postId])
+
+  async function updateComment(id: string, updates: any) {
+    const res = await fetch('/api/blog/comments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updates }),
+    })
+    if (res.ok) {
+      toast.success('Comment updated')
+      load()
+    } else {
+      toast.error('Failed to update comment')
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
+
+  if (comments.length === 0) {
+    return <div className="card p-12 text-center text-[var(--color-muted)]">No comments yet.</div>
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {comments.map((c) => (
+        <div key={c.id} className="card p-5">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <div className="font-medium text-[var(--color-text-primary)]">{c.author_name}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">{c.author_email} · {formatDate(c.created_at, 'short')}</div>
+            </div>
+            <div>
+              {c.is_approved ? (
+                <span className="badge bg-green-500/10 text-green-600 text-xs">Approved</span>
+              ) : (
+                <span className="badge bg-amber-500/10 text-amber-600 text-xs">Pending</span>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4 bg-[var(--color-surface-overlay)] p-3 rounded">{c.content}</p>
+          
+          <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-4 mt-2">
+            {!c.is_approved ? (
+              <button onClick={() => updateComment(c.id, { is_approved: true })} className="btn btn-outline text-xs self-start">
+                Approve Comment
+              </button>
+            ) : (
+              <button onClick={() => updateComment(c.id, { is_approved: false })} className="btn btn-outline text-xs self-start text-red-500 hover:border-red-500">
+                Unapprove
+              </button>
+            )}
+            
+            <div className="mt-2">
+              <label className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide mb-2 block">Admin Reply</label>
+              <div className="flex gap-2">
+                <input 
+                  className="input text-sm flex-1" 
+                  defaultValue={c.admin_reply || ''} 
+                  placeholder="Write a reply as admin..."
+                  onBlur={(e) => {
+                    if (e.target.value !== (c.admin_reply || '')) {
+                      updateComment(c.id, { admin_reply: e.target.value })
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur()
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
