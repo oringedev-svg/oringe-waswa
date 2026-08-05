@@ -41,6 +41,12 @@ export default function Navbar() {
   const [themeReady, setThemeReady] = useState(false)
   useEffect(() => { setThemeReady(true) }, [])
   const [open, setOpen] = useState(false)
+  // Which top-level mobile item (if any) has its submenu expanded. Capabilities
+  // alone has 13 practice areas -- rendering all of them permanently open (the
+  // old behaviour) made the panel ~1370px tall, so reaching Team/Impact/
+  // Insights/Contact meant scrolling past a wall of sub-links first. One
+  // section open at a time, accordion-style, like every mobile nav pattern.
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
@@ -79,7 +85,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
-  useEffect(() => { setOpen(false); setSearchOpen(false); setActiveDropdown(null) }, [pathname])
+  useEffect(() => { setOpen(false); setSearchOpen(false); setActiveDropdown(null); setMobileExpanded(null) }, [pathname])
 
   function submitSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -278,29 +284,54 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div id="mobile-navigation" className="lg:hidden bg-[var(--color-surface)]/95 backdrop-blur-md border-t border-[var(--color-border)] animate-slide-down">
+        <div id="mobile-navigation" className="lg:hidden bg-[var(--color-surface)]/95 backdrop-blur-md border-t border-[var(--color-border)] animate-slide-down max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain">
           <div className="container py-4 flex flex-col gap-1">
-            {navLinks.map((link) => (
-              <div key={link.label}>
-                <Link href={link.href || '#'}
-                  className={cn('block px-4 py-3 text-sm font-medium rounded-md transition-colors',
-                    pathname === link.href
-                      ? 'bg-[var(--color-surface-overlay)] text-[var(--color-accent)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]')}>
-                  {link.label}
-                </Link>
-                {link.children && link.children.length > 0 && (
-                  <div className="ml-4 flex flex-col gap-0.5 mt-0.5">
-                    {link.children.map((child) => (
-                      <Link key={child.href} href={child.href}
-                        className="block px-4 py-2.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors rounded-md hover:bg-[var(--color-surface-overlay)]">
-                        {child.label}
+            {navLinks.map((link) => {
+              const hasChildren = !!link.children && link.children.length > 0
+              const expanded = mobileExpanded === link.label
+              return (
+                <div key={link.label}>
+                  {hasChildren ? (
+                    // Same as desktop: the label itself opens the submenu
+                    // rather than navigating, with its own "View all" link
+                    // inside for going to the section's landing page. A
+                    // split target (part of the row navigates, part
+                    // expands) is worse to tap accurately than one clear
+                    // toggle.
+                    <button
+                      onClick={() => setMobileExpanded(expanded ? null : link.label)}
+                      aria-expanded={expanded}
+                      className={cn('w-full flex items-center justify-between gap-2 px-4 py-3 min-h-11 text-sm font-medium rounded-md transition-colors',
+                        expanded ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]')}>
+                      {link.label}
+                      <ChevronDown className={cn('w-4 h-4 flex-shrink-0 transition-transform', expanded && 'rotate-180')} />
+                    </button>
+                  ) : (
+                    <Link href={link.href || '#'}
+                      className={cn('block px-4 py-3 min-h-11 text-sm font-medium rounded-md transition-colors',
+                        pathname === link.href
+                          ? 'bg-[var(--color-surface-overlay)] text-[var(--color-accent)]'
+                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]')}>
+                      {link.label}
+                    </Link>
+                  )}
+                  {hasChildren && expanded && (
+                    <div className="ml-4 flex flex-col gap-0.5 mt-0.5 pb-1">
+                      <Link href={link.href || '#'}
+                        className="flex items-center gap-1.5 px-4 py-2.5 min-h-11 text-sm font-medium text-[var(--color-accent)] hover:bg-[var(--color-surface-overlay)] transition-colors rounded-md">
+                        {link.label === 'Careers' ? 'View all openings' : 'View all capabilities'} <ArrowUpRight className="w-3.5 h-3.5" />
                       </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                      {link.children!.map((child) => (
+                        <Link key={child.href} href={child.href}
+                          className="block px-4 py-2.5 min-h-11 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors rounded-md hover:bg-[var(--color-surface-overlay)]">
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
             <form onSubmit={submitSearch} className="flex items-center gap-2 px-4 py-2 mt-1">
               <Search className="w-4 h-4 text-[var(--color-muted)] flex-shrink-0" />
               {/* text-base (16px): text-sm here triggers iOS Safari's
