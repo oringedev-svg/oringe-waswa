@@ -469,13 +469,13 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
             <div className="flex items-center gap-1 text-xs">
               <button
                 onClick={() => setView('daily')}
-                className={`px-2.5 py-1 rounded-md ${view === 'daily' ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)]'}`}
+                className={`px-2.5 min-h-9 rounded-md ${view === 'daily' ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)]'}`}
               >
                 Daily
               </button>
               <button
                 onClick={() => setView('monthly')}
-                className={`px-2.5 py-1 rounded-md ${view === 'monthly' ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)]'}`}
+                className={`px-2.5 min-h-9 rounded-md ${view === 'monthly' ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)]'}`}
               >
                 Monthly
               </button>
