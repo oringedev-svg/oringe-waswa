@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { completeWithTools, type ToolMessage } from '@/lib/openai'
+import { completeWithTools, isAIAvailable, type ToolMessage } from '@/lib/openai'
 import { buildToolDefinitions, buildSystemPrompt, runQuery, isValidResource } from '@/lib/adminAiTools'
 
 const MAX_TOOL_ITERATIONS = 6
@@ -19,6 +19,12 @@ export interface PendingAction {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isAIAvailable()) {
+      return NextResponse.json({
+        message: "The AI assistant is offline — no AI provider is configured. All other admin features work normally. To enable AI, add your API key to `.env.local` (see `.env.local.example`).",
+      })
+    }
+
     const { messages } = (await req.json()) as { messages: IncomingMessage[] }
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Invalid messages array' }, { status: 400 })

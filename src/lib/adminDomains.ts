@@ -2,7 +2,7 @@ import {
   Globe, Scale, Users, Landmark, BookOpen, Newspaper, MessageSquare, Image,
   Map, Award, Calendar, FileText, Mail, Settings, BarChart2, Folder, Shield,
   Receipt, Clock, Lightbulb, Calculator, Network, Search, TrendingUp, Briefcase, Trophy, HelpCircle,
-  Gavel, Building2, type LucideIcon,
+  Gavel, Building2, GraduationCap, type LucideIcon,
 } from 'lucide-react'
 
 // ============================================================
@@ -88,6 +88,7 @@ export const ADMIN_DOMAINS: AdminDomain[] = [
     description: 'The people who carry the work, public profiles, accounts, and internal communication.',
     tools: [
       { href: '/admin/recruitment', icon: Briefcase, label: 'Recruitment', description: 'Postings and applications, from first contact through onboarding' },
+      { href: '/admin/pupillage', icon: GraduationCap, label: 'Pupillage', description: 'Pupillage intake pipeline, deeds, document verification, and work book tracking' },
       { href: '/admin/calendar', icon: Calendar, label: 'Calendar', description: 'Meetings, court dates, and deadlines, with attendees and notifications' },
       { href: '/admin/team', icon: Shield, label: 'Team', description: 'Public team profiles and bios' },
       { href: '/admin/organization', icon: Network, label: 'Organization', description: 'Structure, positions, legal authorities, and document requirements' },

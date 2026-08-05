@@ -1,19 +1,22 @@
-import ModelClient, { isUnexpected } from "@azure-rest/ai-inference"
-import { AzureKeyCredential } from "@azure/core-auth"
-
 // ============================================================
-// GitHub Models, Azure REST AI Inference SDK
-// Endpoint: https://models.github.ai/inference
-// Token:    github.com/settings/tokens (classic, no scopes needed)
-// Models:   https://github.com/marketplace/models
+// Provider-agnostic AI client (OpenAI-compatible API format)
+//
+// Default provider: Groq free tier (llama-3.3-70b-versatile)
+//   - 30 RPM, 14 400 RPD, 131 072 tokens/min
+//   - Get a free key: https://console.groq.com/keys
+//
+// To switch provider, set AI_BASE_URL to any OpenAI-compatible
+// endpoint (Together AI, OpenRouter, local Ollama, etc.).
 // ============================================================
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "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"
-const ENDPOINT = "https://models.github.ai/inference"
-const MODEL = process.env.GITHUB_MODEL || "openai/gpt-4.1-mini"
+const AI_API_KEY = process.env.AI_API_KEY || ''
+const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1'
+const AI_MODEL = process.env.AI_MODEL || 'llama-3.3-70b-versatile'
 
-function getClient() {
-  return ModelClient(ENDPOINT, new AzureKeyCredential(GITHUB_TOKEN))
+const REQUEST_TIMEOUT_MS = 20_000
+
+export function isAIAvailable(): boolean {
+  return AI_API_KEY.length > 0
 }
 
 async function complete(
@@ -21,19 +24,39 @@ async function complete(
   maxTokens = 1000,
   temperature = 0.7
 ): Promise<string> {
-  const client = getClient()
-  const response = await client.path("/chat/completions").post({
-    body: {
-      model: MODEL,
-      messages,
-      max_tokens: maxTokens,
-      temperature,
-    },
-  })
-  if (isUnexpected(response)) {
-    throw new Error(response.body.error?.message || "GitHub Models request failed")
+  if (!AI_API_KEY) {
+    throw new Error('AI not configured — set AI_API_KEY in .env.local')
   }
-  return (response.body.choices?.[0]?.message?.content as string) || ""
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  try {
+    const res = await fetch(`${AI_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${AI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages,
+        max_tokens: maxTokens,
+        temperature,
+      }),
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(`AI API ${res.status}: ${body.slice(0, 200)}`)
+    }
+
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content || ''
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 // ============================================================
@@ -80,50 +103,73 @@ export interface ToolCompletionResult {
   tool_calls?: ToolCall[]
 }
 
-/**
- * Low-level completion call that supports OpenAI-style function/tool calling.
- * Returns the raw assistant message (content + any tool_calls) so the caller
- * can decide whether to execute tools and loop, or stop and show the answer.
- */
 export async function completeWithTools(
   messages: ToolMessage[],
   tools: ToolDefinition[],
   maxTokens = 800,
   temperature = 0.2
 ): Promise<ToolCompletionResult> {
-  const client = getClient()
-  const response = await client.path('/chat/completions').post({
-    body: {
-      model: MODEL,
-      messages,
-      tools,
-      tool_choice: 'auto',
-      max_tokens: maxTokens,
-      temperature,
-    },
-  })
-  if (isUnexpected(response)) {
-    throw new Error(response.body.error?.message || 'GitHub Models request failed')
+  if (!AI_API_KEY) {
+    throw new Error('AI not configured — set AI_API_KEY in .env.local')
   }
-  const choice = response.body.choices?.[0]
-  return {
-    content: (choice?.message?.content as string) ?? null,
-    tool_calls: choice?.message?.tool_calls as ToolCall[] | undefined,
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  try {
+    const res = await fetch(`${AI_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${AI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages,
+        tools,
+        tool_choice: 'auto',
+        max_tokens: maxTokens,
+        temperature,
+      }),
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(`AI API ${res.status}: ${body.slice(0, 200)}`)
+    }
+
+    const data = await res.json()
+    const choice = data.choices?.[0]
+    return {
+      content: choice?.message?.content ?? null,
+      tool_calls: choice?.message?.tool_calls as ToolCall[] | undefined,
+    }
+  } finally {
+    clearTimeout(timer)
   }
 }
 
 // ============================================================
 // PUBLIC API FUNCTIONS
+// (Every function returns a sensible default when AI is down.)
 // ============================================================
 
 export async function chatWithAI(
-  messages: { role: "user" | "assistant"; content: string }[]
+  messages: { role: 'user' | 'assistant'; content: string }[]
 ): Promise<string> {
-  return complete(
-    [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
-    1000,
-    0.7
-  )
+  if (!isAIAvailable()) {
+    return 'The AI assistant is temporarily offline. Please contact us directly at info@oringewaswa.com or call our office for immediate assistance.'
+  }
+  try {
+    return await complete(
+      [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+      1000,
+      0.7
+    )
+  } catch {
+    return "I'm having trouble connecting right now. Please try again shortly, or reach out to our office directly."
+  }
 }
 
 export async function analyzeSubmission(
@@ -138,6 +184,16 @@ export async function analyzeSubmission(
   suggested_type?: string
   confidence?: number
 }> {
+  const fallback = {
+    summary: 'Submission received and ready for manual review.',
+    highlights: [],
+    concerns: [],
+    recommended_action: 'Review manually',
+    priority_score: 5,
+  }
+
+  if (!isAIAvailable()) return fallback
+
   const prompt = `Analyze this "${type}" form submission for Oringe Waswa & Akude Advocates LLP law firm:
 ${JSON.stringify(data, null, 2)}
 
@@ -161,17 +217,11 @@ IMPORTANT: Respond ONLY with valid JSON, no markdown, no backticks:
   "routing_reason": "..."
 }`
 
-  const raw = await complete([{ role: "user", content: prompt }], 600, 0.2)
   try {
-    return JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())
+    const raw = await complete([{ role: 'user', content: prompt }], 600, 0.2)
+    return JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
   } catch {
-    return {
-      summary: "Submission received and ready for review.",
-      highlights: [],
-      concerns: [],
-      recommended_action: "Review manually",
-      priority_score: 5,
-    }
+    return fallback
   }
 }
 
@@ -185,8 +235,18 @@ export async function analyzeAndRoute(
   summary: string
   priority_score: number
 }> {
+  const fallback = {
+    suggested_type: type,
+    confidence: 0.5,
+    routing_reason: 'AI unavailable — default routing applied',
+    summary: 'Submission received',
+    priority_score: 5,
+  }
+
+  if (!isAIAvailable()) return fallback
+
   const prompt = `A user submitted a "${type}" form with this content:
-Name: ${data.name || data.client_name || "Unknown"}
+Name: ${data.name || data.client_name || 'Unknown'}
 Message: ${data.message || data.description || JSON.stringify(data).slice(0, 500)}
 
 Determine the CORRECT submission category based on the actual content.
@@ -206,17 +266,11 @@ Respond ONLY with JSON:
   "priority_score": 7
 }`
 
-  const raw = await complete([{ role: "user", content: prompt }], 300, 0.1)
   try {
-    return JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())
+    const raw = await complete([{ role: 'user', content: prompt }], 300, 0.1)
+    return JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
   } catch {
-    return {
-      suggested_type: type,
-      confidence: 0.5,
-      routing_reason: "Default routing",
-      summary: "Submission received",
-      priority_score: 5,
-    }
+    return fallback
   }
 }
 
@@ -224,14 +278,19 @@ export async function generateBlogSummary(
   title: string,
   content: string
 ): Promise<string> {
-  return complete(
-    [{
-      role: "user",
-      content: `Write a compelling 2-sentence excerpt for a law firm blog post titled "${title}": ${content.slice(0, 2000)}`,
-    }],
-    150,
-    0.5
-  )
+  if (!isAIAvailable()) return ''
+  try {
+    return await complete(
+      [{
+        role: 'user',
+        content: `Write a compelling 2-sentence excerpt for a law firm blog post titled "${title}": ${content.slice(0, 2000)}`,
+      }],
+      150,
+      0.5
+    )
+  } catch {
+    return ''
+  }
 }
 
 export async function generateCertificateContent(data: {
@@ -241,19 +300,26 @@ export async function generateCertificateContent(data: {
   date: string
   firmName: string
 }): Promise<string> {
-  return complete(
-    [{
-      role: "user",
-      content: `Write formal certificate body text (3-4 sentences, no headings, no markdown) for:
+  if (!isAIAvailable()) {
+    return `This certifies that ${data.recipientName} has successfully completed ${data.achievement} at ${data.firmName} on ${data.date}.`
+  }
+  try {
+    return await complete(
+      [{
+        role: 'user',
+        content: `Write formal certificate body text (3-4 sentences, no headings, no markdown) for:
 Recipient: ${data.recipientName}
-Certificate Type: ${data.type.replace(/_/g, " ")}
+Certificate Type: ${data.type.replace(/_/g, ' ')}
 Achievement: ${data.achievement}
 Date: ${data.date}
 Issuing Organization: ${data.firmName}`,
-    }],
-    200,
-    0.4
-  )
+      }],
+      200,
+      0.4
+    )
+  } catch {
+    return `This certifies that ${data.recipientName} has successfully completed ${data.achievement} at ${data.firmName} on ${data.date}.`
+  }
 }
 
 export async function moderateBlogContent(
@@ -266,24 +332,28 @@ export async function moderateBlogContent(
   quality_score: number
   seo_keywords: string[]
 }> {
-  const raw = await complete(
-    [{
-      role: "user",
-      content: `Review this blog post for a Kenyan law firm's website:
+  const fallback = { safe_to_publish: true, concerns: [], suggestions: ['AI moderation unavailable — please review manually.'], quality_score: 5, seo_keywords: [] }
+
+  if (!isAIAvailable()) return fallback
+
+  try {
+    const raw = await complete(
+      [{
+        role: 'user',
+        content: `Review this blog post for a Kenyan law firm's website:
 Title: ${title}
 Content preview: ${content.slice(0, 2000)}
 
 Check: legal accuracy, inappropriate content, defamatory statements, writing quality, SEO.
 Respond ONLY with JSON (no markdown):
 {"safe_to_publish":true,"concerns":[],"suggestions":[],"quality_score":7,"seo_keywords":[]}`,
-    }],
-    400,
-    0.2
-  )
-  try {
-    return JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())
+      }],
+      400,
+      0.2
+    )
+    return JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
   } catch {
-    return { safe_to_publish: true, concerns: [], suggestions: [], quality_score: 5, seo_keywords: [] }
+    return fallback
   }
 }
 
@@ -291,17 +361,22 @@ export async function draftCampaignEmail(
   subject: string,
   audience: string
 ): Promise<string> {
-  return complete(
-    [{
-      role: "user",
-      content: `Write a professional newsletter email for a Kenyan law firm with subject: "${subject}".
-Target audience: ${audience || "general subscribers"}
+  if (!isAIAvailable()) return ''
+  try {
+    return await complete(
+      [{
+        role: 'user',
+        content: `Write a professional newsletter email for a Kenyan law firm with subject: "${subject}".
+Target audience: ${audience || 'general subscribers'}
 Requirements: under 200 words, formal but engaging, include a call-to-action.
 Return plain HTML body (no <!DOCTYPE>, no <html>, just inner body content).`,
-    }],
-    500,
-    0.6
-  )
+      }],
+      500,
+      0.6
+    )
+  } catch {
+    return ''
+  }
 }
 
 export async function generateAIFormSuggestion(
@@ -309,14 +384,19 @@ export async function generateAIFormSuggestion(
   fieldName: string,
   context: string
 ): Promise<string> {
-  return complete(
-    [{
-      role: "user",
-      content: `Help a user fill in the "${fieldName}" field of a ${formType} form for Oringe Waswa & Akude Advocates LLP law firm.
+  if (!isAIAvailable()) return ''
+  try {
+    return await complete(
+      [{
+        role: 'user',
+        content: `Help a user fill in the "${fieldName}" field of a ${formType} form for Oringe Waswa & Akude Advocates LLP law firm.
 Context provided: ${context}
 Write a professional 2-3 sentence template they can use or adapt. Be specific and helpful.`,
-    }],
-    150,
-    0.5
-  )
+      }],
+      150,
+      0.5
+    )
+  } catch {
+    return ''
+  }
 }

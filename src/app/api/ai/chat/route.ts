@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const response = await chatWithAI(messages)
     return NextResponse.json({ response })
   } catch (error) {
-    console.error('GitHub Models chat error:', error)
+    console.error('AI chat error:', error)
     return NextResponse.json(
       { error: 'AI service unavailable. Please try again.' },
       { status: 500 }

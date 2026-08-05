@@ -1,6 +1,6 @@
 # Oringe Waswa & Associates — Full-Stack Legal Website
 
-Built with **Next.js 14**, **Supabase**, and **GitHub Models AI** (free), deployable to **Vercel**.
+Built with **Next.js 14**, **Supabase**, and **Groq AI** (free tier), deployable to **Vercel**.
 
 ---
 
@@ -25,12 +25,12 @@ npm install
 | `certificates` | ❌ Private |
 | `insights` | ✅ Yes |
 
-### 3. Set Up GitHub Models AI (FREE)
+### 3. Set Up AI (FREE — Groq)
 ```bash
-# Get your free token at https://github.com/settings/tokens
-# Classic token, no scopes needed
-# Uses SDK: @azure-rest/ai-inference
-# Endpoint: https://models.github.ai/inference
+# Get a free API key at https://console.groq.com/keys
+# Sign up, create a key, paste it in .env.local as AI_API_KEY
+# Default model: llama-3.3-70b-versatile (fast, capable, free)
+# Works with any OpenAI-compatible provider (Together, OpenRouter, Ollama)
 ```
 
 ### 4. Configure Environment
@@ -47,26 +47,21 @@ npm run dev
 
 ---
 
-## 🤖 AI Architecture
+## AI Architecture
 
-Uses **GitHub Models** via `@azure-rest/ai-inference` SDK:
+Uses any **OpenAI-compatible** API via plain `fetch` (default: Groq free tier):
 
 ```typescript
-import ModelClient, { isUnexpected } from "@azure-rest/ai-inference"
-import { AzureKeyCredential } from "@azure/core-auth"
-
-const client = ModelClient(
-  "https://models.github.ai/inference",
-  new AzureKeyCredential(process.env.GITHUB_TOKEN)
-)
-
-const response = await client.path("/chat/completions").post({
-  body: {
-    model: "openai/gpt-4.1-mini",
+// src/lib/openai.ts — provider-agnostic, zero SDK dependencies
+const res = await fetch(`${AI_BASE_URL}/chat/completions`, {
+  headers: { Authorization: `Bearer ${AI_API_KEY}` },
+  body: JSON.stringify({
+    model: AI_MODEL,            // default: llama-3.3-70b-versatile
     messages: [{ role: "user", content: "..." }],
     max_tokens: 1000,
-  }
+  }),
 })
+// Every consumer function has a graceful fallback when AI is down.
 ```
 
 ### AI Features
@@ -110,7 +105,7 @@ src/
 │   ├── ui/                   # ImagePicker, TranslateWidget
 │   └── home/                 # Homepage sections
 ├── lib/
-│   ├── openai.ts             # GitHub Models AI (Azure REST SDK)
+│   ├── openai.ts             # AI client (Groq / any OpenAI-compatible)
 │   ├── supabase.ts           # Database client
 │   ├── email.ts              # Email templates
 │   └── utils.ts              # Helpers
