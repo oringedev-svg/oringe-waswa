@@ -149,13 +149,18 @@ export default function AdminAIAssistant() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 left-4 sm:left-auto flex flex-col items-end">
       {open && (
         <div
           className={cn(
-            'mb-4 flex flex-col rounded-xl border border-[var(--color-border)] shadow-[var(--shadow-xl)] overflow-hidden transition-all duration-300',
+            'mb-4 flex flex-col rounded-xl border border-[var(--color-border)] shadow-[var(--shadow-xl)] overflow-hidden transition-all duration-300 w-full',
             'bg-[var(--color-surface)]',
-            minimized ? 'h-12' : 'w-[24rem] sm:w-[26rem] h-[600px]'
+            // 384-416px fixed widths overflowed a 375px phone entirely (the
+            // panel is right-anchored with no left constraint, so it just
+            // ran off the left edge). w-full + the container's left-4
+            // right-4 inset makes it fill the screen with margins instead;
+            // sm+ restores the fixed floating-panel width.
+            minimized ? 'h-12 sm:w-[24rem] sm:mb-4' : 'h-[min(600px,calc(100dvh-6rem))] sm:w-[24rem] md:w-[26rem]'
           )}
         >
           {/* Header */}
@@ -175,11 +180,19 @@ export default function AdminAIAssistant() {
                 <span style={{ fontSize: '0.7rem', color: 'var(--color-muted)' }}>Can read and act (with confirmation)</span>
               </div>
             </div>
-            <div className="flex gap-1">
-              <button onClick={() => setMinimized(!minimized)} className="p-1 hover:opacity-70 transition-opacity text-[var(--color-muted)]">
+            <div className="flex gap-0.5 -mr-1.5">
+              <button
+                onClick={() => setMinimized(!minimized)}
+                aria-label={minimized ? 'Expand' : 'Minimize'}
+                className="inline-flex items-center justify-center min-h-9 min-w-9 hover:opacity-70 transition-opacity text-[var(--color-muted)]"
+              >
                 <Minimize2 className="w-3.5 h-3.5" />
               </button>
-              <button onClick={() => setOpen(false)} className="p-1 hover:opacity-70 transition-opacity text-[var(--color-muted)]">
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="inline-flex items-center justify-center min-h-9 min-w-9 hover:opacity-70 transition-opacity text-[var(--color-muted)]"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -305,7 +318,7 @@ export default function AdminAIAssistant() {
                   className="input text-sm resize-none"
                   style={{ minHeight: '38px', maxHeight: '100px' }}
                 />
-                <button onClick={sendMessage} disabled={!input.trim() || loading} className="btn btn-primary !p-2.5 flex-shrink-0">
+                <button onClick={sendMessage} disabled={!input.trim() || loading} aria-label="Send" className="btn btn-primary !p-2.5 min-h-11 min-w-11 flex-shrink-0">
                   <Send className="w-4 h-4" />
                 </button>
               </div>
