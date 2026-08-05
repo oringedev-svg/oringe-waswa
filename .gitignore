@@ -26,3 +26,21 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# tsc incremental build cache -- per-machine, regenerates on demand
+tsconfig.tsbuildinfo
+
+# Claude Code's per-machine tool config
+.claude/settings.local.json
+
+# The drafting-library source zip -- 119 MB one-time asset for
+# scripts/import-drafting-library.mjs. Extracted contents are what the
+# script uploads to Supabase; the zip itself should never enter git
+# history, where it can't be removed after the fact.
+Legal_Drafting_Template_Library*.zip
+
+# AI-generated image assets belong in Supabase Storage (uploaded via
+# update_images.mjs), not the repo -- 19 MB and growing per generation
+# would bloat every future clone.
+public/images/ai/
+update_images.mjs
