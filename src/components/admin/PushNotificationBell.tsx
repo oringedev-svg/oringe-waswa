@@ -101,13 +101,13 @@ export default function PushNotificationBell() {
   if (state === 'unsupported') return null
 
   const baseClass =
-    'p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors relative'
+    'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors relative'
 
   if (state === 'subscribed') {
     return (
-      <button onClick={disable} className={baseClass} title="Notifications on for this device — click to turn off">
+      <button onClick={disable} aria-label="Notifications on — turn off" className={baseClass} title="Notifications on for this device — click to turn off">
         <BellRing className="w-4 h-4" />
-        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-emerald-500" />
       </button>
     )
   }
@@ -116,6 +116,7 @@ export default function PushNotificationBell() {
     return (
       <button
         onClick={() => toast.error('Notifications are blocked for this site. Enable them in your browser settings.')}
+        aria-label="Notifications blocked"
         className={baseClass}
         title="Notifications blocked — check your browser settings"
       >
@@ -125,7 +126,7 @@ export default function PushNotificationBell() {
   }
 
   return (
-    <button onClick={enable} disabled={state === 'loading'} className={baseClass} title="Turn on notifications for this device">
+    <button onClick={enable} disabled={state === 'loading'} aria-label="Turn on notifications" className={baseClass} title="Turn on notifications for this device">
       <Bell className="w-4 h-4" />
     </button>
   )

@@ -252,9 +252,12 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Top bar */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b border-[var(--color-border)]">
-        <div>
+      {/* Top bar. gap-2 sm:gap-4 -- notification icons stay tight to the
+          title on narrow screens rather than being pushed off the right
+          edge by whitespace. Title truncates via min-w-0 on the inner div
+          so the icons are never covered. */}
+      <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 pb-4 border-b border-[var(--color-border)]">
+        <div className="min-w-0 flex-1">
           {/* The eyebrow is the way into the team itself. Only on /desk:
               /admin has its own navigation, and the team page lives under
               /desk so restricted roles can actually reach it. */}
@@ -270,12 +273,17 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
               Team Centre
             </div>
           )}
-          <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          {/* xl:text-2xl on the biggest tier only -- 24px on a 375px phone
+              is enough to eat the width. sm gets 20px, base gets 18px. */}
+          <h1 className="font-display text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-[var(--color-text-primary)] truncate">
             {teamMember ? `Welcome, ${teamMember.full_name.split(' ')[0]}` : 'Your workspace'}
           </h1>
-          {teamMember?.position && <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{teamMember.position}</p>}
+          {teamMember?.position && <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-0.5 truncate">{teamMember.position}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        {/* min-h-11 min-w-11 (44x44) each -- the WCAG/Apple touch target
+            floor. The p-2 icons ended up ~36px, borderline for one-handed
+            use, esp. with a growing 9+ badge on top. */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {/* /admin/messages is off-limits to the roles that land on /desk,
               so linking there would bounce them straight back to this page.
               Omitted rather than shipped as a dead link; those roles have no
@@ -283,7 +291,8 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
           {variant === 'admin' && (
             <Link
               href="/admin/messages"
-              className="relative p-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+              aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : 'Messages'}
+              className="relative inline-flex items-center justify-center min-h-11 min-w-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-overlay)] active:scale-95 transition-all"
               title="Messages"
             >
               <MessageSquare className="w-4 h-4" />
@@ -297,7 +306,8 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
           {reviewCount > 0 && (
             <Link
               href="/admin/assignments"
-              className="relative p-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+              aria-label={`${reviewCount} awaiting review`}
+              className="relative inline-flex items-center justify-center min-h-11 min-w-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-overlay)] active:scale-95 transition-all"
               title="Work awaiting your review"
             >
               <Bell className="w-4 h-4" />
@@ -348,9 +358,13 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* One column on phones, two-up on tablets (Tasks left, Calendar
+          right, Today's Meetings under Calendar), full 5/3/4 grid on
+          desktop. Prevents a 768px tablet from getting the phone-stacked
+          layout with tons of unused right-side whitespace. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 md:gap-6 items-start">
         {/* Tasks */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="md:col-span-1 md:row-span-2 lg:col-span-5 lg:row-span-1 space-y-4">
           <h2 className="font-display font-semibold text-lg text-[var(--color-text-primary)]">Tasks</h2>
 
           {tasks.length === 0 ? (
@@ -412,7 +426,10 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
         </div>
 
         {/* Daily meetings */}
-        <div className="lg:col-span-3 space-y-4">
+        {/* Order 3 on tablets so Calendar sits BEFORE Today's Meetings in
+            the right column -- the calendar gives context for which day's
+            agenda you're reading. */}
+        <div className="md:col-span-1 md:order-3 lg:order-none lg:col-span-3 space-y-4">
           <h2 className="font-display font-semibold text-lg text-[var(--color-text-primary)]">Today&apos;s Meetings</h2>
           {todayMeetings.length === 0 ? (
             <p className="text-sm text-[var(--color-text-muted)]">Nothing on your calendar today.</p>
@@ -444,7 +461,9 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
         </div>
 
         {/* Calendar */}
-        <div className="lg:col-span-4 space-y-4">
+        {/* Order 2 on tablets so Calendar appears at the TOP of the right
+            column, above Today's Meetings. Full-column on desktop. */}
+        <div className="md:col-span-1 md:order-2 lg:order-none lg:col-span-4 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-lg text-[var(--color-text-primary)]">Calendar</h2>
             <div className="flex items-center gap-1 text-xs">
@@ -468,7 +487,7 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
               <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-overlay)]/40">
                 <button
                   onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-                  className="p-1 hover:bg-[var(--color-surface-overlay)] rounded"
+                  className="inline-flex items-center justify-center min-h-9 min-w-9 hover:bg-[var(--color-surface-overlay)] active:scale-95 rounded transition-all"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -477,7 +496,7 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
                 </span>
                 <button
                   onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-                  className="p-1 hover:bg-[var(--color-surface-overlay)] rounded"
+                  className="inline-flex items-center justify-center min-h-9 min-w-9 hover:bg-[var(--color-surface-overlay)] active:scale-95 rounded transition-all"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -530,7 +549,7 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
               <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-overlay)]/40">
                 <button
                   onClick={() => setSelectedDay(new Date(selectedDay.getTime() - 86400000))}
-                  className="p-1 hover:bg-[var(--color-surface-overlay)] rounded"
+                  className="inline-flex items-center justify-center min-h-9 min-w-9 hover:bg-[var(--color-surface-overlay)] active:scale-95 rounded transition-all"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -539,7 +558,7 @@ export default function TeamCentre({ variant = 'admin' }: { variant?: 'admin' | 
                 </span>
                 <button
                   onClick={() => setSelectedDay(new Date(selectedDay.getTime() + 86400000))}
-                  className="p-1 hover:bg-[var(--color-surface-overlay)] rounded"
+                  className="inline-flex items-center justify-center min-h-9 min-w-9 hover:bg-[var(--color-surface-overlay)] active:scale-95 rounded transition-all"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>

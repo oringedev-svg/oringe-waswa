@@ -145,10 +145,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
 
             {launcherOpen && (
-              <div className="absolute left-0 top-full mt-2 w-[min(92vw,640px)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-xl)] p-4 animate-slide-down">
+              <div className="absolute left-0 top-full mt-2 w-[min(92vw,640px)] max-h-[calc(100vh-5rem)] overflow-y-auto bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-xl)] p-4 animate-slide-down">
                 <Link href="/admin"
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm mb-2 transition-colors',
+                    'flex items-center gap-3 px-3 py-2.5 min-h-11 rounded-md text-sm mb-2 transition-colors',
                     pathname === '/admin'
                       ? 'bg-[color-mix(in_srgb,var(--color-brand)_10%,var(--color-surface))] text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)] font-medium'
                       : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]'
@@ -161,7 +161,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   {ADMIN_DOMAINS.map(d => (
                     <Link key={d.key} href={d.href}
                       className={cn(
-                        'flex items-start gap-3 p-3 rounded-md transition-colors border',
+                        'flex items-start gap-3 p-3 min-h-11 rounded-md transition-colors border',
                         pathname === d.href
                           ? 'border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-brand)_8%,var(--color-surface))]'
                           : 'border-transparent hover:bg-[var(--color-surface-overlay)]'
@@ -181,7 +181,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   {SYSTEM_ITEMS.map(item => (
                     <Link key={item.href} href={item.href}
                       className={cn(
-                        'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors',
+                        'flex items-center gap-2 px-2.5 py-1.5 min-h-9 rounded-md text-xs transition-colors',
                         pathname.startsWith(item.href)
                           ? 'bg-[color-mix(in_srgb,var(--color-brand)_10%,var(--color-surface))] text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-brand)_35%,transparent)] font-medium'
                           : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)]'
@@ -202,18 +202,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <GlobalSearch />
 
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors" title="Toggle theme">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label="Toggle theme"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors"
+              title="Toggle theme"
+            >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <PushNotificationBell />
             {profile && (
-              <div className="flex items-center gap-2 pl-2 ml-1 border-l border-[color-mix(in_srgb,var(--on-band)_15%,transparent)]">
+              <div className="flex items-center gap-1 sm:gap-2 pl-1 sm:pl-2 ml-0.5 sm:ml-1 border-l border-[color-mix(in_srgb,var(--on-band)_15%,transparent)]">
                 <div className="text-right hidden lg:block">
                   <div className="text-sm font-medium text-[var(--on-band)] leading-tight">{profile.fullName}</div>
                   <div className="text-xs text-[var(--on-band-muted)] leading-tight capitalize">{profile.role}</div>
                 </div>
-                <button onClick={handleSignOut} className="p-2 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors" title="Sign out">
+                <button
+                  onClick={handleSignOut}
+                  aria-label="Sign out"
+                  className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors"
+                  title="Sign out"
+                >
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
