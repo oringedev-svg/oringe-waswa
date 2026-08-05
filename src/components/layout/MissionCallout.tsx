@@ -6,8 +6,8 @@ type Props = {
   description: string
   primaryHref: string
   primaryLabel: string
-  secondaryHref: string
-  secondaryLabel: string
+  secondaryHref?: string
+  secondaryLabel?: string
 }
 
 // A firm-specific mission panel: inspired by the clarity of an editorial
@@ -22,7 +22,9 @@ export default function MissionCallout({ eyebrow, title, description, primaryHre
       <p>{description}</p>
       <div className="mission-callout-actions">
         <Link href={primaryHref} className="mission-callout-primary">{primaryLabel}</Link>
-        <Link href={secondaryHref} className="mission-callout-secondary">{secondaryLabel}</Link>
+        {secondaryHref && secondaryLabel && (
+          <Link href={secondaryHref} className="mission-callout-secondary">{secondaryLabel}</Link>
+        )}
       </div>
     </div>
   </section>

@@ -65,34 +65,25 @@ export default function TeamPage() {
           ) : team.length === 0 ? (
             <div className="text-center py-20 text-[var(--color-text-muted)]">Team information coming soon.</div>
           ) : (
-            <div className="flex flex-col md:flex-row items-start gap-10">
-              {/* Sidebar department filter, vertical list with counts, sticky */}
+            <div className="services-directory">
+              {/* Sidebar department filter, vertical list with counts */}
               {departments.length > 2 && (
-                <aside className="w-full md:w-56 flex-shrink-0 md:sticky md:top-24">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-3">Department</h4>
-                  <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
-                    {departments.map(dep => {
-                      const count = dep === 'All' ? team.length : team.filter(m => m.department === dep).length
-                      const active = department === dep
-                      return (
-                        <button
-                          key={dep}
-                          onClick={() => setDepartment(dep)}
-                          className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-left whitespace-nowrap md:whitespace-normal rounded-sm border transition-colors flex-shrink-0"
-                          style={{
-                            background: active ? 'var(--color-text-primary)' : 'transparent',
-                            color: active ? 'var(--color-surface)' : 'var(--color-text-secondary)',
-                            borderColor: active ? 'var(--color-text-primary)' : 'var(--color-border)',
-                            fontWeight: active ? 600 : 500,
-                          }}
-                        >
-                          <span className="flex-1">{dep}</span>
-                          {dep !== 'All' && <span className="opacity-70 text-xs flex-shrink-0">({count})</span>}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </aside>
+                <nav className="services-sidebar" aria-label="Departments">
+                  {departments.map(dep => {
+                    const count = dep === 'All' ? team.length : team.filter(m => m.department === dep).length
+                    const active = department === dep
+                    return (
+                      <button
+                        key={dep}
+                        onClick={() => setDepartment(dep)}
+                        className={`services-sidebar-item ${active ? 'is-active' : ''} flex justify-between items-center`}
+                      >
+                        <span>{dep}</span>
+                        {dep !== 'All' && <span className="text-xs opacity-60 ml-2">({count})</span>}
+                      </button>
+                    )
+                  })}
+                </nav>
               )}
 
               {/* Card grid */}

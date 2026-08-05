@@ -91,7 +91,7 @@ export default function InsightsPage() {
                   <Link href={featured[0].href || '#'} className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.15em] font-semibold hover:opacity-80 transition-opacity">
                     Read More <ArrowRight className="w-4 h-4" />
                   </Link>
-                  {(featured[0].type === 'article' || featured[0].type === 'news') && featured[0].description && (
+                  {featured[0].description && (
                     <ReadAloud text={featured[0].description} title={featured[0].title} compact />
                   )}
                 </div>
@@ -193,7 +193,7 @@ function InsightCardBody({ item, large, fullWidth = false, Icon }: { item: Insig
         )}
 
         {/* Compact Read Aloud Icon */}
-        {(item.type === 'article' || item.type === 'news') && item.description && (
+        {item.description && (
           <div className="absolute top-3 right-3 z-20">
             <ReadAloud text={item.description} title={item.title} compact />
           </div>

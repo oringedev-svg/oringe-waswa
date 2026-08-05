@@ -183,46 +183,69 @@ export default function ReadAloud({ text, title, compact = false }: ReadAloudPro
           {playing && !paused ? <Volume2 className="w-5 h-5 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
         </button>
 
-        {(showSettings || playing) && (
-          <div className="absolute top-12 right-0 z-50 w-64 p-3 bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-xl)] rounded-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePause(); }} className="w-8 h-8 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center hover:bg-[var(--color-brand-dark)] transition-colors flex-shrink-0">
-                  {playing && !paused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                </button>
-                {(playing || progress > 0) && (
-                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); stop(); }} className="w-6 h-6 rounded-full bg-[var(--color-surface-overlay)] text-[var(--color-muted)] flex items-center justify-center hover:bg-[var(--color-border)] transition-colors flex-shrink-0">
-                    <Square className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-              <div className="read-aloud-progress flex-1 min-w-0 cursor-pointer h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSeek(e); }}>
-                <div className="h-full bg-[var(--color-brand)] transition-all duration-200" style={{ width: `${progress}%` }} />
-              </div>
-              <button
-                onClick={(e) => {
-                  e.preventDefault(); e.stopPropagation();
-                  const nextMuted = !muted
-                  setMuted(nextMuted)
-                  if (utteranceRef.current) utteranceRef.current.volume = nextMuted ? 0 : volume
-                }}
-                className="flex-shrink-0 text-[var(--color-muted)] hover:text-[var(--color-brand)] transition-colors ml-1"
-              >
-                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        <div 
+          className={`absolute top-12 right-0 z-50 w-64 p-3 bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-xl)] rounded-sm transition-all duration-200 ease-out origin-top-right ${showSettings || playing ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`} 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePause(); }} className="w-8 h-8 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center hover:bg-[var(--color-brand-dark)] transition-colors flex-shrink-0">
+                {playing && !paused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
+              {(playing || progress > 0) && (
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); stop(); }} className="w-6 h-6 rounded-full bg-[var(--color-surface-overlay)] text-[var(--color-muted)] flex items-center justify-center hover:bg-[var(--color-border)] transition-colors flex-shrink-0">
+                  <Square className="w-3 h-3" />
+                </button>
+              )}
             </div>
-            
-            <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--color-border)]">
-               <div className="flex items-center gap-1">
-                 {SPEEDS.map(s => (
-                   <button key={s} onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeSpeed(s); }} className={`text-[10px] px-1.5 py-1 rounded transition-colors ${speed === s ? 'bg-[var(--color-brand)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-text-primary)]'}`}>
-                     {SPEED_LABELS[s]}
-                   </button>
-                 ))}
-               </div>
+            <div className="read-aloud-progress flex-1 min-w-0 cursor-pointer h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSeek(e); }}>
+              <div className="h-full bg-[var(--color-brand)] transition-all duration-200" style={{ width: `${progress}%` }} />
             </div>
+            <button
+              onClick={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                const nextMuted = !muted
+                setMuted(nextMuted)
+                if (utteranceRef.current) utteranceRef.current.volume = nextMuted ? 0 : volume
+              }}
+              className="flex-shrink-0 text-[var(--color-muted)] hover:text-[var(--color-brand)] transition-colors ml-1"
+            >
+              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
           </div>
-        )}
+          
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--color-border)]">
+              <div className="flex items-center gap-1">
+                {SPEEDS.map(s => (
+                  <button key={s} onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeSpeed(s); }} className={`text-[10px] px-1.5 py-1 rounded transition-colors ${speed === s ? 'bg-[var(--color-brand)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-text-primary)]'}`}>
+                    {SPEED_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+          </div>
+          
+          {voices.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-[var(--color-border)]">
+              <div className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider font-semibold mb-1">Voice</div>
+              <select 
+                value={selectedVoice}
+                onChange={(e) => {
+                  setSelectedVoice(e.target.value)
+                  if (playing) {
+                    const resumeFrom = currentWordIndex >= 0 ? currentWordIndex : 0
+                    window.speechSynthesis?.cancel()
+                    setTimeout(() => speak(resumeFrom), 100)
+                  }
+                }}
+                className="w-full bg-[var(--color-surface-overlay)] text-xs p-1.5 rounded text-[var(--color-text-secondary)] border border-[var(--color-border)] outline-none focus:border-[var(--color-brand)]"
+              >
+                {voices.filter(v => v.lang.startsWith('en')).map(v => (
+                  <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
