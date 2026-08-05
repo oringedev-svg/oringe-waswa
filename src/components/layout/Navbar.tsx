@@ -303,8 +303,10 @@ export default function Navbar() {
             ))}
             <form onSubmit={submitSearch} className="flex items-center gap-2 px-4 py-2 mt-1">
               <Search className="w-4 h-4 text-[var(--color-muted)] flex-shrink-0" />
+              {/* text-base (16px): text-sm here triggers iOS Safari's
+                  focus-zoom on this being the only mobile search entry point. */}
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search…"
-                className="flex-1 bg-transparent border-b border-[var(--color-border)] text-sm py-1 outline-none" />
+                className="flex-1 bg-transparent border-b border-[var(--color-border)] text-base py-1.5 outline-none" />
             </form>
             <Link href="/appointments" className="btn btn-primary mt-2 text-center">Book Appointment</Link>
             <InstallAppButton className="justify-center mt-1" />
