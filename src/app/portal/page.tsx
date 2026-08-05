@@ -1,9 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase'
-import { Loader2, FileText, Download, LogOut, Scale, Phone, Receipt } from 'lucide-react'
+import { Loader2, FileText, Download, Scale, Phone, Receipt, Trello, Calendar, MessageSquare, ArrowRight } from 'lucide-react'
 import { formatDate, formatFileSize, formatCurrency, MATTER_TYPES } from '@/lib/utils'
 
 interface PortalDocument {
@@ -44,7 +42,6 @@ const TONE_BADGE: Record<string, string> = {
 }
 
 export default function ClientPortalPage() {
-  const router = useRouter()
   const [matters, setMatters] = useState<PortalMatter[]>([])
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(true)
@@ -59,48 +56,46 @@ export default function ClientPortalPage() {
     }).finally(() => setLoading(false))
   }, [])
 
-  async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-surface-raised)' }}>
-      {/* Portal header */}
-      <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-        <div className="container flex items-center justify-between py-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Scale className="w-5 h-5 text-[var(--color-accent)]" />
-            <span className="font-display font-semibold text-[var(--color-text-primary)]">Oringe Waswa & Akude Advocates LLP</span>
-          </Link>
-          <button onClick={handleSignOut} className="btn btn-ghost gap-2 text-sm">
-            <LogOut className="w-4 h-4" /> Sign out
-          </button>
-        </div>
-      </header>
-
-      <main className="container py-10">
-        <div className="mb-8">
-          <span className="eyebrow mb-2 block">Client Portal</span>
-          <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">
+    <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6">
+      {/* Sleek Top Banner Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-[var(--color-border)]">
+        <div>
+          <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-[var(--color-text-muted)] font-medium">
+            Client Portal
+          </div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
             {name ? `Welcome, ${name}` : 'Welcome'}
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">Your matters with the firm, and documents shared with you.</p>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
-        ) : matters.length === 0 ? (
-          <div className="card p-12 text-center">
-            <Scale className="w-10 h-10 mx-auto mb-3 text-[var(--color-accent)]/30" />
-            <p className="text-[var(--color-text-muted)] mb-4">No matters are linked to your account yet.</p>
-            <Link href="/contact" className="btn btn-primary text-sm">Get in Touch</Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-3">
+          <Link href="/portal/assignments" className="btn btn-outline text-xs flex items-center gap-1.5 py-1.5 px-3">
+            <Trello className="w-3.5 h-3.5" />
+            Your Assignments
+          </Link>
+          <Link href="/portal/messages" className="btn btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3">
+            <MessageSquare className="w-3.5 h-3.5" />
+            Messages
+          </Link>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" /></div>
+      ) : matters.length === 0 ? (
+        <div className="p-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xs text-center">
+          <Scale className="w-10 h-10 mx-auto mb-3 text-[var(--color-accent)]/30" />
+          <h2 className="font-display text-lg font-semibold text-[var(--color-text-primary)] mb-1">No Active Matters</h2>
+          <p className="text-[var(--color-text-muted)] mb-4">No matters are linked to your account yet.</p>
+          <Link href="/contact" className="btn btn-primary text-sm">Get in Touch</Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left column: Matters Feed */}
+          <div className="lg:col-span-8 space-y-4">
             {matters.map(matter => (
-              <div key={matter.id} className="card p-6">
+              <div key={matter.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xs p-6">
                 <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
                   <div>
                     <span className="font-mono text-xs font-bold text-[var(--color-accent)]">{matter.matter_number}</span>
@@ -177,18 +172,40 @@ export default function ClientPortalPage() {
               </div>
             ))}
           </div>
-        )}
 
-        <div className="card p-5 mt-8 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <div className="font-display font-semibold text-[var(--color-text-primary)]">Need to speak to us?</div>
-            <p className="text-sm text-[var(--color-text-muted)]">Questions about your matter are best handled by your advocate directly.</p>
+          {/* Right column: Quick links */}
+          <div className="lg:col-span-4 space-y-4">
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-surface-overlay)]/40">
+                <h3 className="text-xs font-semibold text-[var(--color-text-primary)]">Quick Actions</h3>
+              </div>
+              <div className="divide-y divide-[var(--color-border)]">
+                <Link href="/portal/calendar" className="flex items-center justify-between p-4 hover:bg-[var(--color-surface-overlay)] transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors" />
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">Upcoming Meetings</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+                <Link href="/portal/assignments" className="flex items-center justify-between p-4 hover:bg-[var(--color-surface-overlay)] transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <Trello className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors" />
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">My Assignments</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+                <Link href="/contact" className="flex items-center justify-between p-4 hover:bg-[var(--color-surface-overlay)] transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors" />
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">Contact My Advocate</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+            </div>
           </div>
-          <Link href="/contact" className="btn btn-outline gap-2 text-sm flex-shrink-0">
-            <Phone className="w-4 h-4" /> Contact the Firm
-          </Link>
         </div>
-      </main>
+      )}
     </div>
   )
 }
