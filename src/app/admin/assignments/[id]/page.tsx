@@ -340,7 +340,7 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
   const isAssigner = !!currentUserId && assignment.assigned_by === currentUserId
 
   return (
-    <div className="max-w-5xl mx-auto px-2 md:px-4">
+    <div className="max-w-5xl mx-auto px-4">
       <div className="mb-8">
         <button
           onClick={() => router.back()}
@@ -348,16 +348,16 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
         >
           ← Back
         </button>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl font-semibold text-[var(--color-text-primary)]">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-xl sm:text-2xl font-semibold text-[var(--color-text-primary)] break-words">
               {assignment.work_item?.title || assignment.matter?.title || assignment.instructions || 'Assignment'}
             </h1>
             <p className="text-[var(--color-text-muted)] text-sm mt-1">
               {assignment.matter?.matter_number || (assignment.submission ? `Enquiry ${assignment.submission.tracking_code}` : 'Standalone work')}
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             {assignment.priority && assignment.priority !== 'none' && (
               <span className={`badge text-sm ${PRIORITY_CONFIG[assignment.priority].color}`}>
                 {PRIORITY_CONFIG[assignment.priority].label}
@@ -368,7 +368,7 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Assignment Summary */}
