@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Send, Hash, Users, MessageSquare, Plus, X } from 'lucide-react'
+import { Send, Hash, Users, MessageSquare, Plus, X, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TeamMember } from '@/types'
 import { PageHeader, EmptyState, LoadingState } from '@/components/admin/ui'
@@ -165,9 +165,13 @@ export default function AdminMessagesPage() {
         }
       />
 
-      <div className="border border-[var(--color-border)] rounded-xl bg-[var(--color-surface)] flex overflow-hidden h-[calc(100vh-14rem)] min-h-[500px]">
+      {/* On mobile this shows exactly one pane at a time -- list OR thread,
+          switched by whether a conversation is open -- rather than the
+          list's min-w-[260px] squeezing the thread into an unusable sliver
+          next to it. md+ restores the classic side-by-side messenger. */}
+      <div className="border border-[var(--color-border)] rounded-xl bg-[var(--color-surface)] flex overflow-hidden h-[calc(100dvh-13rem)] md:h-[calc(100vh-14rem)] min-h-[420px] sm:min-h-[500px]">
         {/* Conversation list */}
-        <div className="w-1/3 min-w-[260px] border-r border-[var(--color-border)] flex flex-col">
+        <div className={`w-full md:w-1/3 md:min-w-[260px] border-r border-[var(--color-border)] flex-col ${activeId ? 'hidden md:flex' : 'flex'}`}>
           <div className="flex-1 overflow-y-auto">
             {loading ? (
               <LoadingState />
@@ -213,19 +217,31 @@ export default function AdminMessagesPage() {
           </div>
         </div>
 
-        {/* Thread */}
-        <div className="flex-1 flex flex-col">
+        {/* Thread. Hidden on mobile until a conversation is selected --
+            otherwise it renders as a useless empty pane no wider than a
+            thumb next to the list. */}
+        <div className={`flex-1 flex-col ${activeId ? 'flex' : 'hidden md:flex'}`}>
           {!activeConversation ? (
             <div className="flex-1 flex items-center justify-center text-[var(--color-text-muted)] text-sm">
               Select a conversation, or start a new one.
             </div>
           ) : (
             <>
-              <div className="p-4 border-b border-[var(--color-border)] flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[var(--color-surface-overlay)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)]">
+              <div className="p-3 sm:p-4 border-b border-[var(--color-border)] flex items-center gap-2 sm:gap-3">
+                {/* Exit point back to the list -- the only way back on
+                    mobile, where the list pane is hidden while a thread
+                    is open. */}
+                <button
+                  onClick={() => setActiveId(null)}
+                  aria-label="Back to conversations"
+                  className="md:hidden -ml-1 inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)] flex-shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <div className="w-9 h-9 rounded-full bg-[var(--color-surface-overlay)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] flex-shrink-0">
                   <ConversationIcon type={activeConversation.type} />
                 </div>
-                <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                <h2 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
                   {conversationLabel(activeConversation, myProfileId)}
                 </h2>
               </div>
@@ -241,7 +257,7 @@ export default function AdminMessagesPage() {
                     const displayName = m.display_sender?.full_name || m.actual_sender?.full_name || 'Unknown'
                     return (
                       <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${mine ? 'bg-[var(--color-accent)] text-white rounded-br-sm' : 'bg-[var(--color-surface-overlay)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-bl-sm'}`}>
+                        <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 ${mine ? 'bg-[var(--color-accent)] text-white rounded-br-sm' : 'bg-[var(--color-surface-overlay)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-bl-sm'}`}>
                           {!mine && <p className="text-xs font-semibold mb-0.5 opacity-80">{displayName}</p>}
                           {m.display_sender && m.display_sender.id !== m.actual_sender?.id && (
                             <p className="text-[0.65rem] opacity-70 mb-0.5">on behalf of {m.actual_sender?.full_name}</p>
@@ -258,11 +274,13 @@ export default function AdminMessagesPage() {
                 <div ref={bottomRef} />
               </div>
 
-              <div className="p-4 border-t border-[var(--color-border)]">
+              <div className="p-3 sm:p-4 border-t border-[var(--color-border)]">
                 <div className="flex items-end gap-2 bg-[var(--color-surface-overlay)]/30 border border-[var(--color-border)] rounded-xl p-2 focus-within:border-[var(--color-accent)] transition-colors">
+                  {/* text-base (16px), not text-sm -- anything smaller makes
+                      iOS Safari zoom the whole page in on focus. */}
                   <textarea
                     placeholder="Type your message..."
-                    className="flex-1 max-h-32 min-h-10 bg-transparent outline-none text-sm py-2 px-2 resize-none"
+                    className="flex-1 max-h-32 min-h-11 bg-transparent outline-none text-base sm:text-sm py-2.5 sm:py-2 px-2 resize-none"
                     rows={1}
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
@@ -274,7 +292,8 @@ export default function AdminMessagesPage() {
                     }}
                   />
                   <button
-                    className="p-2 bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
+                    aria-label="Send message"
+                    className="inline-flex items-center justify-center min-h-11 min-w-11 bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
                     onClick={send}
                     disabled={sending || !draft.trim()}
                   >
@@ -292,7 +311,7 @@ export default function AdminMessagesPage() {
           <div className="card p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display font-semibold text-lg">New message</h2>
-              <button className="btn btn-ghost p-1.5" onClick={() => setShowNew(false)}>
+              <button aria-label="Close" className="btn btn-ghost inline-flex items-center justify-center min-h-11 min-w-11 p-1.5" onClick={() => setShowNew(false)}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -332,7 +351,7 @@ export default function AdminMessagesPage() {
                           )
                         }
                       }}
-                      className={`w-full text-left px-3 py-2.5 text-sm flex items-center justify-between hover:bg-[var(--color-surface-overlay)] transition-colors ${selected ? 'bg-[var(--color-surface-overlay)]' : ''}`}
+                      className={`w-full text-left px-3 py-2.5 min-h-11 text-sm flex items-center justify-between hover:bg-[var(--color-surface-overlay)] transition-colors ${selected ? 'bg-[var(--color-surface-overlay)]' : ''}`}
                     >
                       <span>
                         {t.full_name} <span className="text-[var(--color-text-muted)]">· {t.position}</span>

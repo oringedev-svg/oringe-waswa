@@ -1,10 +1,13 @@
 'use client'
 import { useState } from 'react'
-import { MessageSquare, Send, Paperclip, Search, User } from 'lucide-react'
+import { Send, Paperclip, Search, User, ArrowLeft } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 export default function PortalMessagesPage() {
-  const [activeThread, setActiveThread] = useState(1)
+  // Starts unselected (not the first thread) so mobile shows the list
+  // first, matching /admin/messages -- opening straight into a thread with
+  // the list hidden and no selection made would leave no way back to it.
+  const [activeThread, setActiveThread] = useState<number | null>(null)
   
   // Mock data for messages
   const threads = [
@@ -27,16 +30,19 @@ export default function PortalMessagesPage() {
         </h1>
       </div>
 
-      <div className="flex-1 border border-[var(--color-border)] rounded-xl bg-[var(--color-surface)] shadow-xs flex overflow-hidden min-h-[500px]">
+      {/* Mobile shows one pane at a time -- list OR thread -- switched by
+          activeThread, same fix as /admin/messages: a 250px-min sidebar
+          plus flex-1 thread is unusable side-by-side under ~500px wide. */}
+      <div className="flex-1 border border-[var(--color-border)] rounded-xl bg-[var(--color-surface)] shadow-xs flex overflow-hidden min-h-[420px] sm:min-h-[500px]">
         {/* Sidebar */}
-        <div className="w-1/3 min-w-[250px] border-r border-[var(--color-border)] flex flex-col bg-[var(--color-surface-overlay)]/20">
+        <div className={`w-full md:w-1/3 md:min-w-[250px] border-r border-[var(--color-border)] flex-col bg-[var(--color-surface-overlay)]/20 ${activeThread ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-[var(--color-border)]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
-              <input 
-                type="text" 
-                placeholder="Search messages..." 
-                className="w-full pl-9 pr-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md text-sm outline-none focus:border-[var(--color-accent)] transition-colors"
+              <input
+                type="text"
+                placeholder="Search messages..."
+                className="w-full pl-9 pr-4 py-2.5 min-h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md text-base sm:text-sm outline-none focus:border-[var(--color-accent)] transition-colors"
               />
             </div>
           </div>
@@ -66,16 +72,29 @@ export default function PortalMessagesPage() {
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-[var(--color-surface)]">
+        {/* Chat Area. Hidden on mobile until a thread is selected. */}
+        <div className={`flex-1 flex-col bg-[var(--color-surface)] ${activeThread ? 'flex' : 'hidden md:flex'}`}>
+          {!activeThread ? (
+            <div className="flex-1 flex items-center justify-center text-[var(--color-text-muted)] text-sm">
+              Select a conversation to view it here.
+            </div>
+          ) : (
+          <>
           {/* Header */}
-          <div className="p-4 border-b border-[var(--color-border)] flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[var(--color-surface-overlay)] border border-[var(--color-border)] flex items-center justify-center">
+          <div className="p-3 sm:p-4 border-b border-[var(--color-border)] flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setActiveThread(null)}
+              aria-label="Back to conversations"
+              className="md:hidden -ml-1 inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)] flex-shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div className="w-10 h-10 rounded-full bg-[var(--color-surface-overlay)] border border-[var(--color-border)] flex items-center justify-center flex-shrink-0">
               <User className="w-5 h-5 text-[var(--color-text-muted)]" />
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{threads.find(t => t.id === activeThread)?.subject}</h2>
-              <p className="text-xs text-[var(--color-text-muted)]">{threads.find(t => t.id === activeThread)?.advocate}</p>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{threads.find(t => t.id === activeThread)?.subject}</h2>
+              <p className="text-xs text-[var(--color-text-muted)] truncate">{threads.find(t => t.id === activeThread)?.advocate}</p>
             </div>
           </div>
 
@@ -83,9 +102,9 @@ export default function PortalMessagesPage() {
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.sender === 'client' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
-                  msg.sender === 'client' 
-                    ? 'bg-[var(--color-accent)] text-white rounded-br-sm' 
+                <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 ${
+                  msg.sender === 'client'
+                    ? 'bg-[var(--color-accent)] text-white rounded-br-sm'
                     : 'bg-[var(--color-surface-overlay)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-bl-sm'
                 }`}>
                   <p className="text-sm">{msg.text}</p>
@@ -98,21 +117,24 @@ export default function PortalMessagesPage() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-[var(--color-border)] bg-[var(--color-surface-overlay)]/10">
+          <div className="p-3 sm:p-4 border-t border-[var(--color-border)] bg-[var(--color-surface-overlay)]/10">
             <div className="flex items-end gap-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-2 focus-within:border-[var(--color-accent)] transition-colors">
-              <button className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] rounded-lg transition-colors">
+              <button aria-label="Attach file" className="inline-flex items-center justify-center min-h-11 min-w-11 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] rounded-lg transition-colors flex-shrink-0">
                 <Paperclip className="w-4 h-4" />
               </button>
-              <textarea 
-                placeholder="Type your message..." 
-                className="flex-1 max-h-32 min-h-[40px] bg-transparent outline-none text-sm py-2 resize-none"
+              {/* text-base (16px) prevents iOS Safari's focus-zoom. */}
+              <textarea
+                placeholder="Type your message..."
+                className="flex-1 max-h-32 min-h-11 bg-transparent outline-none text-base sm:text-sm py-2.5 sm:py-2 resize-none"
                 rows={1}
               />
-              <button className="p-2 bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] rounded-lg transition-colors flex-shrink-0">
+              <button aria-label="Send message" className="inline-flex items-center justify-center min-h-11 min-w-11 bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] rounded-lg transition-colors flex-shrink-0">
                 <Send className="w-4 h-4" />
               </button>
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
