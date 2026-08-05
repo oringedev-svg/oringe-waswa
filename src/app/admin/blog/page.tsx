@@ -18,6 +18,8 @@ interface BlogPost {
   scheduled_at?: string
   created_at: string
   authors: { name: string; role: string }[]
+  comments_count?: number
+  pending_comments_count?: number
 }
 
 const FILTERS = ['all', ...STATUSES.map((s) => s.key)]
@@ -26,7 +28,6 @@ export default function AdminBlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState('all')
-  const [pendingComments, setPendingComments] = useState(0)
   const [permissions, setPermissions] = useState<string[]>([])
 
   // Inline dialog state for transitions that need extra input
@@ -38,13 +39,14 @@ export default function AdminBlogPage() {
     setLoading(true)
     const params = new URLSearchParams({ admin: 'true', limit: '50' })
     if (status !== 'all') params.set('status', status)
+    // The firm-wide pending-comments fetch went with the global comments
+    // page: each post now carries its own counts, so a whole extra request
+    // for a number nothing renders is pure waste.
     Promise.all([
       fetch(`/api/blog?${params}`).then((r) => r.json()),
-      fetch('/api/blog/comments?pending=true').then((r) => r.json()),
       fetch('/api/me').then((r) => (r.ok ? r.json() : { permissions: [] })),
-    ]).then(([data, comments, me]) => {
+    ]).then(([data, me]) => {
       setPosts(data.data || [])
-      setPendingComments((comments || []).length)
       setPermissions(me.permissions || [])
     }).finally(() => setLoading(false))
   }
@@ -93,13 +95,6 @@ export default function AdminBlogPage() {
           <p className="text-[var(--color-text-muted)] text-sm mt-1">Draft, review, approve, schedule, and publish.</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/admin/blog/comments" className="btn btn-outline gap-2 text-sm relative">
-            <MessageSquare className="w-4 h-4" />
-            Comments
-            {pendingComments > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">{pendingComments}</span>
-            )}
-          </Link>
           <Link href="/admin/blog/new" className="btn btn-primary gap-2 text-sm">
             <Plus className="w-4 h-4" /> New Post
           </Link>
@@ -133,6 +128,7 @@ export default function AdminBlogPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">Authors</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">Date</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">Comments</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -154,6 +150,21 @@ export default function AdminBlogPage() {
                   </td>
                   <td className="px-4 py-3 text-xs text-[var(--color-muted)]">
                     {formatDate(post.published_at || post.created_at, 'short')}
+                  </td>
+                  {/* Total, plus a pending flag: "4" alone gives no hint that
+                      one of them is waiting on moderation, and there's no
+                      firm-wide comments queue to catch it any more. Links
+                      into the post's own comments section. */}
+                  <td className="px-4 py-3 text-xs text-[var(--color-muted)]">
+                    <Link href={`/admin/blog/${post.id}#comments`} className="inline-flex items-center gap-1.5 hover:text-[var(--color-accent)] transition-colors">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      {post.comments_count || 0}
+                      {!!post.pending_comments_count && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-[var(--status-warning)]/15 text-[var(--status-warning)] font-medium">
+                          {post.pending_comments_count} pending
+                        </span>
+                      )}
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">

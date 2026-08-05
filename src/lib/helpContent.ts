@@ -164,16 +164,20 @@ export const helpTopics: HelpTopic[] = [
     ],
   },
   {
-    path: '/admin/blog/comments',
+    // Was /admin/blog/comments, a single firm-wide moderation queue. Comments
+    // now live on the post they belong to, so the guidance points at the post
+    // editor rather than a page that no longer exists.
+    path: '/admin/blog/[id]',
     title: 'Blog comments',
     audience: 'admin',
     group: 'Content',
-    summary: 'Moderation queue for visitor comments on blog posts.',
+    summary: 'Visitor comments are moderated on the post they belong to.',
     sections: [
       {
         heading: 'Moderation',
         body: [
-          'Comments are held for approval before appearing publicly. Approve, reject, or mark as spam from this list.',
+          'Comments are held for approval before appearing publicly. Open the post and use its Comments section to approve or reply.',
+          'The Comments column on the blog list shows each post’s total, and flags how many are still waiting on approval.',
         ],
       },
     ],

@@ -7,16 +7,22 @@ import { logAudit } from '@/lib/audit'
 export async function GET(req: NextRequest) {
   const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
-  const status = searchParams.get('status') || 'published'
   const category = searchParams.get('category')
   const search = searchParams.get('search')
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '12')
   const admin = searchParams.get('admin') === 'true'
+  // Defaulting to 'published' for BOTH callers hid every draft, in-review,
+  // scheduled and archived post from the admin list: the blog page omits
+  // the status param entirely for its "All" filter, so "All" silently
+  // meant "published only" and unpublished work was unreachable from it.
+  // The public caller still defaults to published, and is pinned to it
+  // by the !admin branch below regardless.
+  const status = searchParams.get('status') || (admin ? 'all' : 'published')
 
   let query = supabase
     .from('blog_posts')
-    .select('*, authors:blog_authors(*)', { count: 'exact' })
+    .select('*, authors:blog_authors(*), comments:blog_comments(count)', { count: 'exact' })
     .order('published_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1)
 
@@ -27,7 +33,31 @@ export async function GET(req: NextRequest) {
 
   const { data, error, count } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ data, count })
+
+  // Comments belong to their post, so moderation is discoverable per post
+  // rather than from one firm-wide queue. The list needs the pending count
+  // as well as the total, otherwise "4 comments" gives no hint that one of
+  // them is sitting unapproved. Counted in a single grouped read rather
+  // than a second embed per row.
+  const pendingByPost = new Map<string, number>()
+  if (admin && data.length > 0) {
+    const { data: pendingRows } = await supabase
+      .from('blog_comments')
+      .select('post_id')
+      .eq('is_approved', false)
+      .in('post_id', data.map((p) => p.id))
+    for (const row of pendingRows || []) {
+      pendingByPost.set(row.post_id, (pendingByPost.get(row.post_id) || 0) + 1)
+    }
+  }
+
+  const mappedData = data.map(post => ({
+    ...post,
+    comments_count: post.comments?.[0]?.count || 0,
+    pending_comments_count: pendingByPost.get(post.id) || 0,
+  }))
+
+  return NextResponse.json({ data: mappedData, count })
 }
 
 export async function POST(req: NextRequest) {
