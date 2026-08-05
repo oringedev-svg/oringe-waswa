@@ -21,12 +21,16 @@ export async function GET(
 
   const supabase = createAdminClient()
 
-  // Get all assignments for the matter with billing data
+  // No .is('deleted_at', null) here: unlike invoices, assignments has no
+  // deleted_at column on this schema. The filter made the whole endpoint
+  // throw a 500 for every matter, and the MatterBillingWorkspace component
+  // silently retained its Loading state -- so opening any matter showed a
+  // spinner that would never resolve, with the actual error hidden in the
+  // network tab. Soft-delete on assignments would need to be added first.
   const { data: assignments, error: assignmentsError } = await supabase
     .from('assignments')
     .select('id, estimated_value, billing_status')
     .eq('matter_id', id)
-    .is('deleted_at', null)
 
   if (assignmentsError) {
     return NextResponse.json({ error: assignmentsError.message }, { status: 500 })
