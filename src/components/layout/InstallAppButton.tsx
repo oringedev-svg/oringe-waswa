@@ -29,16 +29,23 @@ interface InstallAppButtonProps {
   className?: string
   /**
    * 'pill' is the original text+icon pill for a light, wide surface (the
-   * public nav). 'icon' is a compact icon-only button sized and coloured to
-   * sit among the admin top bar's other icon buttons (theme toggle,
-   * notifications), which live on a coloured band rather than the page
-   * surface and read their colour from the --on-band-* tokens instead of
-   * the plain --color-* ones the pill uses.
+   * public nav). 'icon' is a compact icon-only button matching the other
+   * icon buttons around it.
    */
   variant?: 'pill' | 'icon'
+  /**
+   * Only meaningful for variant="icon". 'band' reads --on-band-* tokens, for
+   * AdminLayout's coloured top bar. 'surface' reads the plain --color-*
+   * tokens (the same ones .btn-ghost uses) for a page like /desk that sits
+   * directly on the page surface rather than a coloured band -- the pupil
+   * and admin-assistant workspace, which never renders AdminLayout at all
+   * (see src/app/desk/page.tsx), so this is that surface's own install entry
+   * point, not a second copy of the admin one.
+   */
+  tone?: 'band' | 'surface'
 }
 
-export default function InstallAppButton({ className = '', variant = 'pill' }: InstallAppButtonProps) {
+export default function InstallAppButton({ className = '', variant = 'pill', tone = 'band' }: InstallAppButtonProps) {
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(false)
   const [showIOSInstructions, setShowIOSInstructions] = useState(false)
@@ -63,9 +70,10 @@ export default function InstallAppButton({ className = '', variant = 'pill' }: I
 
   if (installed) return null
 
-  const iconButtonClass =
-    'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors'
-  const buttonClass = variant === 'icon' ? iconButtonClass : `install-app-button ${className}`
+  const iconButtonClass = tone === 'surface'
+    ? 'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] transition-colors'
+    : 'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors'
+  const buttonClass = variant === 'icon' ? `${iconButtonClass} ${className}` : `install-app-button ${className}`
 
   if (prompt) {
     return (

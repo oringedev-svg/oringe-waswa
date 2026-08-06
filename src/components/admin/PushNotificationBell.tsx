@@ -16,7 +16,17 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 type PushState = 'unsupported' | 'default' | 'subscribed' | 'denied' | 'loading'
 
-export default function PushNotificationBell() {
+interface PushNotificationBellProps {
+  /**
+   * 'band' reads the --on-band-* tokens, for AdminLayout's coloured top bar.
+   * 'surface' reads the plain --color-* tokens, for a header sitting directly
+   * on the page surface -- /desk, the pupil and admin-assistant workspace,
+   * which hand-rolls its own header instead of rendering AdminLayout.
+   */
+  tone?: 'band' | 'surface'
+}
+
+export default function PushNotificationBell({ tone = 'band' }: PushNotificationBellProps) {
   const [state, setState] = useState<PushState>('default')
 
   useEffect(() => {
@@ -100,8 +110,9 @@ export default function PushNotificationBell() {
 
   if (state === 'unsupported') return null
 
-  const baseClass =
-    'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors relative'
+  const baseClass = tone === 'surface'
+    ? 'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] transition-colors relative'
+    : 'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors relative'
 
   if (state === 'subscribed') {
     return (

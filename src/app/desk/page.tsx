@@ -1,9 +1,13 @@
 'use client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase'
-import { LogOut } from 'lucide-react'
+import { LogOut, Sun, Moon } from 'lucide-react'
 import TeamCentre from '@/components/admin/TeamCentre'
+import InstallAppButton from '@/components/layout/InstallAppButton'
+import PushNotificationBell from '@/components/admin/PushNotificationBell'
 
 // The personal workspace for pupils and administrative assistants, who
 // middleware keeps out of /admin entirely (except their own assignment
@@ -20,6 +24,13 @@ import TeamCentre from '@/components/admin/TeamCentre'
 // did.
 export default function DeskPage() {
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
+  // The server can't know the visitor's stored theme, so it always renders
+  // one icon and a client booting in dark mode renders the other, which React
+  // flags as a hydration mismatch on every dark-mode load. Same guard the
+  // public Navbar uses: render the icon only after mount.
+  const [themeReady, setThemeReady] = useState(false)
+  useEffect(() => { setThemeReady(true) }, [])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -40,16 +51,36 @@ export default function DeskPage() {
             <span className="hidden sm:inline">Oringe Waswa &amp; Akude</span>
             <span className="sm:hidden">OWA</span>
           </Link>
-          {/* Icon-only on mobile; label restored on sm+. Keeps the
-              44px target. */}
-          <button
-            onClick={handleSignOut}
-            aria-label="Sign out"
-            className="btn btn-ghost inline-flex items-center justify-center gap-2 text-sm min-h-11 min-w-11 flex-shrink-0"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
+          {/* /desk never renders AdminLayout (see the note at the top of this
+              file), so every affordance the admin top bar carries has to be
+              repeated here or these two roles simply don't get it. That drift
+              is why pupils and admin assistants were, until now, the only
+              people using this app -- including anonymous strangers on the
+              public site -- who could neither install it, switch theme, nor
+              turn on notifications. None of those are permissions; they're
+              personal comfort and device settings. */}
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <InstallAppButton variant="icon" tone="surface" />
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label="Toggle theme"
+              title="Toggle theme"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] transition-colors"
+            >
+              {themeReady && theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <PushNotificationBell tone="surface" />
+            {/* Icon-only on mobile; label restored on sm+. Keeps the
+                44px target. */}
+            <button
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              className="btn btn-ghost inline-flex items-center justify-center gap-2 text-sm min-h-11 min-w-11 flex-shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
         </div>
       </header>
 
