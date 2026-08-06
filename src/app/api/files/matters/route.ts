@@ -4,6 +4,7 @@ import { generateMatterNumber } from '@/lib/utils'
 import { logAudit } from '@/lib/audit'
 import { requirePermissionApi, getSessionProfile } from '@/lib/auth'
 import { getMatterAccessScope } from '@/lib/matterScope'
+import { isDriveConfigured, createMatterFolder } from '@/lib/google-drive'
 
 export async function GET(req: NextRequest) {
   const profile = await getSessionProfile()
@@ -192,6 +193,21 @@ export async function POST(req: NextRequest) {
   if (error || !data) return NextResponse.json({ error: error?.message || 'Could not create matter' }, { status: 500 })
   const createdMatter = data as { id: string; status: string; matter_number: string }
   await logAudit({ table_name: 'legal_matters', record_id: createdMatter.id, action: 'INSERT', new_data: body })
+
+  if (isDriveConfigured()) {
+    try {
+      const { folderId, folderUrl } = await createMatterFolder(
+        createdMatter.matter_number,
+        (body.title || body.description || 'Untitled') as string,
+      )
+      await supabase
+        .from('legal_matters')
+        .update({ google_drive_folder_id: folderId, google_drive_folder_url: folderUrl })
+        .eq('id', createdMatter.id)
+    } catch (e) {
+      console.error('Drive folder creation failed (non-blocking):', e)
+    }
+  }
 
   // `practice_area_id` remains the primary/legacy compatibility field. The
   // junction table lets one matter genuinely span multiple service lines.

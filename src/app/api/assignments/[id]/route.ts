@@ -7,6 +7,7 @@ import { buildAssignmentBrief } from '@/lib/assignmentBrief'
 import { stageLabel as matterStageLabelOf } from '@/lib/matterLifecycle'
 import { intakeStageMeta } from '@/lib/intakeLifecycle'
 import { checkAssignmentCompletion } from '@/lib/assignmentCompletion'
+import { isDriveConfigured, createGoogleDoc, setPermission } from '@/lib/google-drive'
 
 // Assignments are visible to: the assigner, the assignee, or anyone in an
 // admin-tier role. requireAdminApi() alone would exclude pupils and admin
@@ -372,6 +373,39 @@ export async function PATCH(
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
+  }
+
+  if (action === 'start' && isDriveConfigured() && assignment.matter_id) {
+    try {
+      const { data: matter } = await supabase
+        .from('legal_matters')
+        .select('google_drive_folder_id')
+        .eq('id', assignment.matter_id)
+        .single()
+
+      if (matter?.google_drive_folder_id) {
+        const docTitle = assignment.title || `Assignment ${params.id}`
+        const { fileId, fileUrl } = await createGoogleDoc(docTitle, matter.google_drive_folder_id)
+
+        await supabase
+          .from('assignments')
+          .update({ google_drive_file_id: fileId, google_drive_url: fileUrl })
+          .eq('id', params.id)
+
+        const { data: assigneeProfile } = await supabase
+          .from('team_members')
+          .select('profiles(email)')
+          .eq('id', assignment.assigned_to)
+          .single()
+
+        const email = (assigneeProfile as any)?.profiles?.email
+        if (email) {
+          await setPermission(fileId, email, 'writer')
+        }
+      }
+    } catch (e) {
+      console.error('Drive doc creation failed (non-blocking):', e)
+    }
   }
 
   // Add system message and optional user message

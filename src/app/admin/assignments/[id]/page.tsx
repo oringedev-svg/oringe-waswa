@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, X, Play, Send, MessageCircle, AlertCircle, FileUp, Loader2, Paperclip, Link2 } from 'lucide-react'
+import { CheckCircle2, X, Play, Send, MessageCircle, AlertCircle, FileUp, Loader2, Paperclip, Link2, ExternalLink, Eye } from 'lucide-react'
 import SectionCard from '@/components/admin/SectionCard'
 import AssignmentMessages from '@/components/assignments/AssignmentMessages'
 import MatterTimelineStrip from '@/components/assignments/MatterTimelineStrip'
@@ -29,6 +29,9 @@ interface Assignment {
   currentStageLabel?: string | null
   priority?: 'overdue' | 'due_soon' | 'normal' | 'none'
   brief?: AssignmentBrief
+  title?: string
+  google_drive_file_id?: string | null
+  google_drive_url?: string | null
   assigned_at: string
   accepted_at?: string
   started_at?: string
@@ -634,6 +637,33 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
             </SectionCard>
           )}
 
+          {/* Google Drive Document Preview */}
+          {assignment.google_drive_file_id && (
+            <SectionCard title="Document Preview" color="blue" defaultOpen={assignment.status === 'Submitted'}>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-[var(--color-muted)]">
+                    {assignment.status === 'Submitted' ? 'Review the document below' : 'Live document preview'}
+                  </p>
+                  <a
+                    href={assignment.google_drive_url || `https://docs.google.com/document/d/${assignment.google_drive_file_id}/edit`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-[var(--color-accent)] hover:underline flex items-center gap-1"
+                  >
+                    <Eye className="w-3 h-3" /> Open full view
+                  </a>
+                </div>
+                <iframe
+                  src={`https://drive.google.com/file/d/${assignment.google_drive_file_id}/preview`}
+                  className="w-full rounded-lg border border-[var(--color-border)]"
+                  style={{ height: '500px' }}
+                  allow="autoplay"
+                />
+              </div>
+            </SectionCard>
+          )}
+
           {/* Messages */}
           <AssignmentMessages
             messages={
@@ -713,6 +743,17 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
                     Submit
                   </button>
                 </div>
+              )}
+
+              {isAssignee && assignment.status === 'In Progress' && assignment.google_drive_url && (
+                <a
+                  href={assignment.google_drive_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-primary w-full gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" /> Open in Google Docs
+                </a>
               )}
 
               {isAssignee && assignment.status === 'In Progress' && assignment.matter_id && (
