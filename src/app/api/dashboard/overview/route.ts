@@ -33,8 +33,8 @@ export async function GET() {
     teamCount,
     submittedAssignments,
   ] = await Promise.all([
-    supabase.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('deleted_at', null),
-    supabase.from('submissions').select('id', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo).is('deleted_at', null),
+    supabase.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('deleted_at', null).not('email_verified_at', 'is', null),
+    supabase.from('submissions').select('id', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo).is('deleted_at', null).not('email_verified_at', 'is', null),
     supabase.from('mail_subscribers').select('id', { count: 'exact', head: true }),
     supabase.from('blog_posts').select('id', { count: 'exact', head: true }).eq('status', 'published'),
     supabase.from('legal_matters').select('status, assigned_attorney_id, updated_at'),

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     supabase.from('page_views').select('id', { count: 'exact', head: true }).gte('created_at', since),
     supabase.from('page_views').select('path').gte('created_at', since).limit(5000),
     supabase.from('chat_queries').select('query').gte('created_at', since).limit(2000),
-    supabase.from('submissions').select('type, status, created_at').gte('created_at', since).limit(5000),
+    supabase.from('submissions').select('type, status, created_at').gte('created_at', since).not('email_verified_at', 'is', null).limit(5000),
     supabase.from('blog_posts').select('id, title, views').order('views', { ascending: false }).limit(10),
   ])
 

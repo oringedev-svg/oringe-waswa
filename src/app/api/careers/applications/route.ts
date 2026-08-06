@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
     .from('job_applications')
     .select('*, job_openings(title)')
     .order('created_at', { ascending: false })
+    // An applicant who hasn't confirmed their email doesn't reach the
+    // recruiter's queue -- same rule as every other public intake form.
+    .not('email_verified_at', 'is', null)
   if (category) query = query.eq('category', category)
   if (status) query = query.eq('status', status)
 

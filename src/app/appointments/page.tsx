@@ -107,7 +107,7 @@ export default function AppointmentsPage() {
 
       setMessages(prev => [...prev, {
         role: 'ai',
-        content: `Your appointment request has been submitted, ${data.client_name}! Tracking code: **${subData.trackingCode}**\n\nOur team will confirm within 1 business day. Check your email for details.`
+        content: `Almost there, ${data.client_name}! We've sent a confirmation link to **${data.client_email}** — click it to secure this booking (tracking code **${subData.trackingCode}**). Our team will confirm within 1 business day of that.`
       }])
       setDone({ trackingCode: subData.trackingCode })
     } catch (err: unknown) {

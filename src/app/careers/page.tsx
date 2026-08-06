@@ -228,7 +228,7 @@ function ApplyModal({ target, onClose }: { target: { job?: JobOpening; category:
         {done ? (
           <div className="flex flex-col items-center text-center py-6 gap-3">
             <CheckCircle className="w-10 h-10 text-green-600" />
-            <p className="text-sm text-[var(--color-text-secondary)]">We've received your application and sent you a confirmation email. We'll be in touch if there's a fit.</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">We've sent a confirmation link to your email — click it to complete your application. We'll be in touch if there's a fit.</p>
             <button onClick={onClose} className="btn btn-primary mt-2">Close</button>
           </div>
         ) : (

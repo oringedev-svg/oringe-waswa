@@ -140,7 +140,7 @@ export default function ContactPage() {
 
       setMessages(prev => [...prev, {
         role: 'ai',
-        content: `All done, ${data.name}! Your submission has been received. Tracking code: **${result.trackingCode}**\n\nCheck your email for confirmation. We'll respond within 1-3 business days.`
+        content: `Almost there, ${data.name}! We've sent a confirmation link to **${data.email}** — click it to complete your submission (tracking code **${result.trackingCode}**). We'll respond within 1-3 business days of confirmation.`
       }])
       setDone({ trackingCode: result.trackingCode })
     } catch {
@@ -284,8 +284,9 @@ export default function ContactPage() {
                   <div className="flex items-center gap-3 flex-1">
                     <CheckCircle className="w-8 h-8 text-green-500 flex-shrink-0" />
                     <div>
-                      <p className="font-semibold text-sm text-[var(--color-text-primary)]">Submission Successful!</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <p className="font-semibold text-sm text-[var(--color-text-primary)]">Confirm your email to finish</p>
+                      <p className="text-xs text-[var(--color-muted)] mt-0.5">We've emailed you a confirmation link — your submission isn't complete until you click it.</p>
+                      <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-xs text-[var(--color-muted)]">Tracking:</span>
                         <code className="text-xs font-mono font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded">{done.trackingCode}</code>
                       </div>

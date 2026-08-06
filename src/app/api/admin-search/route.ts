@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     supabase.from('blog_posts').select('id, title, status').ilike('title', like).limit(5),
     supabase.from('legal_matters').select('id, title, case_number').or(`title.ilike.${like},case_number.ilike.${like}`).limit(5),
     supabase.from('profiles').select('id, full_name, email').or(`full_name.ilike.${like},email.ilike.${like}`).limit(5),
-    supabase.from('submissions').select('id, submitter_name, tracking_code').or(`submitter_name.ilike.${like},tracking_code.ilike.${like}`).limit(5),
+    supabase.from('submissions').select('id, submitter_name, tracking_code').or(`submitter_name.ilike.${like},tracking_code.ilike.${like}`).not('email_verified_at', 'is', null).limit(5),
     supabase.from('profiles').select('id, full_name, email, role').not('user_id', 'is', null).or(`full_name.ilike.${like},email.ilike.${like}`).limit(5),
     supabase.from('awards').select('id, title').ilike('title', like).is('deleted_at', null).limit(5),
     supabase.from('events').select('id, title').ilike('title', like).is('deleted_at', null).limit(5),
