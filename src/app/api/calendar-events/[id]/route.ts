@@ -5,6 +5,8 @@ import { logAudit } from '@/lib/audit'
 import { sendEmail } from '@/lib/email'
 import { buildIcsInvite, meetingInviteEmail } from '@/lib/ics'
 import { resolveAttendees } from '@/lib/attendeeResolver'
+import { buildLocationSummary } from '@/lib/meetingProviders'
+import { syncEventUpdated, syncEventCancelled } from '@/lib/calendarSync'
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const guard = await requireAdminApi()
@@ -27,10 +29,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const supabase = createAdminClient()
   const body = await req.json()
   const allowed: Record<string, unknown> = {}
-  for (const key of ['title', 'description', 'type', 'start_at', 'end_at', 'location', 'meeting_link', 'status']) {
+  for (const key of [
+    'title', 'description', 'type', 'start_at', 'end_at', 'location', 'meeting_link', 'status',
+    'meeting_provider', 'venue_name', 'building', 'room', 'address', 'location_notes',
+  ]) {
     if (key in body) allowed[key] = body[key]
   }
   if (Object.keys(allowed).length === 0) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+
+  // `location` is derived from the venue fields, so moving a meeting to a
+  // different room has to rewrite the summary line every downstream reader
+  // (the .ics, the invite email) actually uses.
+  const venueTouched = ['venue_name', 'building', 'room', 'address'].some((k) => k in allowed)
+  if (venueTouched && !('location' in body)) {
+    const summary = buildLocationSummary({
+      venue_name: allowed.venue_name as string | null,
+      building: allowed.building as string | null,
+      room: allowed.room as string | null,
+      address: allowed.address as string | null,
+    })
+    if (summary) allowed.location = summary
+  }
 
   const rescheduled = 'start_at' in allowed || 'end_at' in allowed
 
@@ -71,6 +90,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     } catch {}
   }
 
+  // Mirror the change onto every calendar this event was copied to. A
+  // cancellation removes the copy outright; anything else patches it.
+  if (allowed.status === 'cancelled') {
+    await syncEventCancelled(params.id)
+  } else {
+    await syncEventUpdated(params.id)
+  }
+
   await logAudit({ table_name: 'calendar_events', record_id: params.id, action: 'UPDATE', new_data: allowed })
   return NextResponse.json(data)
 }
@@ -82,6 +109,9 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
   const supabase = createAdminClient()
   const { error } = await supabase.from('calendar_events').update({ status: 'cancelled' }).eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await syncEventCancelled(params.id)
+
   await logAudit({ table_name: 'calendar_events', record_id: params.id, action: 'DELETE' })
   return NextResponse.json({ success: true })
 }
