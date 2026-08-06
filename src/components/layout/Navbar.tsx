@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Menu, X, Sun, Moon, ChevronDown, Search, Twitter, Instagram, Linkedin, Youtube, Facebook, ArrowUpRight } from 'lucide-react'
+import { Menu, X, Sun, Moon, ChevronDown, Search, Twitter, Instagram, Linkedin, Youtube, Facebook } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import TranslateWidget from '@/components/ui/TranslateWidget'
 import { useSetting } from '@/components/providers/SiteSettingsProvider'
@@ -199,15 +199,19 @@ export default function Navbar() {
                             <div className="container py-14 grid grid-cols-12 gap-x-12 gap-y-8">
                               <div className="col-span-12 md:col-span-4 lg:col-span-3 md:pr-8 md:border-r md:border-[var(--color-border)]">
                                 <div className="grow-line-left rule-accent mb-5 visible" />
-                                <h3 className="font-display text-2xl font-light text-[var(--color-text-primary)]">{link.label}</h3>
+                                {/* The heading itself is the "view all" link now
+                                    that the trigger button navigates on click
+                                    (see the button above) -- a second, separate
+                                    "View all X" link right below it was pointing
+                                    at the exact same place. */}
+                                <Link href={link.href || '/services'} className="inline-block font-display text-2xl font-light text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors">
+                                  {link.label}
+                                </Link>
                                 <p className="text-sm text-[var(--color-text-muted)] mt-3 leading-relaxed max-w-xs">
                                   {link.label === 'Careers'
                                     ? "Trainee to qualified lawyer, business services to support staff, see where you'd fit."
                                     : 'Full-service counsel across our core practice areas, tailored to the outcome you need.'}
                                 </p>
-                                <Link href={link.href || '/services'} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent)] hover:underline mt-6">
-                                  {link.label === 'Careers' ? 'View all openings' : 'View all capabilities'} <ArrowUpRight className="w-3.5 h-3.5" />
-                                </Link>
                               </div>
                               <div className="col-span-12 md:col-span-8 lg:col-span-9 grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
                                 {link.children.map((child) => (
