@@ -25,7 +25,20 @@ function isStandalone() {
   )
 }
 
-export default function InstallAppButton({ className = '' }: { className?: string }) {
+interface InstallAppButtonProps {
+  className?: string
+  /**
+   * 'pill' is the original text+icon pill for a light, wide surface (the
+   * public nav). 'icon' is a compact icon-only button sized and coloured to
+   * sit among the admin top bar's other icon buttons (theme toggle,
+   * notifications), which live on a coloured band rather than the page
+   * surface and read their colour from the --on-band-* tokens instead of
+   * the plain --color-* ones the pill uses.
+   */
+  variant?: 'pill' | 'icon'
+}
+
+export default function InstallAppButton({ className = '', variant = 'pill' }: InstallAppButtonProps) {
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(false)
   const [showIOSInstructions, setShowIOSInstructions] = useState(false)
@@ -50,10 +63,15 @@ export default function InstallAppButton({ className = '' }: { className?: strin
 
   if (installed) return null
 
+  const iconButtonClass =
+    'inline-flex items-center justify-center min-h-11 min-w-11 rounded-md text-[var(--on-band-muted)] hover:bg-[color-mix(in_srgb,var(--on-band)_8%,transparent)] hover:text-[var(--on-band)] transition-colors'
+  const buttonClass = variant === 'icon' ? iconButtonClass : `install-app-button ${className}`
+
   if (prompt) {
     return (
-      <button type="button" onClick={install} className={`install-app-button ${className}`}>
-        <Download className="w-3.5 h-3.5" /> Install app
+      <button type="button" onClick={install} className={buttonClass} title="Install app" aria-label="Install app">
+        <Download className="w-4 h-4" />
+        {variant === 'pill' && 'Install app'}
       </button>
     )
   }
@@ -61,8 +79,9 @@ export default function InstallAppButton({ className = '' }: { className?: strin
   if (iosEligible) {
     return (
       <div className="relative">
-        <button type="button" onClick={() => setShowIOSInstructions((v) => !v)} className={`install-app-button ${className}`}>
-          <Download className="w-3.5 h-3.5" /> Install app
+        <button type="button" onClick={() => setShowIOSInstructions((v) => !v)} className={buttonClass} title="Install app" aria-label="Install app">
+          <Download className="w-4 h-4" />
+          {variant === 'pill' && 'Install app'}
         </button>
         {showIOSInstructions && (
           <div className="install-app-ios-popover" role="dialog" aria-label="Install on iPhone or iPad">

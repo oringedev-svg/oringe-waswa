@@ -6,7 +6,6 @@ import { useTheme } from 'next-themes'
 import { Menu, X, Sun, Moon, ChevronDown, Search, Twitter, Instagram, Linkedin, Youtube, Facebook, ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import TranslateWidget from '@/components/ui/TranslateWidget'
-import InstallAppButton from '@/components/layout/InstallAppButton'
 import { useSetting } from '@/components/providers/SiteSettingsProvider'
 import type { NavMenuItem } from '@/lib/settingsSchema'
 
@@ -183,7 +182,12 @@ export default function Navbar() {
                       // crossing the gap between the trigger and the panel
                       // below it doesn't close the menu before you get there.
                       <div onMouseEnter={() => openDropdown(link.label)} onMouseLeave={scheduleCloseDropdown}>
-                        <button aria-expanded={activeDropdown === link.label} aria-haspopup="true" className={cn('flex items-center gap-1 py-2 text-[13px] font-medium tracking-tight transition-colors', activeDropdown === link.label ? activeColor : linkColor)}>
+                        {/* Hover still opens the mega-menu, but the trigger
+                            is a real navigation now: a click (or Enter, via
+                            the router push) lands on the section's own page
+                            instead of being a dead end for anyone who
+                            clicks rather than hovers-then-picks-an-item. */}
+                        <button aria-expanded={activeDropdown === link.label} aria-haspopup="true" onClick={() => router.push(link.href || '/services')} className={cn('flex items-center gap-1 py-2 text-[13px] font-medium tracking-tight transition-colors', activeDropdown === link.label ? activeColor : linkColor)}>
                           {link.label}
                           <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', activeDropdown === link.label && 'rotate-180')} />
                         </button>
@@ -265,8 +269,6 @@ export default function Navbar() {
               </button>
             </div>
 
-            <InstallAppButton />
-
             <Link href="/appointments" className={cn('nav-appointment-cta', onDarkHero ? 'border border-[#f5f5f3]/40 text-[#f5f5f3] hover:border-[var(--color-accent-light)]' : 'btn-primary')}>Book Appointment</Link>
           </div>
 
@@ -292,20 +294,28 @@ export default function Navbar() {
               return (
                 <div key={link.label}>
                   {hasChildren ? (
-                    // Same as desktop: the label itself opens the submenu
-                    // rather than navigating, with its own "View all" link
-                    // inside for going to the section's landing page. A
-                    // split target (part of the row navigates, part
-                    // expands) is worse to tap accurately than one clear
-                    // toggle.
-                    <button
-                      onClick={() => setMobileExpanded(expanded ? null : link.label)}
-                      aria-expanded={expanded}
-                      className={cn('w-full flex items-center justify-between gap-2 px-4 py-3 min-h-11 text-sm font-medium rounded-md transition-colors',
-                        expanded ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]')}>
-                      {link.label}
-                      <ChevronDown className={cn('w-4 h-4 flex-shrink-0 transition-transform', expanded && 'rotate-180')} />
-                    </button>
+                    // The label itself is a real link to the section's
+                    // landing page, so one tap gets you there, same as any
+                    // other nav item. The chevron is its own separate
+                    // tap target that only expands the practice-area list,
+                    // for anyone who wants to jump straight to one of those
+                    // instead of landing on the overview first.
+                    <div className={cn('flex items-center rounded-md transition-colors',
+                      expanded ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]')}>
+                      <Link href={link.href || '#'}
+                        className={cn('flex-1 px-4 py-3 min-h-11 text-sm font-medium rounded-md transition-colors',
+                          expanded ? '' : 'hover:bg-[var(--color-surface-overlay)]')}>
+                        {link.label}
+                      </Link>
+                      <button
+                        onClick={() => setMobileExpanded(expanded ? null : link.label)}
+                        aria-expanded={expanded}
+                        aria-label={`${expanded ? 'Collapse' : 'Expand'} ${link.label} list`}
+                        className={cn('flex items-center justify-center min-h-11 min-w-11 flex-shrink-0 rounded-md transition-colors',
+                          expanded ? '' : 'hover:bg-[var(--color-surface-overlay)]')}>
+                        <ChevronDown className={cn('w-4 h-4 transition-transform', expanded && 'rotate-180')} />
+                      </button>
+                    </div>
                   ) : (
                     <Link href={link.href || '#'}
                       className={cn('block px-4 py-3 min-h-11 text-sm font-medium rounded-md transition-colors',
@@ -317,10 +327,6 @@ export default function Navbar() {
                   )}
                   {hasChildren && expanded && (
                     <div className="ml-4 flex flex-col gap-0.5 mt-0.5 pb-1">
-                      <Link href={link.href || '#'}
-                        className="flex items-center gap-1.5 px-4 py-2.5 min-h-11 text-sm font-medium text-[var(--color-accent)] hover:bg-[var(--color-surface-overlay)] transition-colors rounded-md">
-                        {link.label === 'Careers' ? 'View all openings' : 'View all capabilities'} <ArrowUpRight className="w-3.5 h-3.5" />
-                      </Link>
                       {link.children!.map((child) => (
                         <Link key={child.href} href={child.href}
                           className="block px-4 py-2.5 min-h-11 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors rounded-md hover:bg-[var(--color-surface-overlay)]">
@@ -340,7 +346,6 @@ export default function Navbar() {
                 className="flex-1 bg-transparent border-b border-[var(--color-border)] text-base py-1.5 outline-none" />
             </form>
             <Link href="/appointments" className="btn btn-primary mt-2 text-center">Book Appointment</Link>
-            <InstallAppButton className="justify-center mt-1" />
             {socials.length > 0 && (
               <div className="flex items-center gap-4 px-4 mt-3">
                 {socials.map(({ icon: Icon, url, label }) => (

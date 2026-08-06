@@ -14,6 +14,7 @@ import AdminAIAssistant from './AdminAIAssistant'
 import GlobalSearch from './GlobalSearch'
 import PushNotificationBell from './PushNotificationBell'
 import HelpWidget from '@/components/help/HelpWidget'
+import InstallAppButton from '@/components/layout/InstallAppButton'
 
 // The shell is a slim top bar plus a persistent left sidebar that appears
 // once you are inside one of the four domains: the sidebar lists that
@@ -203,6 +204,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <GlobalSearch />
 
           <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            {/* Lives here rather than a one-shot browser prompt: a missed
+                native install banner never comes back, so this stays put
+                (hides itself once installed, see InstallAppButton) as the
+                one place to find it again. */}
+            <InstallAppButton variant="icon" />
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               aria-label="Toggle theme"

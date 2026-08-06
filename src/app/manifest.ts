@@ -5,7 +5,16 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Oringe Waswa & Akude Advocates',
     short_name: 'OWA Advocates',
     description: 'Legal services, client matters, appointments, and firm updates.',
-    start_url: '/',
+    // This manifest is what "Install app" installs, and installing it is a
+    // staff/practice-management action, not a public-site one (the install
+    // entry point lives in the admin top bar, not the marketing nav, see
+    // AdminLayout.tsx). The installed icon should therefore open straight
+    // into the workspace rather than the marketing homepage. '/admin' is
+    // safe as a universal launch target for every account type: middleware
+    // already sends an unauthenticated visitor to /login?redirect=/admin,
+    // and a pupil/admin_assistant on to /desk, before this page ever
+    // renders (see middleware.ts).
+    start_url: '/admin',
     display: 'standalone',
     background_color: '#f5f5f5',
     theme_color: '#242e34',
