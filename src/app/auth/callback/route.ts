@@ -16,6 +16,25 @@ export async function GET(req: NextRequest) {
   // application routes are valid continuations after the code exchange.
   const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/portal'
 
+  // A password-recovery link must NOT be spent here.
+  // exchangeCodeForSession() consumes a single-use code, and anything that
+  // merely *loads* this URL spends it -- Gmail's link scanner, a corporate
+  // mail security prefetcher, a preview generator. The human then clicks a
+  // link the server correctly reports as already used, requests another,
+  // and the replacement gets scanned and burned exactly the same way, which
+  // is the "every reset link says it's already been used" loop.
+  //
+  // So for recovery, hand the code to the reset page unspent and let the
+  // actual form submission exchange it. Only a real person filling in a
+  // password consumes anything. Magic-link sign-in below is unchanged: it
+  // has nowhere further to hand off to, and auto-exchange is the whole
+  // point of that flow.
+  if (code && next.startsWith('/reset-password')) {
+    const forward = new URL(`${origin}/reset-password`)
+    forward.searchParams.set('code', code)
+    return NextResponse.redirect(forward)
+  }
+
   if (code) {
     const supabase = createRouteSupabaseClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)

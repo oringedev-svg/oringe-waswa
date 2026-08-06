@@ -1,12 +1,19 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Loader2 } from 'lucide-react'
 import AuthLayout from '@/components/auth/AuthLayout'
 
-export default function ResetPasswordPage() {
+function ResetPasswordInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // Present when arriving from a recovery email. /auth/callback deliberately
+  // forwards the code here unspent instead of exchanging it itself, so that a
+  // mail scanner merely fetching the link can't burn it -- see the note in
+  // src/app/auth/callback/route.ts. It gets spent on submit, below.
+  const recoveryCode = searchParams.get('code')
+
   const [ready, setReady] = useState(false)
   const [invalid, setInvalid] = useState(false)
   const [password, setPassword] = useState('')
@@ -15,6 +22,14 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // Holding a recovery code is enough to show the form. Rendering a form is
+    // not "using" the link, so nothing is consumed here.
+    if (recoveryCode) {
+      setReady(true)
+      setInvalid(false)
+      return
+    }
+
     const supabase = createClient()
     let active = true
 
@@ -24,15 +39,13 @@ export default function ResetPasswordPage() {
       }
     })
 
-    // Covers the case where the recovery session was already established
-    // (link processed) before this listener was attached.
+    // Invite links (portal and staff account invites) and any already-
+    // established recovery session arrive here with a live session and no
+    // code, which is still a legitimate way to reach this page.
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         if (active) { setReady(true); setInvalid(false) }
       } else if (active) {
-        // The callback route has already exchanged a valid PKCE recovery
-        // code by this point. A missing session is therefore a real invalid
-        // or expired link, not a race hidden behind an arbitrary timeout.
         setInvalid(true)
       }
     })
@@ -41,7 +54,7 @@ export default function ResetPasswordPage() {
       active = false
       listener.subscription.unsubscribe()
     }
-  }, [])
+  }, [recoveryCode])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -57,17 +70,32 @@ export default function ResetPasswordPage() {
     setError('')
 
     const supabase = createClient()
+
+    // Spend the single-use code at the one moment we know a human is here.
+    if (recoveryCode) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(recoveryCode)
+      if (exchangeError) {
+        setLoading(false)
+        // PKCE ties the code to the browser that requested it, so "opened in
+        // a different browser" is a real and easily-hit cause here, not just
+        // expiry. Naming all three saves a pointless second attempt.
+        setError(
+          'This reset link could not be verified. It may have expired, already been used, or been opened in a different browser than the one that requested it. Request a new link from the sign-in page.'
+        )
+        return
+      }
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({ password })
 
     setLoading(false)
     if (updateError) {
       // A blanket "link expired" message here was actively misleading: the
-      // recovery session at this point is already valid (we're past the
-      // `ready` gate), so a failure is almost always the password itself --
-      // too weak for the project's policy, or identical to the current
-      // one, both of which Supabase reports in updateError.message. Only
-      // an actual session/auth failure should point the user back to
-      // requesting a new link.
+      // recovery session at this point is already valid, so a failure is
+      // almost always the password itself -- too weak for the project's
+      // policy, or identical to the current one, both of which Supabase
+      // reports in updateError.message. Only an actual session/auth failure
+      // should point the user back to requesting a new link.
       const isSessionError = /session|token|jwt|expired|unauthorized/i.test(updateError.message)
       setError(
         isSessionError
@@ -127,5 +155,19 @@ export default function ResetPasswordPage() {
         </form>
       )}
     </AuthLayout>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthLayout title="Set new password">
+          <div className="auth-loading"><Loader2 className="animate-spin" /></div>
+        </AuthLayout>
+      }
+    >
+      <ResetPasswordInner />
+    </Suspense>
   )
 }
